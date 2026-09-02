@@ -1,0 +1,222 @@
+// ============================================================================
+// Archivo: src/controllers/diagnosticoController.js
+// Propósito: Manejar la lógica de negocio del examen diagnóstico inicial.
+// Requerimiento asociado: RF-02 (Diagnóstico), RF-03 (Ruta Adaptativa) y RF-07 (Gamificación)
+// Arquitectura: Integración de Microservicio IA (Flask) y Persistencia en MySQL
+// ============================================================================
+
+const PreguntaDiagnostico = require('../models/PreguntaDiagnostico');
+const Diagnostico = require('../models/Diagnostico');
+
+/**
+ * Obtiene las preguntas del diagnóstico excluyendo la respuesta correcta por seguridad.
+ * @param {import('express').Request} req - Objeto de petición Express.
+ * @param {import('express').Response} res - Objeto de respuesta Express.
+ */
+exports.obtenerPreguntas = async (req, res) => {
+    try {
+        const preguntas = await PreguntaDiagnostico.findAll({
+            limit: 13,
+            attributes: { exclude: ['respuesta_correcta'] } 
+        });
+
+        if (!preguntas || preguntas.length === 0) {
+            return res.status(404).json({ mensaje: 'No hay preguntas disponibles para el diagnóstico.' });
+        }
+
+        res.status(200).json({
+            mensaje: 'Preguntas cargadas exitosamente',
+            total: preguntas.length,
+            data: preguntas
+        });
+    } catch (error) {
+        console.error('Error al obtener preguntas del diagnóstico:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor al cargar el examen.' });
+    }
+};
+
+/**
+ * Evalúa el diagnóstico inicial del usuario, se comunica con la IA para asignar el rango,
+ * y otorga progreso e insignias de forma retroactiva (Piso de Cristal).
+ * @param {import('express').Request} req - Objeto de petición Express (body: respuestas).
+ * @param {import('express').Response} res - Objeto de respuesta Express.
+ */
+exports.evaluarDiagnostico = async (req, res) => {
+    // Usamos la instancia de sequelize para transacciones y consultas crudas de herencia
+    const sequelize = Diagnostico.sequelize; 
+    const t = await sequelize.transaction();
+
+    try {
+        const id_usuario = req.usuario?.id_usuario || req.user?.id_usuario; 
+        const { respuestas } = req.body;
+
+        if (!respuestas || !Array.isArray(respuestas)) {
+            return res.status(400).json({ mensaje: 'Formato de respuestas inválido.' });
+        }
+
+        // 1. Calificación de Respuestas y Generación de Detalles
+        const preguntasDB = await PreguntaDiagnostico.findAll({ raw: true });
+        let respuestasCorrectas = 0;
+        const totalPreguntas = preguntasDB.length;
+        const detalleRespuestas = []; // Arreglo para la revisión en el frontend
+
+        respuestas.forEach(resEstudiante => {
+            const preguntaReal = preguntasDB.find(p => p.id_pregunta === resEstudiante.id_pregunta);
+            
+            if (preguntaReal) {
+                const esCorrecta = preguntaReal.respuesta_correcta.trim().toLowerCase() === resEstudiante.respuesta.trim().toLowerCase();
+                
+                if (esCorrecta) {
+                    respuestasCorrectas++;
+                }
+
+                // Estructuramos los datos para el pergamino de errores
+                detalleRespuestas.push({
+                    id_pregunta: preguntaReal.id_pregunta,
+                    pregunta: preguntaReal.pregunta,
+                    opciones: [
+                        { clave: 'opcion_a', texto: preguntaReal.opcion_a },
+                        { clave: 'opcion_b', texto: preguntaReal.opcion_b },
+                        { clave: 'opcion_c', texto: preguntaReal.opcion_c },
+                        { clave: 'opcion_d', texto: preguntaReal.opcion_d }
+                    ],
+                    respuesta_correcta: preguntaReal.respuesta_correcta, 
+                    respuesta_usuario: resEstudiante.respuesta,
+                    es_correcta: esCorrecta
+                });
+            }
+        });
+
+        // 2. ORQUESTACIÓN DE MICROSERVICIOS: Llamada a la IA en Flask
+        let nivelAsignado = '';
+        const mapaNiveles = {
+            0: 'Genin (Iniciado)',
+            1: 'Chunin (Guerrero)',
+            2: 'Jonin (Maestro)'
+        };
+
+        try {
+            const flaskResponse = await fetch('http://127.0.0.1:5000/api/ia/recomendar-ruta', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ puntaje: respuestasCorrectas })
+            });
+
+            if (!flaskResponse.ok) throw new Error('Flask respondió con error');
+
+            const dataIA = await flaskResponse.json();
+            nivelAsignado = mapaNiveles[dataIA.nivel_id];
+
+        } catch (errorIA) {
+            console.warn("⚠️ IA Flask no responde. Activando algoritmo de respaldo ninja (Fallback)...");
+            if (respuestasCorrectas <= 4) nivelAsignado = 'Genin (Iniciado)';
+            else if (respuestasCorrectas <= 9) nivelAsignado = 'Chunin (Guerrero)';
+            else nivelAsignado = 'Jonin (Maestro)';
+        }
+
+        // 3. Guardamos el resultado del Diagnóstico
+        await Diagnostico.create({
+            id_usuario: id_usuario,
+            puntaje_obtenido: respuestasCorrectas, 
+            nivel_asignado: nivelAsignado,
+            fecha_realizacion: new Date() 
+        }, { transaction: t });
+
+        await sequelize.query(
+            'UPDATE usuarios SET rango = ?, rango_actual = ? WHERE id_usuario = ?',
+            { replacements: [nivelAsignado, nivelAsignado, id_usuario], transaction: t }
+        );
+
+        // 🚩 4. LÓGICA DE HERENCIA: Insignias y Progreso Dinámico (RF-07)
+        let idsModulosLegacy = [];
+        let idsMedallasRango = []; // 🚩 Arreglo para guardar el Sello del Rango oficial
+
+        // Definición de jerarquía según los IDs de tu base de datos
+        const modulosGenin = [1, 2, 10, 11];
+        const modulosChunin = [3, 4, 12, 14, 15, 16, 17, 18, 19];
+
+        if (nivelAsignado.includes('Chunin')) {
+            idsModulosLegacy = [...modulosGenin];
+            idsMedallasRango = [101]; // 🚩 Otorga el Sello Chunin
+        } else if (nivelAsignado.includes('Jonin')) {
+            idsModulosLegacy = [...modulosGenin, ...modulosChunin];
+            idsMedallasRango = [101, 102]; // 🚩 Otorga Sello Chunin y Sello Jonin
+        } else if (nivelAsignado.includes('Kage')) {
+            idsModulosLegacy = [...modulosGenin, ...modulosChunin]; 
+            idsMedallasRango = [101, 102, 103]; // 🚩 Otorga todos los sellos
+        }
+
+        // Unimos todas las insignias que el ninja debe recibir (Módulos completados + Rangos)
+        const todasLasInsignias = [...idsModulosLegacy, ...idsMedallasRango];
+
+        if (todasLasInsignias.length > 0) {
+            // Otorgamos TODAS las insignias automáticamente
+            const queryInsignias = `
+                INSERT IGNORE INTO usuarios_insignias (id_usuario, id_insignia, fecha_otorgada)
+                VALUES ${todasLasInsignias.map(id => `(${id_usuario}, ${id}, NOW())`).join(', ')}`;
+            
+            await sequelize.query(queryInsignias, { transaction: t });
+        }
+
+        if (idsModulosLegacy.length > 0) {
+            // Seteamos progreso al 100% SOLO para los módulos saltados (No aplica para medallas de rango)
+            const queryProgreso = `
+                INSERT INTO progreso_estudiante (id_usuario, id_modulo, porcentaje_avance, intentos_realizados, ultima_actualizacion)
+                VALUES ${idsModulosLegacy.map(id => `(${id_usuario}, ${id}, 100, 1, NOW())`).join(', ')}
+                ON DUPLICATE KEY UPDATE porcentaje_avance = 100, ultima_actualizacion = NOW()`;
+
+            await sequelize.query(queryProgreso, { transaction: t });
+        }
+
+        await t.commit();
+
+        res.status(200).json({
+            mensaje: '¡Diagnóstico evaluado y rango ninja actualizado!',
+            resultados: {
+                correctas: respuestasCorrectas,
+                total: totalPreguntas,
+                rango_asignado: nivelAsignado,
+                insignias_heredadas: idsModulosLegacy.length,
+                sellos_obtenidos: idsMedallasRango.length
+            },
+            detalle: detalleRespuestas // <-- Enviamos el detalle al frontend aquí
+        });
+
+    } catch (error) {
+        if (t) await t.rollback();
+        console.error('Error al evaluar el diagnóstico:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor al procesar las respuestas.' });
+    }
+};
+
+// ============================================================================
+// 🛠️ RUTA DE DESARROLLO: Resetear progreso para pruebas
+// ============================================================================
+/**
+ * Elimina todo el progreso, insignias y diagnósticos del usuario (Útil para pruebas).
+ * @param {import('express').Request} req - Objeto de petición Express.
+ * @param {import('express').Response} res - Objeto de respuesta Express.
+ */
+exports.resetearProgresoPruebas = async (req, res) => {
+    const sequelize = Diagnostico.sequelize;
+    const t = await sequelize.transaction();
+
+    try {
+        const id_usuario = req.usuario?.id_usuario || req.user?.id_usuario;
+
+        // Borramos todo el rastro del usuario en progreso, insignias y diagnósticos
+        await sequelize.query(`DELETE FROM progreso_estudiante WHERE id_usuario = ${id_usuario}`, { transaction: t });
+        await sequelize.query(`DELETE FROM usuarios_insignias WHERE id_usuario = ${id_usuario}`, { transaction: t });
+        await sequelize.query(`DELETE FROM diagnostico WHERE id_usuario = ${id_usuario}`, { transaction: t });
+
+        // Regresamos el rango a Genin en la tabla usuarios
+        await sequelize.query(`UPDATE usuarios SET rango = 'Genin (Iniciado)', rango_actual = 'Genin (Iniciado)' WHERE id_usuario = ${id_usuario}`, { transaction: t });
+
+        await t.commit();
+        res.status(200).json({ mensaje: '¡Progreso reseteado! Ahora eres un ninja novato de nuevo.' });
+    } catch (error) {
+        if (t) await t.rollback();
+        console.error('Error reseteando:', error);
+        res.status(500).json({ mensaje: 'Error al limpiar la base de datos.' });
+    }
+};

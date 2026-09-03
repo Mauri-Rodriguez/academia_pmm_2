@@ -108,7 +108,7 @@ const DashboardEstudiante = () => {
 
     if (loading) return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
-            <div className="w-16 h-16 border-4 border-[#0A3D62]/20 border-t-[#0A3D62] rounded-full animate-spin mb-4"></div>
+            <img src="/motivacion.png" alt="Cargando" className="w-32 h-32 object-contain animate-bounce mb-4" />
             <div className="text-[#0A3D62] font-bold animate-pulse tracking-[0.3em] text-xs uppercase">Cargando tu progreso...</div>
         </div>
     );
@@ -138,7 +138,7 @@ const DashboardEstudiante = () => {
     return (
         <div className="min-h-screen bg-slate-100 flex text-slate-800 font-sans overflow-hidden selection:bg-[#FBE000]/30">
 
-            {/* 🚩 MODAL DE ONBOARDING (SIN MASCOTA) */}
+            {/* 🚩 MODAL DE ONBOARDING */}
             <AnimatePresence>
                 {onboardingActivo && datos && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
@@ -150,9 +150,7 @@ const DashboardEstudiante = () => {
                         >
                             {pasoOnboarding === 0 ? (
                                 <div className="space-y-6">
-                                    <div className="w-20 h-20 bg-[#FBE000]/10 rounded-full mx-auto flex items-center justify-center border border-[#FBE000]">
-                                        <span className="text-4xl">🎓</span>
-                                    </div>
+                                    <img src="/motivacion.png" alt="Mascota" className="w-28 h-28 mx-auto object-contain animate-bounce" />
                                     <h2 className="text-2xl font-bold text-[#0A3D62]">¡Bienvenido a PMM Interactivo!</h2>
                                     <p className="text-sm text-slate-500 leading-relaxed">
                                         Este es tu panel de control. Aquí encontrarás tu ruta de aprendizaje personalizada, estadísticas de avance y recomendaciones para mejorar.
@@ -173,7 +171,7 @@ const DashboardEstudiante = () => {
                                         transition={{ type: "spring", duration: 0.8 }}
                                         className="w-24 h-24 mx-auto bg-slate-100 border-4 border-[#FBE000] rounded-full flex items-center justify-center shadow-lg"
                                     >
-                                        <span className="text-5xl">🏅</span>
+                                        <img src="/subir nivel robot.png" alt="Nuevo nivel" className="w-16 h-16 object-contain" />
                                     </motion.div>
 
                                     <h2 className="text-xl font-bold text-[#0A3D62]">
@@ -296,7 +294,7 @@ const DashboardEstudiante = () => {
                 <div className="mb-8 md:mb-10">
                     {loadingIA ? (
                         <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl animate-pulse flex flex-col md:flex-row items-center gap-6">
-                            <div className="w-16 h-16 bg-slate-100 rounded-full"></div>
+                            <img src="/pensando.png" alt="IA pensando" className="w-20 h-20 object-contain" />
                             <div className="flex-1 w-full space-y-3">
                                 <div className="h-2 w-1/2 bg-slate-100 rounded"></div>
                                 <div className="h-4 w-full bg-slate-100 rounded"></div>
@@ -308,9 +306,7 @@ const DashboardEstudiante = () => {
                             <div className="flex flex-col lg:flex-row items-center gap-6 md:gap-8 relative z-10">
                                 <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full border flex items-center justify-center flex-shrink-0
                                     ${sugerenciaIA.nivel_alerta === 'critico' ? 'bg-red-50 border-red-200' : 'bg-[#FBE000]/10 border-[#FBE000]'}`}>
-                                    <span className={`text-xl md:text-2xl ${sugerenciaIA.nivel_alerta === 'critico' ? 'animate-bounce' : 'animate-pulse'}`}>
-                                        {sugerenciaIA.nivel_alerta === 'critico' ? '🎯' : '🤖'}
-                                    </span>
+                                    <img src="/idea.png" alt="Idea IA" className="w-12 h-12 object-contain" />
                                 </div>
                                 <div className="flex-1 text-center lg:text-left w-full">
                                     <h4 className={`font-bold text-[10px] md:text-xs uppercase tracking-[0.2em] mb-2 ${sugerenciaIA.nivel_alerta === 'critico' ? 'text-red-500' : 'text-[#0A3D62]'}`}>
@@ -372,31 +368,36 @@ const DashboardEstudiante = () => {
 
                 {/* 🚩 SECCIÓN 3: ESTADÍSTICAS RÁPIDAS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
+                    
+                    {/* 🔥 RACHA DE ESTUDIO */}
                     <div className="bg-white border border-red-100 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-red-200 transition-all shadow-lg">
-                        <div className="absolute -right-4 -top-4 text-6xl opacity-10 group-hover:scale-110 transition-transform">🔥</div>
-                        <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-1 relative z-10">Dedicación Continua</p>
-                        <div className="flex items-center gap-3 relative z-10">
-                            <span className="text-3xl md:text-4xl animate-pulse">🔥</span>
-                            <p className="text-2xl md:text-3xl font-bold text-red-500">
-                                {datos?.estadisticas?.racha_dias || 0} <span className="text-sm text-red-400 uppercase">Días</span>
-                            </p>
-                        </div>
-                        <p className="text-[8px] md:text-[9px] text-red-400 font-bold uppercase tracking-tighter mt-1 relative z-10">Racha de Estudio Activa</p>
+                        <img src="/robot con llama.png" alt="Motivación" className="w-20 h-20 object-contain mb-3" />
+                        <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-1">Dedicación Continua</p>
+                        <p className="text-2xl md:text-3xl font-bold text-red-500">
+                            {datos?.estadisticas?.racha_dias || 0} <span className="text-sm text-red-400 uppercase">Días</span>
+                        </p>
+                        <p className="text-[8px] md:text-[9px] text-red-400 font-bold uppercase tracking-tighter mt-1">Racha de Estudio Activa</p>
                     </div>
 
+                    {/* 🤔 DESEMPEÑO INICIAL */}
                     <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-slate-300 transition-all shadow-lg">
+                        <img src="/pensando.png" alt="Pensando" className="w-20 h-20 object-contain mb-3" />
                         <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-2">Desempeño Inicial</p>
                         <p className={`text-2xl md:text-3xl font-bold mb-1 ${configGlobal.color}`}>{efectividadInicial}%</p>
                         <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Puntaje en Diagnóstico</p>
                     </div>
 
+                    {/* 😎 CATEGORÍA ACTUAL */}
                     <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-slate-300 transition-all shadow-lg">
+                        <img src="/respuesta correcta robot.png" alt="Nivel" className="w-20 h-20 object-contain mb-3" />
                         <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-2">Categoría Actual</p>
                         <p className="text-xl md:text-3xl font-bold mb-1 text-slate-900 uppercase truncate">{configGlobal.label}</p>
                         <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Nivel de Dominio</p>
                     </div>
 
+                    {/* 📈 PROGRESO GENERAL */}
                     <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-slate-300 transition-all shadow-lg">
+                        <img src="/subir nivel robot.png" alt="Progreso" className="w-20 h-20 object-contain mb-3" />
                         <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-2">Progreso General</p>
                         <p className="text-2xl md:text-3xl font-bold mb-1 text-[#0A3D62]">
                             {misionesCompletas}
@@ -472,7 +473,7 @@ const DashboardEstudiante = () => {
                 {errores.length > 0 && (
                     <div className="mb-8 md:mb-10 bg-red-50 border border-red-200 p-5 md:p-6 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-4 text-center md:text-left">
-                            <span className="text-2xl md:text-3xl">⚠️</span>
+                            <img src="/respuesta incorrecta robot.png" alt="Error" className="w-16 h-16 object-contain" />
                             <div>
                                 <h4 className="text-red-500 font-bold text-[10px] md:text-xs uppercase tracking-widest">Fallas Detectadas</h4>
                                 <p className="text-[9px] md:text-[11px] text-slate-500 uppercase mt-1">Se detectaron {errores.length} puntos que requieren repaso.</p>

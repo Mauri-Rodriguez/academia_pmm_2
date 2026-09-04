@@ -1,4 +1,3 @@
-// src/pages/VerificarCorreo.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/api';
@@ -8,20 +7,18 @@ const VerificarCorreo = () => {
     const navigate = useNavigate();
     const [estado, setEstado] = useState('validando'); // validando, exito, error
     
-    // 🛡️ Guardia Ninja: Evita el doble render de React 18
+    // 🛡️ Guardia: Evita el doble render de React 18 en modo estricto
     const peticionEnviada = useRef(false);
 
     useEffect(() => {
         const confirmar = async () => {
-            // Si ya enviamos la petición, abortamos la segunda ejecución fantasma
             if (peticionEnviada.current) return;
             peticionEnviada.current = true;
 
             try {
-                // Llama al endpoint del backend
                 await api.get(`/api/auth/verificar/${token}`);
                 setEstado('exito');
-                setTimeout(() => navigate('/'), 4000); // Lo manda al login
+                setTimeout(() => navigate('/'), 4000); // Redirige al login después de 4 segundos
             } catch (error) {
                 console.error("Error de verificación:", error.response?.data || error);
                 setEstado('error');
@@ -32,20 +29,53 @@ const VerificarCorreo = () => {
     }, [token, navigate]);
 
     return (
-        <div className="min-h-screen bg-[#0A0C10] flex items-center justify-center p-6 text-center">
-            <div className="bg-[#f4f1e1]/95 p-10 rounded shadow-2xl max-w-md border-y-4 border-shinobi-gold">
-                {estado === 'validando' && <h2 className="text-xl font-bold">Analizando tu chakra... ⏳</h2>}
-                {estado === 'exito' && (
-                    <div>
-                        <h2 className="text-2xl font-bold text-green-600 mb-2">¡Sello Activado! ✅</h2>
-                        <p className="text-sm text-gray-700">Tu cuenta ha sido verificada. Redirigiendo al dojo...</p>
+        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-xl border-t-4 border-[#FBE000] p-8 md:p-12 max-w-md w-full text-center relative overflow-hidden">
+                
+                {/* Decoración de fondo sutil */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#FBE000]/10 blur-[60px] rounded-full -z-10"></div>
+
+                {/* ESTADO: VALIDANDO */}
+                {estado === 'validando' && (
+                    <div className="flex flex-col items-center">
+                        <img src="/pensando.png" alt="Verificando" className="w-32 h-32 object-contain animate-bounce mb-6" />
+                        <h2 className="text-xl font-bold text-[#0A3D62] mb-2">Verificando tu cuenta...</h2>
+                        <p className="text-sm text-slate-500">Por favor, espera un momento mientras confirmamos tus datos.</p>
                     </div>
                 )}
+
+                {/* ESTADO: ÉXITO */}
+                {estado === 'exito' && (
+                    <div className="flex flex-col items-center">
+                        <img src="/correcto.png" alt="Verificado" className="w-32 h-32 object-contain mb-6" />
+                        <h2 className="text-2xl font-extrabold text-[#0A3D62] mb-2">¡Cuenta Verificada!</h2>
+                        <p className="text-sm text-slate-600 mb-6">
+                            Tu registro ha sido completado exitosamente. Serás redirigido al inicio de sesión en unos segundos.
+                        </p>
+                        {/* Barra de progreso visual (Heurística #1: Visibilidad del estado) */}
+                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                                className="bg-[#0A3D62] h-full rounded-full transition-all duration-[4000ms] ease-linear"
+                                style={{ width: '100%' }}
+                            ></div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ESTADO: ERROR */}
                 {estado === 'error' && (
-                    <div>
-                        <h2 className="text-2xl font-bold text-red-600 mb-2">Enlace Corrupto ❌</h2>
-                        <p className="text-sm mb-4 text-gray-700">El enlace es inválido, ya fue utilizado o caducó.</p>
-                        <Link to="/registro" className="text-orange-600 font-bold hover:underline">Solicitar nuevo registro</Link>
+                    <div className="flex flex-col items-center">
+                        <img src="/incorrecto.png" alt="Error" className="w-32 h-32 object-contain mb-6" />
+                        <h2 className="text-2xl font-extrabold text-red-600 mb-2">Enlace Inválido o Expirado</h2>
+                        <p className="text-sm text-slate-600 mb-8">
+                            El enlace de verificación no es válido, ya fue utilizado o ha caducado. Por favor, solicita un nuevo registro.
+                        </p>
+                        <Link 
+                            to="/registro" 
+                            className="w-full bg-[#0A3D62] text-white font-bold py-3.5 rounded-xl hover:bg-[#083252] transition-all uppercase text-sm tracking-wider shadow-md hover:shadow-lg active:scale-95"
+                        >
+                            Volver a Registrarme
+                        </Link>
                     </div>
                 )}
             </div>

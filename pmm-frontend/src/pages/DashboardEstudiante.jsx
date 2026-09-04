@@ -174,7 +174,7 @@ const DashboardEstudiante = () => {
                                         transition={{ type: "spring", duration: 0.8 }}
                                         className="w-24 h-24 mx-auto bg-slate-100 border-4 border-[#FBE000] rounded-full flex items-center justify-center shadow-lg"
                                     >
-                                        <img src="/festejando.png" alt="Nuevo nivel" className="w-16 h-16 object-contain" />
+                                        <img src="/logro.png" alt="Nuevo nivel" className="w-16 h-16 object-contain" />
                                     </motion.div>
 
                                     <h2 className="text-xl font-bold text-[#0A3D62]">

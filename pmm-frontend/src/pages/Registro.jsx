@@ -91,7 +91,7 @@ const Registro = () => {
                 
                 {/* Mascota */}
                 <div className="flex justify-center mb-6">
-                    <img src="/MASCOTA CABEZA.png" alt="Mascota PMM" className="w-28 h-28 object-contain drop-shadow-lg" />
+                    <img src="/icono mascota app.png" alt="Mascota PMM" className="w-28 h-28 object-contain drop-shadow-lg" />
                 </div>
 
                 <div className="text-center mb-8">

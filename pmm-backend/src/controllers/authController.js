@@ -65,26 +65,79 @@ exports.register = async (req, res) => {
         nuevoUsuario.verification_token_expiry = Date.now() + 172800000; // 48h
         await nuevoUsuario.save();
 
-        const urlConfirmacion = `${process.env.FRONTEND_URL}/verificar-correo/${tokenVerificacion}`;
-
-        // ✉️ Envío de Correo vía Resend
+const urlConfirmacion = `${process.env.FRONTEND_URL}/verificar-correo/${tokenVerificacion}`;        // ✉️ Envío de Correo vía Resend
         if (resend) {
             try {
                 // TODO: Cambiar 'onboarding@resend.dev' por dominio real en producción
                 await resend.emails.send({
                     from: 'Academia PMM <admin@academiapmm.online>',
                     to: correo,
-                    subject: "⚔️ Activa tu Sello Ninja en PMM Interactivo",
+                    subject: "Activa tu cuenta en PMM Interactivo",
                     html: `
-                        <div style="font-family: sans-serif; text-align: center; padding: 20px; border-top: 5px solid #C5A059;">
-                            <h2>¡Bienvenido a la Aldea, ${nombre_completo}!</h2>
-                            <p>Has sido reconocido como: <b>${rolAsignado.toUpperCase()}</b>.</p>
-                            <p>Para activar tu cuenta y comenzar el entrenamiento, haz clic en el siguiente enlace:</p>
-                            <a href="${urlConfirmacion}" style="background: #C5A059; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 15px; font-weight: bold;">
-                                ACTIVAR MI CUENTA
-                            </a>
-                            <p style="font-size: 11px; color: #666; margin-top: 20px;">Este enlace expira en 24 horas.</p>
-                        </div>
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="utf-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        </head>
+                        <body style="margin: 0; padding: 0; background-color: #F1F5F9; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F1F5F9; padding: 40px 20px;">
+                                <tr>
+                                    <td align="center">
+                                        <!-- Tarjeta Principal -->
+                                        <table width="100%" max-width="560" cellpadding="0" cellspacing="0" style="background-color: #FFFFFF; border-radius: 24px; overflow: hidden; border-top: 6px solid #FBE000; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                                            
+                                            <!-- Encabezado -->
+                                            <tr>
+                                                <td align="center" style="padding: 40px 40px 20px 40px;">
+                                                    <h1 style="color: #0A3D62; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px; text-transform: uppercase;">
+                                                        PMM <span style="color: #FBE000;">Interactivo</span>
+                                                    </h1>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Cuerpo del Mensaje -->
+                                            <tr>
+                                                <td align="center" style="padding: 0 40px 30px 40px;">
+                                                    <h2 style="color: #0F172A; font-size: 20px; font-weight: 700; margin: 0 0 16px 0;">
+                                                        ¡Bienvenido, ${nombre_completo || 'Estudiante'}!
+                                                    </h2>
+                                                    <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0; text-align: left;">
+                                                        Tu cuenta ha sido creada exitosamente. Para comenzar tu ruta de aprendizaje personalizada y acceder a todos los recursos de la plataforma, es necesario activar tu cuenta.
+                                                    </p>
+                                                    
+                                                    <!-- Botón de Acción (Estilo Oficial PMM) -->
+                                                    <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                                                        <tr>
+                                                            <td align="center" style="border-radius: 12px; background-color: #0A3D62;">
+                                                                <a href="${urlConfirmacion}" style="display: inline-block; padding: 14px 32px; color: #FFFFFF; text-decoration: none; font-weight: 700; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase; border-radius: 12px;">
+                                                                    Activar mi cuenta
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Pie de página / Disclaimer -->
+                                            <tr>
+                                                <td align="center" style="padding: 20px 40px 40px 40px; border-top: 1px solid #E2E8F0;">
+                                                    <p style="color: #94A3B8; font-size: 12px; line-height: 1.5; margin: 0;">
+                                                        Este enlace de activación expirará en 24 horas por motivos de seguridad.<br>
+                                                        Si no solicitaste esta cuenta, puedes ignorar este mensaje de forma segura.
+                                                    </p>
+                                                    <p style="color: #94A3B8; font-size: 11px; margin-top: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
+                                                        © 2025 Academia PMM Interactivo
+                                                    </p>
+                                                </td>
+                                            </tr>
+
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>
                     `
                 });
             } catch (err) { console.error("📧 Fallo envío Resend:", err.message); }

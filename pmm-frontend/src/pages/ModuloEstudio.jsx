@@ -171,7 +171,7 @@ const ModuloEstudio = () => {
     if (completado) return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center text-center p-6">
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-md w-full bg-white border border-slate-200 p-8 md:p-12 rounded-3xl shadow-xl border-t-4 border-t-[#FBE000]">
-                <img src="/subir nivel robot.png" alt="Completado" className="w-32 h-32 object-contain mx-auto mb-6 animate-bounce" />
+                <img src="/logro.png" alt="Completado" className="w-32 h-32 object-contain mx-auto mb-6 animate-bounce" />
                 <h1 className="text-3xl font-extrabold text-[#0A3D62] tracking-tight uppercase mb-4">¡Módulo Completado!</h1>
                 <p className="text-slate-500 text-sm md:text-base mb-10 leading-relaxed">
                     Has dominado los conceptos de este módulo. ¿Deseas repasar o volver a tu panel principal?

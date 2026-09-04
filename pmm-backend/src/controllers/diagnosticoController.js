@@ -108,7 +108,7 @@ exports.evaluarDiagnostico = async (req, res) => {
             nivelAsignado = mapaNiveles[dataIA.nivel_id];
 
         } catch (errorIA) {
-            console.warn("⚠️ IA Flask no responde. Activando algoritmo de respaldo ninja (Fallback)...");
+            console.warn("⚠️ IA Flask no responde. Activando algoritmo de respaldo (Fallback)...");
             if (respuestasCorrectas <= 4) nivelAsignado = 'Genin (Iniciado)';
             else if (respuestasCorrectas <= 9) nivelAsignado = 'Chunin (Guerrero)';
             else nivelAsignado = 'Jonin (Maestro)';

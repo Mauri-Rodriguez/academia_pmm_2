@@ -50,12 +50,12 @@ const crearNotificacion = async (id_usuario, mensaje, ruta = null, transaction =
         const localBogota = new Date(fechaActual.getTime() + offsetBogota);
         const sqlDateTime = localBogota.toISOString().slice(0, 19).replace('T', ' ');
 
-        // 2. Preparamos el objeto de configuración
+        // 2. Preparamos el objeto de configuración asegurando el formato de Sequelize
         const configuracion = {
             replacements: [id_usuario, mensaje, ruta, sqlDateTime]
         };
 
-        // 3. Si hay una transacción activa, la añadimos
+        // 3. Si hay una transacción activa, la añadimos correctamente
         if (transaction) {
             configuracion.transaction = transaction;
         }
@@ -69,18 +69,17 @@ const crearNotificacion = async (id_usuario, mensaje, ruta = null, transaction =
         console.log(`🔔 [NOTIFICACIÓN OK] Usuario ${id_usuario}: "${mensaje}"`);
 
     } catch (error) {
-        // Si sale un error aquí, es probable que no hayas creado la columna 'ruta' en la DB
         console.error("❌ [ERROR NOTIFICACIÓN]:", error.message);
 
-        // Intento de rescate: Guardar lo básico si falla lo anterior
+        // Intento de rescate: Quitamos la transacción en el respaldo por si el objeto viene dañado
         try {
             await db.query(
                 'INSERT INTO notificaciones (id_usuario, mensaje, leida, fecha_creacion) VALUES (?, ?, 0, NOW())',
-                { replacements: [id_usuario, mensaje], transaction }
+                { replacements: [id_usuario, mensaje] }
             );
-            console.log("⚠️ Notificación guardada sin ruta (posible columna faltante en DB)");
+            console.log("⚠️ Notificación guardada sin ruta (respaldo ejecutado sin transacción)");
         } catch (e2) {
-            console.error("❌ Falla crítica en el sistema de notificaciones");
+            console.error("❌ Falla crítica en el sistema de notificaciones:", e2.message);
         }
     }
 };
@@ -115,23 +114,40 @@ exports.registrarFallo = async (req, res) => {
         const textoRespuestaAlumno = preguntaDB[columnaDada];
         const textoRespuestaCorrecta = preguntaDB[formatColumna(preguntaDB.respuesta_correcta)];
 
-        const prompt = `Actúa como un maestro sabio y con gran experiencia en matemáticas. 
-        El estudiante falló en: "${preguntaDB.pregunta}". 
-        Eligió: "${textoRespuestaAlumno}". 
-        La respuesta correcta era: "${textoRespuestaCorrecta}". 
-        Explica el error en máximo 3 oraciones breves y termina con un "🥷🏾Pista Ninja:" motivadora. 
-        IMPORTANTE: No uses signos de peso ($), ni formato LaTeX. Escribe las fórmulas como texto normal (ejemplo: f(x) = 0).
-        No des la respuesta correcta nunca, guía su lógica fomentando el pensamiento crítico.`;
+                // 🚩 Recuerda extraer el nivel del estudiante antes de armar el prompt
+        const usuario = await Usuario.findByPk(id_usuario);
+        const nivelEstudiante = usuario?.rango_actual || usuario?.rango || 'Estudiante';
 
+        const prompt = `
+Eres un Tutor Virtual Académico de Matemáticas. Tu misión es guiar al estudiante dentro de su Zona de Desarrollo Próximo, ayudándole a identificar su error conceptual sin entregarle la solución.
+
+CONTEXTO:
+- Nivel del estudiante: ${nivelEstudiante}
+- Pregunta: "${preguntaDB.pregunta}"
+- Opción elegida por el estudiante (Incorrecta): "${textoRespuestaAlumno}"
+- Opción correcta (CONTEXTO INTERNO: Úsala solo para entender el contraste, pero NUNCA la menciones ni reveles su texto): "${textoRespuestaCorrecta}"
+
+REGLAS ESTRICTAS:
+1. PROHIBICIÓN ABSOLUTA: NUNCA reveles la respuesta correcta, ni su valor numérico, ni el texto de la opción correcta.
+2. ENFOQUE EN EL ERROR: Explica brevemente por qué la opción que eligió es incorrecta (ej. error de signo, concepto erróneo, propiedad mal aplicada).
+3. ANDAMIAJE: Recuerda la regla, propiedad o teorema matemático que debe aplicar y termina con una pregunta orientadora que lo impulse a deducir el siguiente paso por sí mismo.
+4. CARGA COGNITIVA: Sé directo. Máximo 3 oraciones cortas en total para no saturar su memoria de trabajo.
+5. FORMATO PLANO: NO uses LaTeX ni signos de dólar ($). Escribe las fórmulas en texto plano (ej. x^2, a/b, sqrt(x)).
+6. CIERRE GAMIFICADO: Termina tu mensaje exactamente con este formato: "🥷🏾 Pista: [Tu pregunta o pista orientadora]".
+
+Estructura de tu respuesta:
+[1-2 oraciones explicando el error conceptual y la regla a recordar].
+🧩 Pista: [Pregunta o pista para que el estudiante llegue a la conclusión por sí mismo].
+        `;
         try {
             // 🚩 Usamos 2.5-flash-lite para respuestas hiperrápidas
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
             const result = await model.generateContent(prompt);
             explicacionIA = result.response.text();
-            console.log(`⚡ [GEMINI API] Oráculo consultado en tiempo real para la pregunta ${id_pregunta}.`);
+            console.log(`⚡ [GEMINI API] Tutor consultado en tiempo real para la pregunta ${id_pregunta}.`);
         } catch (err) {
             console.error("❌ Error en Gemini:", err.message);
-            explicacionIA = "El oráculo está meditando en las montañas. Analiza el sello por tu cuenta.";
+            explicacionIA = "El Tutor está meditando en las montañas.";
         }
 
         // 4. Guardar SIEMPRE en el historial para no perder las analíticas del profesor
@@ -152,7 +168,7 @@ exports.registrarFallo = async (req, res) => {
         if (fallosHoy && fallosHoy.total === 5) {
             await crearNotificacion(
                 id_usuario,
-                "⚠️ El Oráculo nota turbulencia en tu chakra. Tómate un respiro, revisa la biblioteca y vuelve a intentarlo."
+                "⚠️ El Tutor nota turbulencia en tu sistema. Tómate un respiro, revisa la biblioteca y vuelve a intentarlo."
             );
         }
 
@@ -358,7 +374,7 @@ exports.finalizarModulo = async (req, res) => {
                 await db.query('INSERT IGNORE INTO usuarios_insignias (id_usuario, id_insignia, fecha_otorgada) VALUES (?, ?, NOW())',
                     { replacements: [id_usuario, idMedallaRango], transaction: t });
 
-                await crearNotificacion(id_usuario, mensajeAscenso, t);
+                await crearNotificacion(id_usuario, mensajeAscenso, null, t);
             }
         }
 
@@ -466,7 +482,7 @@ exports.guardarDiagnostico = async (req, res) => {
         await t.commit();
         await crearNotificacion(
             id_usuario,
-            `⛩️ El Oráculo ha hablado. Tu entrenamiento comienza con el rango de: ${rango}. ¡Revisa tu Malla Curricular!`
+            `🤖 El Tutor ha hablado. Tu entrenamiento comienza con el rango de: ${rango}. ¡Revisa tu Malla Curricular!`
         );
 
         res.status(201).json(nuevo);
@@ -543,7 +559,7 @@ exports.obtenerDashboard = async (req, res) => {
                 } else if (diferenciaDias > 1) {
                     // Si pierde la racha y era mayor a 3, le mandamos un mensaje motivacional
                     if (rachaActual >= 3) {
-                        crearNotificacion(id_usuario, "💨 Tu fuego ninja se ha apagado por inactividad. ¡Vuelve a encender la llama hoy!");
+                        crearNotificacion(id_usuario, "💨 Tu fuego se ha apagado por inactividad. ¡Vuelve a encender la llama hoy!");
                     }
                     rachaActual = 1; // Pierde la racha
                 }
@@ -764,7 +780,7 @@ exports.comentarMision = async (req, res) => {
                 // 🚩 Usamos el Helper blindado que ya calcula la hora de Colombia y acepta la ruta
                 await crearNotificacion(
                     postOriginal.id_usuario,
-                    "📜 Un ninja de la aldea ha respondido a tu pergamino en el foro.",
+                    "📜 Un estudiante ha respondido a tu consulta en el foro.",
                     `/estudiante/foro?open=${id_post}`// 
                 );
             }
@@ -891,7 +907,7 @@ exports.obtenerAnaliticaErrores = async (req, res) => {
         res.json({
             grafico: estadisticas, // Para el Chart de Barras/Radar
             sugerencia: puntoDebil ? {
-                mensaje: `Maestro Ninja nota debilidad en: ${puntoDebil.tema}`,
+                mensaje: `Maestro Tutor nota debilidad en: ${puntoDebil.tema}`,
                 id_modulo_sugerido: puntoDebil.id_modulo,
                 nivel_alerta: 'critico'
             } : null
@@ -955,12 +971,12 @@ Comienza tu respuesta directamente con la orientación o la pista, sin saludos g
         return res.json({ respuesta: respuestaOraculo });
 
     } catch (e) {
-        console.error("❌ Error en el Oráculo IA:", e);
+        console.error("❌ Error en el Tutor IA:", e);
         if (e.message.includes('429')) {
             return res.status(429).json({
-                respuesta: "Mi chakra está agotado en este momento, joven ninja. Intenta canalizar tu energía y pregúntame de nuevo en unos segundos."
+                respuesta: "Estoy agotado en este momento, joven estudiante. Intenta canalizar tu energía y pregúntame de nuevo en unos segundos."
             });
         }
-        res.status(500).json({ respuesta: "El enlace telepático con el Oráculo se ha roto. Sigue tu instinto ninja." });
+        res.status(500).json({ respuesta: "El enlace con el Tutor se ha roto. Revisa la biblioteca y vuelve a intentarlo." });
     }
 };

@@ -14,7 +14,7 @@ const HistorialErrores = () => {
                 const res = await api.get('/api/estudiante/errores-recientes');
                 setErrores(res.data);
             } catch (err) {
-                console.error("Error al cargar la bitácora de fallos:", err);
+                console.error("Error al cargar el historial de aprendizaje:", err);
             } finally {
                 setLoading(false);
             }
@@ -23,62 +23,69 @@ const HistorialErrores = () => {
     }, []);
 
     if (loading) return (
-        <div className="min-h-screen bg-[#05070A] flex flex-col items-center justify-center">
-            <div className="w-16 h-16 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin mb-6 shadow-[0_0_30px_rgba(244,63,94,0.3)]"></div>
-            <div className="text-rose-500 font-scholar animate-pulse tracking-[0.5em] text-[10px] uppercase">
-                Invocando Pergaminos de Falla...
+        <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
+            <img src="/pensando.png" alt="Cargando historial" className="w-32 h-32 object-contain animate-bounce mb-4" />
+            <div className="text-[#0A3D62] font-bold animate-pulse tracking-[0.3em] text-xs uppercase">
+                Cargando historial de aprendizaje...
             </div>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-[#05070A] text-slate-300 relative selection:bg-rose-500/30 pb-20">
+        <div className="min-h-screen bg-slate-100 text-slate-800 relative selection:bg-[#FBE000]/30 pb-20 overflow-hidden">
+            {/* Decoración de fondo sutil */}
+            <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-[#FBE000]/10 blur-[120px] rounded-full -z-10"></div>
+            <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-[#0A3D62]/5 blur-[100px] rounded-full -z-10"></div>
             
-            {/* 🚩 NAVBAR ESTILO ALDEA DIGITAL */}
-            <nav className="sticky top-0 z-50 bg-[#0E121C]/90 backdrop-blur-md border-b border-white/5 px-6 py-4 shadow-2xl mb-8 md:mb-12">
-                <div className="max-w-4xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-4">
+            {/* 🚩 NAVBAR INSTITUCIONAL */}
+            <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-6 py-4 shadow-sm mb-8 md:mb-12">
+                <div className="max-w-5xl mx-auto flex justify-between items-center">
+                    <div className="flex items-center gap-3 md:gap-4">
                         <button 
                             onClick={() => navigate('/estudiante/dashboard')}
-                            className="p-2.5 rounded-full bg-white/5 hover:bg-rose-600 hover:text-white text-slate-400 transition-all border border-white/10 group"
-                            title="Regresar a la Aldea"
+                            className="p-2.5 rounded-xl bg-slate-100 hover:bg-[#FBE000]/20 hover:text-[#0A3D62] text-[#0A3D62] transition-all border border-slate-200 group"
+                            title="Regresar al Panel"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                         </button>
-                        <h1 className="text-sm md:text-xl font-scholar text-white tracking-widest uppercase">
-                            Aldea <span className="text-shinobi-gold">Digital</span>
+                        <h1 className="text-base md:text-xl font-bold text-[#0A3D62] tracking-tight uppercase">
+                            PMM <span className="text-[#FBE000] drop-shadow-sm">Interactivo</span>
                         </h1>
                     </div>
                     
-                    <div className="bg-rose-500/10 border border-rose-500/20 px-4 py-1.5 rounded-full flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                        <span className="text-rose-500 font-black text-[9px] uppercase tracking-widest">
-                            Bitácora Crítica
+                    <div className="bg-[#0A3D62]/5 border border-[#0A3D62]/10 px-3 md:px-4 py-1.5 rounded-full flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-[#0A3D62] animate-pulse"></div>
+                        <span className="text-[#0A3D62] font-bold text-[9px] md:text-[10px] uppercase tracking-wider">
+                            Historial de Aprendizaje
                         </span>
                     </div>
                 </div>
             </nav>
 
-            <div className="max-w-4xl mx-auto px-6 md:px-12">
-                <header className="mb-16 relative">
-                    <div className="absolute top-0 left-1/4 w-1/2 h-full bg-rose-500/5 blur-[80px] -z-10 rounded-full"></div>
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="h-px w-12 bg-gradient-to-r from-rose-500 to-transparent"></div>
-                        <span className="text-rose-500 font-scholar text-[10px] tracking-[0.5em] uppercase">
-                            Análisis Forense
-                        </span>
+            <div className="max-w-5xl mx-auto px-4 md:px-6">
+                <header className="mb-10 md:mb-16 relative">
+                    <div className="flex items-start md:items-center gap-4 md:gap-6 flex-col md:flex-row">
+                        <img src="/idea.png" alt="Mejora continua" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-lg" />
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="h-[2px] w-8 bg-[#FBE000]"></div>
+                                <span className="text-[#0A3D62] font-bold text-xs tracking-[0.3em] uppercase opacity-80">
+                                    Oportunidades de Mejora
+                                </span>
+                            </div>
+                            <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight uppercase leading-tight mb-3">
+                                Revisión de <span className="text-[#0A3D62]">Conceptos</span>
+                            </h1>
+                            <p className="text-slate-500 text-sm md:text-base italic leading-relaxed max-w-2xl">
+                                "Aprender de los errores es el primer paso para dominar cualquier concepto matemático. Analiza la retroalimentación y fortalece tus conocimientos."
+                            </p>
+                        </div>
                     </div>
-                    <h1 className="text-4xl md:text-6xl font-scholar text-white tracking-tighter uppercase mb-4">
-                        El Camino de la <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-600 drop-shadow-[0_0_15px_rgba(244,63,94,0.3)]">Corrección</span>
-                    </h1>
-                    <p className="text-slate-500 text-xs md:text-sm italic font-modern tracking-wide">
-                        "Un shinobi no oculta sus cicatrices; las estudia para no volver a sangrar."
-                    </p>
                 </header>
 
-                <div className="space-y-10">
+                <div className="space-y-6 md:space-y-8">
                     {errores.length > 0 ? (
                         errores.map((error, index) => (
                             <motion.div 
@@ -86,62 +93,62 @@ const HistorialErrores = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1, duration: 0.5 }}
                                 key={index} 
-                                className="bg-[#0E121C] border border-white/5 p-6 md:p-10 rounded-[2.5rem] relative overflow-hidden group hover:border-rose-500/30 transition-all duration-500 shadow-2xl"
+                                className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl shadow-lg border-t-4 border-t-[#FBE000] relative overflow-hidden group hover:shadow-xl transition-all duration-300"
                             >
-                                {/* Decoración lateral reactiva */}
-                                <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-rose-500 to-rose-900 opacity-20 group-hover:opacity-100 transition-opacity"></div>
-                                
-                                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8 border-b border-white/5 pb-6">
-                                    <div className="flex flex-col gap-1.5">
-                                        <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                                            <span className="text-sm">🎯</span> Falla Detectada
+                                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6 border-b border-slate-100 pb-5">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] font-bold text-[#2E5AAC] uppercase tracking-wider flex items-center gap-2">
+                                            <span>📚</span> Tema a reforzar
                                         </span>
-                                        <span className="text-sm text-white font-scholar uppercase tracking-wide">
+                                        <span className="text-sm md:text-base font-bold text-slate-900 uppercase tracking-wide">
                                             {error.tema_modulo}
                                         </span>
                                     </div>
-                                    <span className="text-[9px] text-slate-400 font-bold bg-black/50 border border-white/10 px-4 py-2 rounded-full uppercase tracking-widest self-start">
-                                        {new Date(error.fecha_error).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    <span className="text-[9px] md:text-[10px] text-slate-500 font-bold bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full uppercase tracking-wider self-start">
+                                        {new Date(error.fecha_error).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </span>
                                 </div>
 
-                                <h3 className="text-xl md:text-2xl text-white font-modern leading-relaxed mb-8 italic">
-                                    "{error.pregunta_texto}"
+                                <h3 className="text-lg md:text-2xl font-bold text-slate-900 leading-relaxed mb-8">
+                                    {error.pregunta_texto}
                                 </h3>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-                                    <div className="p-6 bg-rose-500/5 border border-rose-500/10 rounded-3xl group-hover:bg-rose-500/10 transition-colors relative overflow-hidden">
-                                        <div className="absolute -right-4 -top-4 text-6xl opacity-5">❌</div>
-                                        <p className="text-[9px] text-rose-500 uppercase font-black mb-3 tracking-[0.2em]">Tu Elección (Ilusión)</p>
-                                        <p className="text-sm text-rose-200/70 line-through decoration-rose-500/50 font-modern break-words leading-relaxed">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
+                                    {/* Respuesta Incorrecta */}
+                                    <div className="p-5 bg-red-50 border border-red-200 rounded-2xl relative overflow-hidden">
+                                        <div className="absolute top-3 right-3 opacity-20">
+                                            <img src="/respuesta incorrecta robot.png" alt="Incorrecto" className="w-10 h-10 object-contain" />
+                                        </div>
+                                        <p className="text-[9px] md:text-[10px] text-red-600 uppercase font-black mb-2 tracking-wider">Tu respuesta</p>
+                                        <p className="text-sm md:text-base text-red-700 line-through decoration-red-400/50 font-medium break-words leading-relaxed">
                                             {error.respuesta_incorrecta}
                                         </p>
                                     </div>
                                     
-                                    <div className="p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl group-hover:bg-emerald-500/10 transition-colors relative overflow-hidden shadow-[0_0_30px_rgba(16,185,129,0.05)]">
-                                        <div className="absolute -right-4 -top-4 text-6xl opacity-5">✅</div>
-                                        <p className="text-[9px] text-emerald-500 uppercase font-black mb-3 tracking-[0.2em]">Sello Correcto (Verdad)</p>
-                                        <p className="text-sm text-emerald-400 font-bold font-modern break-words leading-relaxed">
+                                    {/* Respuesta Correcta */}
+                                    <div className="p-5 bg-green-50 border border-green-200 rounded-2xl relative overflow-hidden shadow-sm">
+                                        <div className="absolute top-3 right-3 opacity-20">
+                                            <img src="/respuesta correcta robot.png" alt="Correcto" className="w-10 h-10 object-contain" />
+                                        </div>
+                                        <p className="text-[9px] md:text-[10px] text-green-700 uppercase font-black mb-2 tracking-wider">Respuesta correcta</p>
+                                        <p className="text-sm md:text-base text-green-800 font-bold break-words leading-relaxed">
                                             {error.respuesta_correcta}
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* 🚩 RETROALIMENTACIÓN DE GEMINI */}
-                                <div className="relative mt-8">
-                                    {/* Conector visual */}
-                                    <div className="absolute -top-10 left-8 w-px h-10 bg-gradient-to-b from-transparent to-shinobi-gold/30"></div>
-                                    
-                                    <div className="bg-gradient-to-br from-[#121620] to-[#0E121C] p-6 md:p-8 rounded-3xl border border-shinobi-gold/20 shadow-[inset_0_0_20px_rgba(197,160,89,0.05)] relative">
-                                        <div className="absolute -top-4 left-6 bg-[#05070A] px-5 py-1.5 border border-shinobi-gold/30 rounded-full flex items-center gap-2 shadow-lg shadow-shinobi-gold/10">
-                                            <span className="text-shinobi-gold text-sm animate-pulse">👁️‍🗨️</span>
-                                            <span className="text-[9px] text-shinobi-gold font-scholar uppercase tracking-[0.2em]">
-                                                Oráculo IA
+                                {/* 🚩 RETROALIMENTACIÓN DE GEMINI (Heurística #9: Recuperación de errores) */}
+                                <div className="relative mt-6">
+                                    <div className="bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-200 relative">
+                                        <div className="absolute -top-3 left-6 bg-white px-4 py-1 border border-slate-200 rounded-full flex items-center gap-2 shadow-sm">
+                                            <img src="/idea.png" alt="IA" className="w-5 h-5 object-contain" />
+                                            <span className="text-[9px] md:text-[10px] text-[#0A3D62] font-bold uppercase tracking-wider">
+                                                Retroalimentación del Tutor IA
                                             </span>
                                         </div>
-                                        <div className="mt-4">
-                                            <p className="text-sm md:text-base text-slate-300 leading-loose font-modern text-justify whitespace-pre-line">
-                                                {error.explicacion_ia || "El pergamino está siendo decodificado por los sabios de la aldea..."}
+                                        <div className="mt-3">
+                                            <p className="text-sm md:text-base text-slate-700 leading-relaxed whitespace-pre-line">
+                                                {error.explicacion_ia || "El sistema está generando una explicación detallada para este concepto..."}
                                             </p>
                                         </div>
                                     </div>
@@ -150,24 +157,26 @@ const HistorialErrores = () => {
                         ))
                     ) : (
                         <motion.div 
-                            initial={{ opacity: 0, scale: 0.9 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="text-center py-32 bg-emerald-500/5 border border-dashed border-emerald-500/20 rounded-[3rem] shadow-[inset_0_0_50px_rgba(16,185,129,0.02)]"
+                            className="text-center py-16 md:py-24 bg-white border-2 border-dashed border-slate-300 rounded-3xl shadow-sm"
                         >
-                            <span className="text-6xl mb-6 block animate-bounce">⛩️</span>
-                            <p className="font-scholar text-emerald-500 uppercase tracking-[0.4em] text-lg mb-2">Registro Inmaculado</p>
-                            <p className="text-slate-500 text-xs uppercase tracking-widest">No hay fallos en tu técnica. Sigue entrenando.</p>
+                            <img src="/festejando.png" alt="Sin errores" className="w-24 h-24 md:w-32 md:h-32 object-contain mx-auto mb-6" />
+                            <p className="font-bold text-[#0A3D62] uppercase tracking-wider text-lg md:text-xl mb-2">¡Excelente trabajo!</p>
+                            <p className="text-slate-500 text-sm md:text-base max-w-md mx-auto leading-relaxed">
+                                No hay errores registrados recientemente en tu historial. ¡Sigue practicando para mantener este ritmo!
+                            </p>
                         </motion.div>
                     )}
                 </div>
                 
                 {errores.length > 0 && (
-                    <div className="mt-16 text-center">
+                    <div className="mt-12 md:mt-16 text-center">
                         <button 
                             onClick={() => navigate('/estudiante/dashboard')}
-                            className="bg-transparent border border-white/10 hover:border-shinobi-gold hover:text-shinobi-gold text-slate-500 px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.3em] transition-all"
+                            className="bg-[#0A3D62] hover:bg-[#083252] text-white px-8 md:px-10 py-4 rounded-xl text-xs md:text-sm font-bold uppercase tracking-wider transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center gap-2 mx-auto"
                         >
-                            Completar Revisión y Volver
+                            <span>←</span> Volver al Panel Principal
                         </button>
                     </div>
                 )}

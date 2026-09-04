@@ -93,7 +93,7 @@ const CampanaNotificaciones = () => {
                         className="absolute right-0 mt-3 w-80 bg-[#0E121C]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
                     >
                         <div className="p-4 border-b border-white/5 flex justify-between items-center bg-black/20">
-                            <h3 className="text-white font-scholar tracking-widest uppercase text-xs">Mensajes de la Aldea</h3>
+                            <h3 className="text-white font-scholar tracking-widest uppercase text-xs">Mensajes PMM Interactivo</h3>
                             {noLeidas > 0 && (
                                 <span className="text-[9px] text-shinobi-gold font-bold bg-shinobi-gold/10 px-2 py-1 rounded-full uppercase tracking-wider">
                                     {noLeidas} Nuevas

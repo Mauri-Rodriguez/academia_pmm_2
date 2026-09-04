@@ -389,105 +389,167 @@ const DashboardEstudiante = () => {
                     </div>
                 </div>
 
-                {/* 🚩 SECCIÓN 3: ESTADÍSTICAS RÁPIDAS - MASCOTAS CORREGIDAS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
+                {/* 🚩 SECCIÓN 3: ESTADÍSTICAS RÁPIDAS - REDISEÑADAS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 mb-10 md:mb-12">
                     
                     {/* 🔥 RACHA DE ESTUDIO */}
-                    <div className="bg-white border border-red-100 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-red-200 transition-all shadow-lg">
-                        <img src="/robot con llama.png" alt="llama" className="w-20 h-20 object-contain mb-3" />
-                        <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-1">Dedicación Continua</p>
-                        <p className="text-2xl md:text-3xl font-bold text-red-500">
-                            {datos?.estadisticas?.racha_dias || 0} <span className="text-sm text-red-400 uppercase">Días</span>
-                        </p>
-                        <p className="text-[8px] md:text-[9px] text-red-400 font-bold uppercase tracking-tighter mt-1">Racha de Estudio Activa</p>
+                    <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-red-500">
+                        <div className="p-5 md:p-6 flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Racha de Estudio</p>
+                                <p className="text-3xl md:text-4xl font-black text-red-500 leading-none mb-1">
+                                    {datos?.estadisticas?.racha_dias || 0}
+                                </p>
+                                <p className="text-[10px] md:text-xs text-slate-500 font-medium">Días consecutivos</p>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <img src="/robot con llama.png" alt="Racha" className="w-24 h-24 md:w-28 md:h-28 object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-500" />
+                            </div>
+                        </div>
                     </div>
 
                     {/* 🤔 DESEMPEÑO INICIAL */}
-                    <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-slate-300 transition-all shadow-lg">
-                        <img src="/pensando.png" alt="Pensando" className="w-20 h-20 object-contain mb-3" />
-                        <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-2">Desempeño Inicial</p>
-                        <p className={`text-2xl md:text-3xl font-bold mb-1 ${configGlobal.color}`}>{efectividadInicial}%</p>
-                        <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Puntaje en Diagnóstico</p>
+                    <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-[#2E5AAC]">
+                        <div className="p-5 md:p-6 flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Desempeño Inicial</p>
+                                <p className={`text-3xl md:text-4xl font-black leading-none mb-1 ${configGlobal.color}`}>
+                                    {efectividadInicial}%
+                                </p>
+                                <p className="text-[10px] md:text-xs text-slate-500 font-medium">Puntaje diagnóstico</p>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <img src="/pensando.png" alt="Diagnóstico" className="w-24 h-24 md:w-28 md:h-28 object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-500" />
+                            </div>
+                        </div>
                     </div>
 
                     {/* 😎 CATEGORÍA ACTUAL */}
-                    <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-slate-300 transition-all shadow-lg">
-                        <img src="/respuesta correcta robot.png" alt="Nivel" className="w-20 h-20 object-contain mb-3" />
-                        <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-2">Categoría Actual</p>
-                        <p className="text-xl md:text-3xl font-bold mb-1 text-slate-900 uppercase truncate">{configGlobal.label}</p>
-                        <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Nivel de Dominio</p>
+                    <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-emerald-500">
+                        <div className="p-5 md:p-6 flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Nivel Actual</p>
+                                <p className="text-2xl md:text-3xl font-black text-slate-900 leading-none mb-1 truncate">
+                                    {configGlobal.label}
+                                </p>
+                                <p className="text-[10px] md:text-xs text-slate-500 font-medium">Rango académico</p>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <img src="/mascota.png" alt="Nivel" className="w-24 h-24 md:w-28 md:h-28 object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-500" />
+                            </div>
+                        </div>
                     </div>
 
                     {/* 📈 PROGRESO GENERAL */}
-                    <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-slate-300 transition-all shadow-lg">
-                        <img src="/subir nivel robot.png" alt="Progreso" className="w-20 h-20 object-contain mb-3" />
-                        <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-2">Progreso General</p>
-                        <p className="text-2xl md:text-3xl font-bold mb-1 text-[#0A3D62]">
-                            {misionesCompletas}
-                            <span className="text-slate-300 text-lg md:text-xl ml-2">/ {datos?.estadisticas?.total_misiones}</span>
-                        </p>
-                        <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Módulos Completados</p>
+                    <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-[#0A3D62]">
+                        <div className="p-5 md:p-6 flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Progreso Total</p>
+                                <p className="text-3xl md:text-4xl font-black text-[#0A3D62] leading-none mb-1">
+                                    {misionesCompletas}
+                                    <span className="text-slate-300 text-xl md:text-2xl font-bold ml-1">/{datos?.estadisticas?.total_misiones}</span>
+                                </p>
+                                <p className="text-[10px] md:text-xs text-slate-500 font-medium">Módulos completados</p>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <img src="/subir nivel robot.png" alt="Progreso" className="w-24 h-24 md:w-28 md:h-28 object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-500" />
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                {/* 🚩 SECCIÓN 4: ANÁLISIS DE EVOLUCIÓN */}
-                <div className="mb-10 md:mb-16 bg-white border border-slate-200 p-6 md:p-10 rounded-3xl shadow-xl">
-                    <div className="flex flex-col sm:flex-row items-center sm:justify-between mb-8 md:mb-12 gap-4 text-center sm:text-left">
+                {/* 🚩 SECCIÓN 4: ANÁLISIS DE EVOLUCIÓN (Minimalista, Fría y 100% Responsive) */}
+                <div className="mb-10 md:mb-16 bg-white border border-slate-200 p-6 md:p-10 rounded-3xl shadow-sm">
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row items-start sm:justify-between mb-10 gap-4">
                         <div>
-                            <h3 className="font-bold text-sm md:text-base text-slate-900 uppercase tracking-widest">Análisis de Evolución</h3>
-                            <p className="text-[8px] md:text-[9px] text-slate-400 uppercase font-bold tracking-widest mt-1">Crecimiento vs Base</p>
+                            <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Análisis de Evolución</h3>
+                            <p className="text-xs text-slate-500 mt-1">Comparativa de rendimiento académico</p>
                         </div>
-                        <div className="text-right">
-                            <span className="text-[9px] md:text-[10px] font-bold text-[#0A3D62] uppercase tracking-widest bg-[#FBE000]/10 px-4 py-2 rounded-full border border-[#FBE000]">
-                                Rendimiento: {efectividadActual >= efectividadInicial ? 'En Ascenso ↑' : 'Estable →'}
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+                            <span className={`w-2 h-2 rounded-full ${efectividadActual >= efectividadInicial ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                            <span className="text-sm font-semibold text-slate-700">
+                                {efectividadActual >= efectividadInicial ? 'Tendencia positiva' : 'Rendimiento estable'}
                             </span>
                         </div>
                     </div>
 
-                    <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-center lg:items-end">
-                        <div className="flex-1 w-full relative h-64 md:h-72 flex items-end justify-center gap-12 md:gap-24 border-b border-slate-200 pb-0">
+                    {/* Contenido Principal */}
+                    <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-end">
+                        
+                        {/* Gráfico de Barras (Izquierda) */}
+                        <div className="flex-1 w-full relative h-64 md:h-72 flex items-end justify-center gap-16 md:gap-24 border-b border-slate-200 pb-2">
+                            {/* Líneas de guía sutiles */}
                             <div className="absolute inset-0 z-0">
                                 {[100, 75, 50, 25, 0].map(val => (
                                     <div key={val} className="absolute w-full border-t border-slate-100" style={{ bottom: `${val}%` }}>
-                                        <span className="absolute -right-2 md:-right-8 text-[8px] md:text-[10px] font-bold text-slate-300 translate-y-[-50%]">{val}%</span>
+                                        {/* 🚩 AQUÍ EL CAMBIO: hidden lg:block oculta los números en móvil/tablet */}
+                                        <span className="absolute -right-8 text-[10px] font-medium text-slate-400 hidden lg:block">
+                                            {val}%
+                                        </span>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="relative z-10 w-20 md:w-32 h-full flex flex-col justify-end items-center group">
-                                <div className="w-full h-full bg-slate-50 rounded-t-xl border border-slate-200 border-b-0 relative flex items-end justify-center">
-                                    <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${heightInicial}%` }}
-                                        transition={{ duration: 1.5, ease: "easeOut" }}
-                                        className="w-full bg-slate-300 relative rounded-t-xl"
-                                    >
-                                        <span className="absolute -top-6 left-0 w-full text-center text-[10px] md:text-[12px] font-bold text-slate-500">{efectividadInicial}%</span>
-                                    </motion.div>
-                                </div>
-                                <p className="absolute -bottom-8 w-full text-center text-[8px] md:text-[10px] font-bold text-slate-400 tracking-widest uppercase">Diagnóstico</p>
+                            {/* Barra 1: Diagnóstico */}
+                            <div className="relative z-10 w-20 md:w-28 h-full flex flex-col justify-end items-center">
+                                <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: `${heightInicial}%` }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                    className="w-full bg-slate-200 rounded-t-lg relative"
+                                >
+                                    <span className="absolute -top-6 left-0 w-full text-center text-xs font-semibold text-slate-500">
+                                        {efectividadInicial}%
+                                    </span>
+                                </motion.div>
+                                <p className="mt-4 text-xs font-semibold text-slate-500 uppercase tracking-wide">Inicial</p>
                             </div>
 
-                            <div className="relative z-10 w-20 md:w-32 h-full flex flex-col justify-end items-center group">
-                                <div className="w-full h-full bg-slate-50 rounded-t-xl border border-slate-200 border-b-0 relative flex items-end justify-center overflow-hidden">
-                                    <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${heightActual}%` }}
-                                        transition={{ type: "spring", stiffness: 50, damping: 12, delay: 0.3 }}
-                                        className={`w-full ${configGlobal.bar} relative rounded-t-xl shadow-[0_0_20px] ${configGlobal.shadow}`}
-                                    >
-                                        <span className="absolute -top-6 left-0 w-full text-center text-[10px] md:text-[12px] font-bold text-white drop-shadow-md z-30">{efectividadActual}%</span>
-                                    </motion.div>
-                                </div>
-                                <p className="absolute -bottom-8 w-full text-center text-[8px] md:text-[10px] font-bold text-[#0A3D62] tracking-widest uppercase">Actual</p>
+                            {/* Barra 2: Actual */}
+                            <div className="relative z-10 w-20 md:w-28 h-full flex flex-col justify-end items-center">
+                                <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: `${heightActual}%` }}
+                                    transition={{ type: "spring", stiffness: 60, damping: 15, delay: 0.2 }}
+                                    className="w-full bg-[#0A3D62] rounded-t-lg relative"
+                                >
+                                    <span className="absolute -top-6 left-0 w-full text-center text-sm font-bold text-[#0A3D62]">
+                                        {efectividadActual}%
+                                    </span>
+                                </motion.div>
+                                <p className="mt-4 text-xs font-bold text-[#0A3D62] uppercase tracking-wide">Actual</p>
                             </div>
                         </div>
 
-                        <div className="w-full lg:w-64 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-slate-200 pt-12 lg:pt-0 lg:pl-8 text-center lg:text-left">
-                            <p className="text-[11px] md:text-[13px] text-slate-500 uppercase leading-relaxed font-medium tracking-wide italic">
-                                Tras analizar <span className="text-slate-900 font-bold">{misionesCompletas}</span> módulos, has incrementado tu rendimiento un <span className={`${configGlobal.color} font-black text-lg md:text-xl block md:inline mt-2 md:mt-0`}>{Math.max(0, efectividadActual - efectividadInicial)}%</span>.
+                        {/* 🚩 PANEL DE INSIGHT (Derecha) */}
+                        <div className="w-full lg:w-80 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-slate-100 pt-8 lg:pt-0 lg:pl-10">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="w-10 h-10 rounded-full bg-[#0A3D62]/5 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0A3D62]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                </div>
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Resumen de Progreso</span>
+                            </div>
+                            
+                            <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                                Has completado <span className="font-bold text-slate-900">{misionesCompletas}</span> módulos. Tu dominio del tema ha evolucionado de manera consistente.
                             </p>
-                            <div className={`mt-4 h-[2px] w-16 rounded-full ${configGlobal.bar} mx-auto lg:mx-0`}></div>
+                            
+                            <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                <div className="flex justify-between items-baseline mb-3">
+                                    <span className="text-xs font-semibold text-slate-500 uppercase">Incremento neto</span>
+                                    <span className={`text-3xl font-black ${configGlobal.color}`}>
+                                        +{Math.max(0, efectividadActual - efectividadInicial)}%
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                                    <div 
+                                        className={`h-full ${configGlobal.bar} transition-all duration-1000 ease-out`} 
+                                        style={{ width: `${Math.min(100, Math.max(0, (efectividadActual - efectividadInicial) * 1.5))}%` }}
+                                    ></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

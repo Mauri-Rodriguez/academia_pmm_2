@@ -2,6 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 
+// 🚩 HELPER: Tooltip de Ayuda Contextual (Heurísticas #6 y #10)
+const InfoTooltip = ({ text }) => (
+    <div className="group relative inline-flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400 cursor-help ml-1 transition-colors group-hover:text-[#0A3D62]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-3 bg-slate-800 text-white text-[11px] rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 text-center leading-relaxed scale-95 group-hover:scale-100">
+            {text}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+        </div>
+    </div>
+);
+
 const Biblioteca = () => {
     const [pergaminos, setPergaminos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -10,7 +23,6 @@ const Biblioteca = () => {
     useEffect(() => {
         const cargarBiblioteca = async () => {
             try {
-                // 🚩 Esta ruta ahora filtra por jerarquía en el Backend
                 const res = await api.get('/api/estudiante/biblioteca');
                 setPergaminos(res.data);
             } catch (err) {
@@ -49,7 +61,10 @@ const Biblioteca = () => {
                     <div className="flex-1 text-center md:text-left">
                         <div className="flex items-center gap-3 mb-3 justify-center md:justify-start">
                             <div className="h-[2px] w-8 bg-[#FBE000]"></div>
-                            <span className="text-[#0A3D62] font-bold text-xs tracking-[0.3em] uppercase opacity-80">Centro de Recursos</span>
+                            <span className="text-[#0A3D62] font-bold text-xs tracking-[0.3em] uppercase opacity-80 flex items-center">
+                                Centro de Recursos
+                                <InfoTooltip text="El acceso a los recursos se desbloquea progresivamente según tu rango académico y los módulos que hayas completado." />
+                            </span>
                         </div>
                         <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight uppercase leading-tight">
                             Biblioteca de <span className="text-[#0A3D62]">Aprendizaje</span>
@@ -59,7 +74,7 @@ const Biblioteca = () => {
                         </p>
                     </div>
                     
-                    {/* Mascota 3D de Biblioteca (CORREGIDO PARA MÓVIL) */}
+                    {/* Mascota 3D de Biblioteca */}
                     <img 
                         src="/leyendo un libro robot.png" 
                         alt="Mascota estudiando" 
@@ -70,7 +85,6 @@ const Biblioteca = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {pergaminos.length > 0 ? (
                         pergaminos.map((p) => {
-                            // 🚩 Sincronizado con nombres de tu BD: tipo_recurso y url_recurso
                             const esVideo = p.tipo_recurso?.toLowerCase() === 'video' || p.url_recurso?.includes('youtube');
 
                             return (
@@ -78,7 +92,6 @@ const Biblioteca = () => {
                                     key={p.id_pergamino} 
                                     className="group relative bg-white border border-slate-200 p-6 md:p-8 rounded-3xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-lg overflow-hidden flex flex-col h-full border-t-4 border-t-[#FBE000]"
                                 >
-                                    {/* Efecto de brillo sutil al hacer hover */}
                                     <div className={`absolute -top-24 -right-24 w-48 h-48 blur-[80px] opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${esVideo ? 'bg-[#2E5AAC]' : 'bg-[#FBE000]'}`}></div>
 
                                     <div className="flex-1 flex flex-col">
@@ -103,17 +116,31 @@ const Biblioteca = () => {
                                         </p>
                                     </div>
 
+                                    {/* 🚩 HEURÍSTICA #1 y #2: Ícono de enlace externo para indicar salida de la plataforma */}
                                     <button 
                                         onClick={() => window.open(p.url_recurso, '_blank')}
                                         className={`w-full py-3.5 rounded-xl font-bold text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95
                                             ${esVideo 
                                                 ? 'bg-[#2E5AAC] text-white hover:bg-[#1e4a8a]' 
                                                 : 'bg-[#0A3D62] text-white hover:bg-[#083252]'}`}
+                                        title="Se abrirá en una nueva pestaña"
                                     >
                                         {esVideo ? (
-                                            <><span>▶</span> Ver Video</>
+                                            <>
+                                                <span>▶</span> 
+                                                <span>Ver Video</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                            </>
                                         ) : (
-                                            <><span>📄</span> Abrir Recurso</>
+                                            <>
+                                                <span>📄</span> 
+                                                <span>Abrir Recurso</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                            </>
                                         )}
                                     </button>
                                 </div>

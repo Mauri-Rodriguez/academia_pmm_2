@@ -3,6 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../api/api';
 
+// 🚩 HELPER: Tooltip de Ayuda Contextual (Heurística #10)
+const InfoTooltip = ({ text }) => (
+    <div className="group relative inline-flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400 cursor-help ml-1 transition-colors group-hover:text-[#0A3D62]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-3 bg-slate-800 text-white text-[11px] rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 text-center leading-relaxed scale-95 group-hover:scale-100">
+            {text}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+        </div>
+    </div>
+);
+
 const HistorialErrores = () => {
     const [errores, setErrores] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -100,7 +113,7 @@ const HistorialErrores = () => {
                                         <span className="text-[10px] font-bold text-[#2E5AAC] uppercase tracking-wider flex items-center gap-2">
                                             <span>📚</span> Tema a reforzar
                                         </span>
-                                        <span className="text-sm md:text-base font-bold text-slate-900 uppercase tracking-wide">
+                                        <span className="text-sm md:text-base font-bold text-slate-900 uppercase tracking-wide break-words">
                                             {error.tema_modulo}
                                         </span>
                                     </div>
@@ -109,7 +122,7 @@ const HistorialErrores = () => {
                                     </span>
                                 </div>
 
-                                <h3 className="text-lg md:text-2xl font-bold text-slate-900 leading-relaxed mb-8">
+                                <h3 className="text-lg md:text-2xl font-bold text-slate-900 leading-relaxed mb-8 break-words">
                                     {error.pregunta_texto}
                                 </h3>
 
@@ -142,8 +155,9 @@ const HistorialErrores = () => {
                                     <div className="bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-200 relative">
                                         <div className="absolute -top-3 left-6 bg-white px-4 py-1 border border-slate-200 rounded-full flex items-center gap-2 shadow-sm">
                                             <img src="/idea.png" alt="IA" className="w-5 h-5 object-contain" />
-                                            <span className="text-[9px] md:text-[10px] text-[#0A3D62] font-bold uppercase tracking-wider">
+                                            <span className="text-[9px] md:text-[10px] text-[#0A3D62] font-bold uppercase tracking-wider flex items-center">
                                                 Retroalimentación del Tutor IA
+                                                <InfoTooltip text="La IA analiza tu respuesta incorrecta para explicarte el concepto exacto que necesitas repasar, guiándote sin darte la respuesta directamente." />
                                             </span>
                                         </div>
                                         <div className="mt-3">

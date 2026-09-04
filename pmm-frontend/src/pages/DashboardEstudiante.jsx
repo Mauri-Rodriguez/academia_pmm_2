@@ -4,6 +4,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import CampanaNotificaciones from '../components/CampanaNotificaciones';
 
+// 🚩 HELPER: Tooltip de Ayuda Contextual (Heurísticas #6 y #10)
+const InfoTooltip = ({ text }) => (
+    <div className="group relative inline-flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400 cursor-help ml-1 transition-colors group-hover:text-[#0A3D62]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-60 p-3 bg-slate-800 text-white text-[11px] rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 text-center leading-relaxed scale-95 group-hover:scale-100">
+            {text}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+        </div>
+    </div>
+);
+
 const DashboardEstudiante = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -14,6 +27,9 @@ const DashboardEstudiante = () => {
     const [errores, setErrores] = useState([]);
     const [sugerenciaIA, setSugerenciaIA] = useState(null);
     const [isExpanded, setIsExpanded] = useState(false);
+    
+    // 🚩 NUEVO: Estado para el modal de cierre de sesión personalizado
+    const [mostrarModalLogout, setMostrarModalLogout] = useState(false);
 
     const [nombreUsuario, setNombreUsuario] = useState(localStorage.getItem('user_name') || 'Estudiante');
     const [fotoPerfil, setFotoPerfil] = useState(localStorage.getItem('user_avatar') || null);
@@ -106,7 +122,6 @@ const DashboardEstudiante = () => {
         window.history.replaceState({}, document.title);
     };
 
-    // Helper para navegación activa
     const isActivePath = (path) => location.pathname === path;
 
     if (loading) return (
@@ -205,7 +220,11 @@ const DashboardEstudiante = () => {
                 ${isExpanded ? 'w-72 shadow-2xl' : 'w-24'}`}
             >
                 <button
-                    onClick={() => { localStorage.clear(); navigate('/'); }}
+                    // 🚩 HEURÍSTICA #3: Modal personalizado en lugar de window.confirm
+                    onClick={(e) => {
+                        e.preventDefault();
+                        setMostrarModalLogout(true);
+                    }}
                     className="mb-8 group flex items-center gap-4 p-3 text-red-500/60 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase font-bold text-[10px] tracking-widest w-full"
                 >
                     <span className="text-xl group-hover:scale-110 transition-transform">🚪</span>
@@ -257,7 +276,7 @@ const DashboardEstudiante = () => {
                 </nav>
             </aside>
 
-            {/* 🚩 NAVEGACIÓN MÓVIL (BOTTOM BAR) - MEJORADA */}
+            {/* 🚩 NAVEGACIÓN MÓVIL (BOTTOM BAR) */}
             <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-lg border-t border-slate-200 flex justify-around p-2 z-50 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
                 {navItems.map((item) => {
                     const isActive = isActivePath(item.path);
@@ -297,7 +316,8 @@ const DashboardEstudiante = () => {
                             <CampanaNotificaciones />
                         </div>
                         <button
-                            onClick={() => { localStorage.clear(); navigate('/'); }}
+                            // 🚩 HEURÍSTICA #3: Modal personalizado en lugar de window.confirm
+                            onClick={() => setMostrarModalLogout(true)}
                             className="md:hidden flex flex-col items-center justify-center text-red-500/60 hover:text-red-500 transition-all active:scale-95 bg-red-50 w-10 h-10 rounded-xl border border-red-100"
                         >
                             <span className="text-xl leading-none">🚪</span>
@@ -344,7 +364,7 @@ const DashboardEstudiante = () => {
                     )}
                 </div>
 
-                {/* 🚩 SECCIÓN 2: LOGROS ACADÉMICOS - MEJORADA */}
+                {/* 🚩 SECCIÓN 2: LOGROS ACADÉMICOS */}
                 <div className="mb-8 md:mb-10 bg-white border border-slate-200 p-6 md:p-8 rounded-3xl shadow-xl relative">
                     <div className="flex flex-col sm:flex-row items-center sm:justify-between mb-6 md:mb-8 relative z-10 gap-4 text-center sm:text-left">
                         <div>
@@ -358,7 +378,6 @@ const DashboardEstudiante = () => {
                         </div>
                     </div>
 
-                    {/* Contenedor con scroll snap en móvil y grid en desktop */}
                     <div className="flex md:grid md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6 overflow-x-auto md:overflow-visible snap-x pb-4 md:pb-0 scrollbar-hide">
                         {datos?.todas_insignias?.map((insignia) => {
                             const ganada = datos?.insignias_obtenidas?.some(i => i.id_insignia === insignia.id_insignia);
@@ -372,13 +391,9 @@ const DashboardEstudiante = () => {
                                             {ganada ? '🏅' : '🔒'}
                                         </span>
                                     </div>
-                                    
-                                    {/* Texto visible en móvil */}
                                     <p className="text-[9px] font-bold text-slate-600 text-center mt-2 line-clamp-2 md:hidden">
                                         {insignia.nombre_insignia}
                                     </p>
-
-                                    {/* Tooltip solo desktop */}
                                     <div className="hidden md:block mt-3 opacity-0 group-hover:opacity-100 transition-all duration-300 text-center absolute -bottom-16 bg-slate-900 p-3 rounded-xl border border-[#FBE000]/30 shadow-2xl z-50 pointer-events-none w-32">
                                         <p className="text-[9px] font-black uppercase text-[#FBE000] leading-tight">{insignia.nombre_insignia}</p>
                                         <p className="text-[8px] text-slate-300 uppercase mt-1 leading-tight">{insignia.descripcion}</p>
@@ -389,14 +404,17 @@ const DashboardEstudiante = () => {
                     </div>
                 </div>
 
-                {/* 🚩 SECCIÓN 3: ESTADÍSTICAS RÁPIDAS - REDISEÑADAS */}
+                {/* 🚩 SECCIÓN 3: ESTADÍSTICAS RÁPIDAS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 mb-10 md:mb-12">
                     
                     {/* 🔥 RACHA DE ESTUDIO */}
-                    <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-red-500">
+                    <div className="bg-white border border-slate-200 rounded-3xl relative group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-red-500">
                         <div className="p-5 md:p-6 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                                <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Racha de Estudio</p>
+                                <div className="flex items-center gap-1 mb-2">
+                                    <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold">Racha de Estudio</p>
+                                    <InfoTooltip text="Mide los días consecutivos que has ingresado a la plataforma. ¡Mantenerla activa demuestra tu compromiso!" />
+                                </div>
                                 <p className="text-3xl md:text-4xl font-black text-red-500 leading-none mb-1">
                                     {datos?.estadisticas?.racha_dias || 0}
                                 </p>
@@ -409,10 +427,13 @@ const DashboardEstudiante = () => {
                     </div>
 
                     {/* 🤔 DESEMPEÑO INICIAL */}
-                    <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-[#2E5AAC]">
+                    <div className="bg-white border border-slate-200 rounded-3xl relative group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-[#2E5AAC]">
                         <div className="p-5 md:p-6 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                                <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Desempeño Inicial</p>
+                                <div className="flex items-center gap-1 mb-2">
+                                    <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold">Desempeño Inicial</p>
+                                    <InfoTooltip text="Porcentaje de aciertos obtenido en tu examen diagnóstico de 13 preguntas." />
+                                </div>
                                 <p className={`text-3xl md:text-4xl font-black leading-none mb-1 ${configGlobal.color}`}>
                                     {efectividadInicial}%
                                 </p>
@@ -425,7 +446,7 @@ const DashboardEstudiante = () => {
                     </div>
 
                     {/* 😎 CATEGORÍA ACTUAL */}
-                    <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-emerald-500">
+                    <div className="bg-white border border-slate-200 rounded-3xl relative group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-emerald-500">
                         <div className="p-5 md:p-6 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Nivel Actual</p>
@@ -441,7 +462,7 @@ const DashboardEstudiante = () => {
                     </div>
 
                     {/* 📈 PROGRESO GENERAL */}
-                    <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-[#0A3D62]">
+                    <div className="bg-white border border-slate-200 rounded-3xl relative group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-[#0A3D62]">
                         <div className="p-5 md:p-6 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Progreso Total</p>
@@ -457,13 +478,13 @@ const DashboardEstudiante = () => {
                         </div>
                     </div>
                 </div>
-                {/* 🚩 SECCIÓN 4: ANÁLISIS DE EVOLUCIÓN (Minimalista, Fría y 100% Responsive) */}
+
+                {/* 🚩 SECCIÓN 4: ANÁLISIS DE EVOLUCIÓN */}
                 <div className="mb-10 md:mb-16 bg-white border border-slate-200 p-6 md:p-10 rounded-3xl shadow-sm">
-                    {/* Header */}
                     <div className="flex flex-col sm:flex-row items-start sm:justify-between mb-10 gap-4">
-                        <div>
+                        <div className="flex items-center gap-2">
                             <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider">Análisis de Evolución</h3>
-                            <p className="text-xs text-slate-500 mt-1">Comparativa de rendimiento académico</p>
+                            <InfoTooltip text="Comparación entre tu puntaje inicial en el diagnóstico y tu rendimiento actual basado en los módulos completados." />
                         </div>
                         <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
                             <span className={`w-2 h-2 rounded-full ${efectividadActual >= efectividadInicial ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
@@ -473,16 +494,11 @@ const DashboardEstudiante = () => {
                         </div>
                     </div>
 
-                    {/* Contenido Principal */}
                     <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-end">
-                        
-                        {/* Gráfico de Barras (Izquierda) */}
                         <div className="flex-1 w-full relative h-64 md:h-72 flex items-end justify-center gap-16 md:gap-24 border-b border-slate-200 pb-2">
-                            {/* Líneas de guía sutiles */}
                             <div className="absolute inset-0 z-0">
                                 {[100, 75, 50, 25, 0].map(val => (
                                     <div key={val} className="absolute w-full border-t border-slate-100" style={{ bottom: `${val}%` }}>
-                                        {/* 🚩 AQUÍ EL CAMBIO: hidden lg:block oculta los números en móvil/tablet */}
                                         <span className="absolute -right-8 text-[10px] font-medium text-slate-400 hidden lg:block">
                                             {val}%
                                         </span>
@@ -490,7 +506,6 @@ const DashboardEstudiante = () => {
                                 ))}
                             </div>
 
-                            {/* Barra 1: Diagnóstico */}
                             <div className="relative z-10 w-20 md:w-28 h-full flex flex-col justify-end items-center">
                                 <motion.div
                                     initial={{ height: 0 }}
@@ -505,7 +520,6 @@ const DashboardEstudiante = () => {
                                 <p className="mt-4 text-xs font-semibold text-slate-500 uppercase tracking-wide">Inicial</p>
                             </div>
 
-                            {/* Barra 2: Actual */}
                             <div className="relative z-10 w-20 md:w-28 h-full flex flex-col justify-end items-center">
                                 <motion.div
                                     initial={{ height: 0 }}
@@ -521,7 +535,6 @@ const DashboardEstudiante = () => {
                             </div>
                         </div>
 
-                        {/* 🚩 PANEL DE INSIGHT (Derecha) */}
                         <div className="w-full lg:w-80 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-slate-100 pt-8 lg:pt-0 lg:pl-10">
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="w-10 h-10 rounded-full bg-[#0A3D62]/5 flex items-center justify-center">
@@ -554,7 +567,7 @@ const DashboardEstudiante = () => {
                     </div>
                 </div>
 
-                {/* 🚩 SECCIÓN 5: BITÁCORA DE ERRORES - ENFOQUE CONSTRUCTIVO */}
+                {/* 🚩 SECCIÓN 5: BITÁCORA DE ERRORES */}
                 {errores.length > 0 && (
                     <div className="mb-8 md:mb-10 bg-orange-50 border border-orange-200 p-5 md:p-6 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-4 transition-all hover:shadow-md">
                         <div className="flex items-center gap-4 text-center md:text-left">
@@ -647,6 +660,44 @@ const DashboardEstudiante = () => {
                     })}
                 </div>
             </main>
+
+            {/* 🚩 MODAL DE CONFIRMACIÓN DE CIERRE DE SESIÓN (Heurística #3 y #4) */}
+            <AnimatePresence>
+                {mostrarModalLogout && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }} 
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl max-w-md w-full text-center shadow-2xl border-t-4 border-t-[#FBE000]"
+                        >
+                            <img src="/idea.png" alt="Confirmar salida" className="w-20 h-20 object-contain mx-auto mb-4 opacity-80" />
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">¿Deseas cerrar sesión?</h3>
+                            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                                Tu progreso está guardado de forma segura. ¿Estás seguro de que deseas salir de la plataforma?
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button 
+                                    onClick={() => setMostrarModalLogout(false)}
+                                    className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-all text-sm uppercase tracking-wider"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        localStorage.clear();
+                                        navigate('/');
+                                    }}
+                                    className="flex-1 bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-xl hover:bg-red-100 transition-all text-sm uppercase tracking-wider"
+                                >
+                                    Sí, cerrar sesión
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 };

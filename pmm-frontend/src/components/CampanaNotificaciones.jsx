@@ -16,7 +16,7 @@ const CampanaNotificaciones = () => {
             // 🛡️ ESCUDO: Si por alguna razón el backend no manda un array, forzamos uno vacío []
             setNotificaciones(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
-            console.error("Error al cargar mensajes del cuervo:", error);
+            console.error("Error al cargar notificaciones:", error);
             setNotificaciones([]); // Previene el error fatal
         }
     };
@@ -28,7 +28,7 @@ const CampanaNotificaciones = () => {
         return () => clearInterval(intervalo);
     }, []);
 
-    // 2. Cerrar el menú si se hace clic afuera
+    // 2. Cerrar el menú si se hace clic afuera (Heurística #3: Control y libertad)
     useEffect(() => {
         const handleClickFuera = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -43,7 +43,7 @@ const CampanaNotificaciones = () => {
     const marcarComoLeida = async (id, ruta_redireccion = null) => {
         try {
             await api.put(`/api/estudiante/notificaciones/${id}/leer`);
-            // Actualizar el estado local para que desaparezca el punto rojo
+            // Actualizar el estado local para que desaparezca el indicador de no leído
             setNotificaciones(notificaciones.map(n =>
                 n.id_notificacion === id ? { ...n, leida: 1 } : n
             ));
@@ -65,17 +65,18 @@ const CampanaNotificaciones = () => {
             {/* 🚩 BOTÓN DE LA CAMPANA */}
             <button
                 onClick={() => setAbierto(!abierto)}
-                className="relative p-2 rounded-full hover:bg-white/5 transition-all text-slate-400 hover:text-shinobi-gold focus:outline-none"
+                className="relative p-2.5 rounded-xl hover:bg-slate-100 transition-all text-slate-500 hover:text-[#0A3D62] focus:outline-none focus:ring-2 focus:ring-[#0A3D62]/20"
+                aria-label="Ver notificaciones"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
 
-                {/* Globo rojo de notificaciones */}
+                {/* Globo rojo de notificaciones (Heurística #1: Visibilidad del estado) */}
                 {noLeidas > 0 && (
                     <motion.span
                         initial={{ scale: 0 }} animate={{ scale: 1 }}
-                        className="absolute top-1 right-1 w-4 h-4 bg-rose-500 border-2 border-[#05070A] rounded-full text-[8px] font-bold text-white flex items-center justify-center shadow-[0_0_10px_rgba(244,63,94,0.5)]"
+                        className="absolute top-1 right-1 w-5 h-5 bg-red-500 border-2 border-white rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-sm"
                     >
                         {noLeidas > 9 ? '9+' : noLeidas}
                     </motion.span>
@@ -90,38 +91,53 @@ const CampanaNotificaciones = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-3 w-80 bg-[#0E121C]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+                        className="absolute right-0 mt-3 w-80 md:w-96 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-xl overflow-hidden"
                     >
-                        <div className="p-4 border-b border-white/5 flex justify-between items-center bg-black/20">
-                            <h3 className="text-white font-scholar tracking-widest uppercase text-xs">Mensajes PMM Interactivo</h3>
+                        {/* Header del Dropdown */}
+                        <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                            <h3 className="text-[#0A3D62] font-bold tracking-wide uppercase text-xs flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                                Notificaciones
+                            </h3>
                             {noLeidas > 0 && (
-                                <span className="text-[9px] text-shinobi-gold font-bold bg-shinobi-gold/10 px-2 py-1 rounded-full uppercase tracking-wider">
+                                <span className="text-[9px] text-[#0A3D62] font-bold bg-[#FBE000]/20 px-2 py-1 rounded-full uppercase tracking-wider">
                                     {noLeidas} Nuevas
                                 </span>
                             )}
                         </div>
 
-                        <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-shinobi-gold/30 scrollbar-track-transparent">
+                        {/* Lista de Notificaciones */}
+                        <div className="max-h-[350px] md:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
                             {notificaciones.length === 0 ? (
                                 <div className="p-8 text-center flex flex-col items-center">
-                                    <span className="text-3xl mb-2 opacity-50">📭</span>
+                                    <img src="/idea.png" alt="Sin notificaciones" className="w-16 h-16 object-contain mb-3 opacity-60" />
                                     <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Sin novedades</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Estás al día con tus actividades.</p>
                                 </div>
                             ) : (
                                 notificaciones.map((notif) => (
                                     <div
                                         key={notif.id_notificacion}
                                         onClick={() => marcarComoLeida(notif.id_notificacion, notif.ruta)} 
-                                        className={`p-4 border-b border-white/5 cursor-pointer transition-colors flex gap-4 items-start
-            ${notif.leida ? 'opacity-60 hover:bg-white/5' : 'bg-shinobi-gold/5 hover:bg-shinobi-gold/10'}`}
+                                        className={`p-4 border-b border-slate-100 cursor-pointer transition-all flex gap-3 items-start group
+                                            ${notif.leida 
+                                                ? 'hover:bg-slate-50 border-l-4 border-l-transparent' 
+                                                : 'bg-[#FBE000]/5 hover:bg-[#FBE000]/10 border-l-4 border-l-[#FBE000]'}`}
                                     >
-                                        <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${notif.leida ? 'bg-transparent' : 'bg-shinobi-gold shadow-[0_0_8px_rgba(197,160,89,0.8)]'}`}></div>
-                                        <div>
-                                            <p className={`text-sm leading-tight ${notif.leida ? 'text-slate-400' : 'text-white font-bold'}`}>
+                                        {/* Indicador visual de leído/no leído */}
+                                        <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${notif.leida ? 'bg-slate-300' : 'bg-[#0A3D62] shadow-sm'}`}></div>
+                                        
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`text-sm leading-snug break-words ${notif.leida ? 'text-slate-500' : 'text-slate-900 font-semibold'}`}>
                                                 {notif.mensaje}
                                             </p>
-                                            <p className="text-[9px] text-slate-500 mt-2 uppercase font-medium tracking-wider">
-                                                {new Date(notif.fecha_creacion).toLocaleString()}
+                                            <p className="text-[9px] text-slate-400 mt-2 uppercase font-medium tracking-wider flex items-center gap-1">
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                {new Date(notif.fecha_creacion).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
                                     </div>

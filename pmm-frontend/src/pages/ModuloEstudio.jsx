@@ -7,6 +7,19 @@ import AchievementToast from './AchievementToast';
 import AscensoModal from './AscensoModal';
 import TutorOraculo from '../components/TutorOraculo';
 
+// 🚩 HELPER: Tooltip de Ayuda Contextual (Heurísticas #6 y #10)
+const InfoTooltip = ({ text }) => (
+    <div className="group relative inline-flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400 cursor-help ml-1 transition-colors group-hover:text-[#0A3D62]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-3 bg-slate-800 text-white text-[11px] rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 text-center leading-relaxed scale-95 group-hover:scale-100">
+            {text}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+        </div>
+    </div>
+);
+
 const ModuloEstudio = () => {
     const { id_modulo } = useParams();
     const navigate = useNavigate();
@@ -23,6 +36,9 @@ const ModuloEstudio = () => {
     const [mostrarAscenso, setMostrarAscenso] = useState(false);
     const [datosAscenso, setDatosAscenso] = useState(null);
     const [insigniaNueva, setInsigniaNueva] = useState(null);
+    
+    // 🚩 NUEVO: Estado para confirmación de salida (Heurística #3)
+    const [mostrarConfirmacionSalida, setMostrarConfirmacionSalida] = useState(false);
 
     // 🚩 CELEBRACIÓN: Colores actualizados a la paleta oficial
     const dispararConfetiVictoria = () => {
@@ -37,7 +53,6 @@ const ModuloEstudio = () => {
             if (timeLeft <= 0) return clearInterval(interval);
 
             const particleCount = 50 * (timeLeft / duration);
-            // Colores oficiales: Amarillo corporativo, Azul institucional, Azul claro y Blanco
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#FBE000', '#0A3D62', '#FFFFFF'] });
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#FBE000', '#2E5AAC', '#FFFFFF'] });
         }, 250);
@@ -161,9 +176,18 @@ const ModuloEstudio = () => {
         }
     };
 
+    // 🚩 Manejo seguro de salida (Heurística #3)
+    const handleIntentoSalida = () => {
+        if (indice > 0 && !completado) {
+            setMostrarConfirmacionSalida(true);
+        } else {
+            navigate('/estudiante/dashboard');
+        }
+    };
+
     if (cargando) return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
-            <img src="/motivación.png" alt="Cargando módulo" className="w-32 h-32 object-contain animate-bounce mb-4" />
+            <img src="/leyendo un libro robot.png" alt="Cargando módulo" className="w-32 h-32 object-contain animate-bounce mb-4" />
             <div className="text-[#0A3D62] font-bold animate-pulse tracking-[0.3em] text-xs uppercase">Preparando el contenido...</div>
         </div>
     );
@@ -220,11 +244,49 @@ const ModuloEstudio = () => {
                 <AscensoModal datos={datosAscenso} onClose={() => { setMostrarAscenso(false); window.location.href = '/estudiante/dashboard'; }} />
             )}
 
+            {/* 🚩 MODAL DE CONFIRMACIÓN DE SALIDA (Heurística #3: Control y libertad) */}
+            <AnimatePresence>
+                {mostrarConfirmacionSalida && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }} 
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl max-w-md w-full text-center shadow-2xl border-t-4 border-t-[#FBE000]"
+                        >
+                            <img src="/pensando.png" alt="Confirmar salida" className="w-20 h-20 object-contain mx-auto mb-4" />
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">¿Deseas salir del módulo?</h3>
+                            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                                Tu progreso actual ya ha sido guardado. Puedes retomar este ejercicio más tarde desde tu panel principal sin perder tu avance.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button 
+                                    onClick={() => setMostrarConfirmacionSalida(false)}
+                                    className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-all text-sm uppercase tracking-wider"
+                                >
+                                    Seguir estudiando
+                                </button>
+                                <button 
+                                    onClick={() => navigate('/estudiante/dashboard')}
+                                    className="flex-1 bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-xl hover:bg-red-100 transition-all text-sm uppercase tracking-wider"
+                                >
+                                    Salir al Panel
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {/* NAVBAR */}
             <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-6 py-4 shadow-sm mb-8 md:mb-12">
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3 md:gap-4">
-                        <button onClick={() => navigate('/estudiante/dashboard')} className="p-2.5 rounded-xl bg-slate-100 hover:bg-[#FBE000]/20 hover:text-[#0A3D62] text-[#0A3D62] transition-all border border-slate-200 group">
+                        <button 
+                            onClick={handleIntentoSalida} 
+                            className="p-2.5 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-600 text-[#0A3D62] transition-all border border-slate-200 group"
+                            title="Salir del módulo"
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
@@ -241,12 +303,12 @@ const ModuloEstudio = () => {
             </AnimatePresence>
 
             <div className="max-w-3xl mx-auto px-4 md:px-6">
-                {/* Barra de Progreso */}
+                {/* Barra de Progreso con Ayuda Contextual (Heurística #10) */}
                 <div className="mb-8 md:mb-10">
                     <div className="flex justify-between items-end mb-3">
-                        <div className="text-left">
+                        <div className="text-left flex items-center gap-2">
                             <h2 className="text-xs font-bold text-slate-400 tracking-[0.2em] uppercase">Progreso del Módulo</h2>
-                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium mt-1">Pregunta {indice + 1} de {ejercicios.length}</p>
+                            <InfoTooltip text="Tu progreso se guarda automáticamente con cada respuesta. Puedes salir y retomar más tarde sin perder tu avance." />
                         </div>
                         <span className="text-[#0A3D62] font-black text-2xl md:text-3xl">{progresoPorcentaje}%</span>
                     </div>

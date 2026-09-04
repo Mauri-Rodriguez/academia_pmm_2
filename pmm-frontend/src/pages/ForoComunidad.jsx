@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { BACKEND_URL } from '../api/api';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -13,11 +13,17 @@ const ForoComunidad = () => {
     const [mostrarModal, setMostrarModal] = useState(false);
     const [nuevaMision, setNuevaMision] = useState({ titulo: '', contenido: '' });
     const [archivo, setArchivo] = useState(null);
+    const [loadingPublicacion, setLoadingPublicacion] = useState(false);
+    const [errorModal, setErrorModal] = useState('');
 
     // Estados para MODAL DE EDICIÓN DE POSTS
     const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
     const [misionAEditar, setMisionAEditar] = useState({ id_post: null, titulo: '', contenido: '' });
     const [archivoEdicion, setArchivoEdicion] = useState(null);
+    const [loadingEdicion, setLoadingEdicion] = useState(false);
+
+    // 🚩 NUEVO: Estado para el Modal de Confirmación de Eliminación (Heurística #3)
+    const [modalConfirmacion, setModalConfirmacion] = useState({ visible: false, tipo: '', id: null });
 
     const [misionSeleccionada, setMisionSeleccionada] = useState(null);
     const [comentarios, setComentarios] = useState([]);
@@ -30,15 +36,14 @@ const ForoComunidad = () => {
 
     const [usuarioActualId, setUsuarioActualId] = useState(null);
     const fotoUsuarioActual = localStorage.getItem('user_avatar') || null;
+    const fileInputRef = useRef(null);
 
-    // 🚩 Función helper para construir la URL absoluta de las imágenes
     const obtenerUrlImagen = (ruta) => {
         if (!ruta) return null;
         if (ruta.startsWith('http')) return ruta;
         return `${BACKEND_URL}${ruta.startsWith('/') ? '' : '/'}${ruta}`;
     };
 
-    // Colores ajustados a la paleta oficial para garantizar legibilidad del texto blanco
     const generarColorAvatar = (nombre = "Estudiante") => {
         const colores = ['#0A3D62', '#2E5AAC', '#059669', '#7C3AED', '#DB2777', '#EA580C'];
         let hash = 0;
@@ -46,12 +51,10 @@ const ForoComunidad = () => {
         for (let i = 0; i < nombreSeguro.length; i++) {
             hash = nombreSeguro.charCodeAt(i) + ((hash << 5) - hash);
         }
-        const indice = Math.abs(hash) % colores.length;
-        return colores[indice];
+        return colores[Math.abs(hash) % colores.length];
     };
 
     useEffect(() => {
-        // 1. Lógica existente del Token
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -60,16 +63,12 @@ const ForoComunidad = () => {
                 setUsuarioActualId(Number(id));
             } catch (e) { console.error("Error de sesión"); }
         }
-
-        // 2. Cargar los posts del servidor
         cargarForo();
     }, []);
 
-    // 🚩 useEffect dedicado a detectar el parámetro de la notificación
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const postIdParaAbrir = params.get('open');
-
         if (postIdParaAbrir && posts.length > 0) {
             const postEncontrado = posts.find(p => Number(p.id_post) === Number(postIdParaAbrir));
             if (postEncontrado) {
@@ -100,10 +99,14 @@ const ForoComunidad = () => {
 
     const publicarMision = async (e) => {
         e.preventDefault();
-        if (!nuevaMision.titulo || !nuevaMision.contenido) return;
+        setErrorModal('');
+        if (nuevaMision.titulo.trim().length < 5) return setErrorModal('El título debe tener al menos 5 caracteres.');
+        if (nuevaMision.contenido.trim().length < 10) return setErrorModal('Por favor, describe tu duda con más detalle (mínimo 10 caracteres).');
+
+        setLoadingPublicacion(true);
         const formData = new FormData();
-        formData.append('titulo', nuevaMision.titulo);
-        formData.append('contenido', nuevaMision.contenido);
+        formData.append('titulo', nuevaMision.titulo.trim());
+        formData.append('contenido', nuevaMision.contenido.trim());
         if (archivo) formData.append('imagen', archivo);
 
         try {
@@ -111,43 +114,71 @@ const ForoComunidad = () => {
             setNuevaMision({ titulo: '', contenido: '' });
             setArchivo(null);
             setMostrarModal(false);
+            setErrorModal('');
             cargarForo();
-        } catch (err) { alert("Error al publicar."); }
+        } catch (err) { 
+            setErrorModal("No se pudo publicar la consulta. Inténtalo de nuevo."); 
+        } finally {
+            setLoadingPublicacion(false);
+        }
     };
 
     const abrirEdicion = (post) => {
-        setMisionAEditar({
-            id_post: post.id_post,
-            titulo: post.titulo,
-            contenido: post.contenido
-        });
+        setMisionAEditar({ id_post: post.id_post, titulo: post.titulo, contenido: post.contenido });
         setArchivoEdicion(null);
+        setErrorModal('');
         setMostrarModalEdicion(true);
     };
 
     const guardarEdicion = async (e) => {
         e.preventDefault();
-        if (!misionAEditar.titulo || !misionAEditar.contenido) return;
+        setErrorModal('');
+        if (misionAEditar.titulo.trim().length < 5 || misionAEditar.contenido.trim().length < 10) {
+            return setErrorModal('El título y el contenido deben cumplir con la longitud mínima.');
+        }
 
+        setLoadingEdicion(true);
         const formData = new FormData();
-        formData.append('titulo', misionAEditar.titulo);
-        formData.append('contenido', misionAEditar.contenido);
+        formData.append('titulo', misionAEditar.titulo.trim());
+        formData.append('contenido', misionAEditar.contenido.trim());
         if (archivoEdicion) formData.append('imagen', archivoEdicion);
 
         try {
             await api.put(`/api/estudiante/foro/post/${misionAEditar.id_post}`, formData);
             setMostrarModalEdicion(false);
+            setErrorModal('');
             cargarForo();
-        } catch (err) { alert("Error al editar."); }
+        } catch (err) { 
+            setErrorModal("No se pudo guardar la edición. Inténtalo de nuevo."); 
+        } finally {
+            setLoadingEdicion(false);
+        }
     };
 
-    const eliminarMision = async (id_post) => {
-        if (!window.confirm("¿Eliminar esta publicación permanentemente?")) return;
+    // 🚩 FUNCIONES DE ELIMINACIÓN SEPARADAS PARA USAR EL MODAL PERSONALIZADO
+    const solicitarEliminarMision = (id_post) => {
+        setModalConfirmacion({ visible: true, tipo: 'mision', id: id_post });
+    };
+
+    const ejecutarEliminarMision = async (id_post) => {
         try {
             await api.delete(`/api/estudiante/foro/post/${id_post}`);
+            setModalConfirmacion({ visible: false, tipo: '', id: null });
             cargarForo();
             setMisionSeleccionada(null);
-        } catch (err) { alert("Error al borrar."); }
+        } catch (err) { alert("Error al borrar la publicación."); }
+    };
+
+    const solicitarEliminarComentario = (id_comentario) => {
+        setModalConfirmacion({ visible: true, tipo: 'comentario', id: id_comentario });
+    };
+
+    const ejecutarEliminarComentario = async (id_comentario) => {
+        try {
+            await api.delete(`/api/estudiante/foro/comentario/${id_comentario}`);
+            setModalConfirmacion({ visible: false, tipo: '', id: null });
+            cargarComentarios(misionSeleccionada.id_post);
+        } catch (err) { console.error("Error al borrar"); }
     };
 
     const enviarComentario = async (e) => {
@@ -157,11 +188,11 @@ const ForoComunidad = () => {
         try {
             await api.post('/api/estudiante/foro/comentar', {
                 id_post: misionSeleccionada.id_post,
-                comentario: nuevoComentario
+                comentario: nuevoComentario.trim()
             });
             setNuevoComentario("");
             cargarComentarios(misionSeleccionada.id_post);
-        } catch (err) { alert("Error al comentar."); }
+        } catch (err) { alert("Error al enviar el comentario."); }
         finally { setEnviandoComentario(false); }
     };
 
@@ -169,21 +200,13 @@ const ForoComunidad = () => {
         if (!textoComentarioEditado.trim()) return;
         try {
             await api.put(`/api/estudiante/foro/comentario/${id_comentario}`, {
-                comentario: textoComentarioEditado
+                comentario: textoComentarioEditado.trim()
             });
             setComentarioEditando(null);
             cargarComentarios(misionSeleccionada.id_post);
         } catch (err) {
             alert("Error al editar el comentario.");
         }
-    };
-
-    const eliminarComentario = async (id_comentario) => {
-        if (!window.confirm("¿Borrar respuesta?")) return;
-        try {
-            await api.delete(`/api/estudiante/foro/comentario/${id_comentario}`);
-            cargarComentarios(misionSeleccionada.id_post);
-        } catch (err) { console.error("Error al borrar"); }
     };
 
     if (loading) return (
@@ -195,7 +218,6 @@ const ForoComunidad = () => {
 
     return (
         <div className="min-h-screen bg-slate-100 text-slate-800 font-sans pb-24 md:pb-20 relative overflow-hidden">
-            {/* Elementos decorativos de fondo sutiles */}
             <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-[#FBE000]/10 blur-[120px] rounded-full -z-10"></div>
             <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-[#0A3D62]/5 blur-[100px] rounded-full -z-10"></div>
 
@@ -211,15 +233,13 @@ const ForoComunidad = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                         </button>
-                        
-                        {/* 🚩 CORRECCIÓN: Se eliminó 'hidden sm:block' para que el título sea visible en móvil */}
                         <h1 className="text-base md:text-xl font-bold text-[#0A3D62] tracking-tight uppercase block truncate">
                             Comunidad <span className="text-[#FBE000] drop-shadow-sm">PMM</span>
                         </h1>
                     </div>
 
                     <button
-                        onClick={() => setMostrarModal(true)}
+                        onClick={() => { setErrorModal(''); setMostrarModal(true); }}
                         className="bg-[#0A3D62] text-white px-4 md:px-5 py-2.5 rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-wider hover:bg-[#083252] transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center gap-1 md:gap-2 whitespace-nowrap"
                     >
                         <span>+</span> <span className="hidden sm:inline">Nueva Consulta</span><span className="sm:hidden">Nueva</span>
@@ -278,7 +298,7 @@ const ForoComunidad = () => {
                                                     </svg>
                                                 </button>
                                                 <button
-                                                    onClick={() => eliminarMision(post.id_post)}
+                                                    onClick={() => solicitarEliminarMision(post.id_post)}
                                                     className="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors"
                                                     title="Eliminar publicación"
                                                 >
@@ -405,7 +425,7 @@ const ForoComunidad = () => {
                                                                 </button>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => eliminarComentario(c.id_comentario)}
+                                                                    onClick={() => solicitarEliminarComentario(c.id_comentario)}
                                                                     className="text-slate-400 hover:text-red-500 transition-all p-1 rounded hover:bg-red-50"
                                                                     title="Eliminar respuesta"
                                                                 >
@@ -486,11 +506,11 @@ const ForoComunidad = () => {
                 </div>
             )}
 
+            {/* 🚩 MODAL DE CREACIÓN */}
             <AnimatePresence>
-                {/* MODAL DE CREACIÓN */}
                 {mostrarModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMostrarModal(false)} className="absolute inset-0" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setMostrarModal(false); setErrorModal(''); }} className="absolute inset-0" />
                         <motion.form
                             initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
                             onSubmit={publicarMision}
@@ -502,28 +522,53 @@ const ForoComunidad = () => {
                                 <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Comparte tu duda con la comunidad</p>
                             </div>
 
+                            {errorModal && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs font-bold mb-4 flex items-center gap-2">
+                                    <span>⚠️</span> {errorModal}
+                                </div>
+                            )}
+
                             <div className="space-y-4">
                                 <input 
+                                    required minLength={5} maxLength={100}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 text-sm outline-none focus:border-[#0A3D62] focus:ring-1 focus:ring-[#0A3D62] transition-all" 
-                                    placeholder="Título de la duda..." 
+                                    placeholder="Título de la duda (ej: Duda con derivada de x^2)" 
                                     value={nuevaMision.titulo} 
                                     onChange={(e) => setNuevaMision({ ...nuevaMision, titulo: e.target.value })} 
                                 />
                                 <textarea 
+                                    required minLength={10}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 text-sm outline-none h-36 resize-none focus:border-[#0A3D62] focus:ring-1 focus:ring-[#0A3D62] transition-all" 
                                     placeholder="Describe el problema detalladamente..." 
                                     value={nuevaMision.contenido} 
                                     onChange={(e) => setNuevaMision({ ...nuevaMision, contenido: e.target.value })} 
                                 />
+                                <p className="text-[10px] text-slate-500 flex items-start gap-1.5">
+                                    <span>💡</span> Tip: Adjuntar una imagen de tu ejercicio ayuda a la comunidad a darte una respuesta más precisa y rápida.
+                                </p>
 
                                 <div className="flex flex-col gap-4">
                                     <label htmlFor="file-upload" className="w-full cursor-pointer bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-4 text-center text-xs text-slate-500 hover:border-[#FBE000] hover:text-[#0A3D62] hover:bg-[#FBE000]/5 transition-all">
                                         {archivo ? `✅ ${archivo.name}` : "📎 ADJUNTAR IMAGEN (OPCIONAL)"}
-                                        <input id="file-upload" type="file" className="hidden" onChange={(e) => setArchivo(e.target.files[0])} />
+                                        <input id="file-upload" ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={(e) => setArchivo(e.target.files[0])} />
                                     </label>
                                     <div className="flex gap-3 pt-2">
-                                        <button type="button" onClick={() => setMostrarModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-3.5 rounded-xl font-bold text-xs uppercase transition-all hover:bg-slate-200">Cancelar</button>
-                                        <button type="submit" className="flex-[2] bg-[#0A3D62] text-white px-6 py-3.5 rounded-xl font-bold text-xs uppercase shadow-md hover:bg-[#083252] transition-all active:scale-95">Publicar Consulta</button>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => { setMostrarModal(false); setErrorModal(''); setNuevaMision({titulo: '', contenido: ''}); setArchivo(null); }} 
+                                            className="flex-1 bg-slate-100 text-slate-600 py-3.5 rounded-xl font-bold text-xs uppercase transition-all hover:bg-slate-200"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            disabled={loadingPublicacion}
+                                            className="flex-[2] bg-[#0A3D62] text-white px-6 py-3.5 rounded-xl font-bold text-xs uppercase shadow-md hover:bg-[#083252] transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            {loadingPublicacion ? (
+                                                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Publicando...</>
+                                            ) : 'Publicar Consulta'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -534,7 +579,7 @@ const ForoComunidad = () => {
                 {/* MODAL DE EDICIÓN */}
                 {mostrarModalEdicion && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMostrarModalEdicion(false)} className="absolute inset-0" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setMostrarModalEdicion(false); setErrorModal(''); }} className="absolute inset-0" />
                         <motion.form
                             initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
                             onSubmit={guardarEdicion}
@@ -546,14 +591,22 @@ const ForoComunidad = () => {
                                 <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Mejora o corrige tu publicación</p>
                             </div>
 
+                            {errorModal && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs font-bold mb-4 flex items-center gap-2">
+                                    <span>⚠️</span> {errorModal}
+                                </div>
+                            )}
+
                             <div className="space-y-4">
                                 <input
+                                    required minLength={5} maxLength={100}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 text-sm outline-none focus:border-[#0A3D62] focus:ring-1 focus:ring-[#0A3D62] transition-all"
                                     placeholder="Título de la duda..."
                                     value={misionAEditar.titulo}
                                     onChange={(e) => setMisionAEditar({ ...misionAEditar, titulo: e.target.value })}
                                 />
                                 <textarea
+                                    required minLength={10}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 text-sm outline-none h-36 resize-none focus:border-[#0A3D62] focus:ring-1 focus:ring-[#0A3D62] transition-all"
                                     placeholder="Describe el problema detalladamente..."
                                     value={misionAEditar.contenido}
@@ -563,15 +616,69 @@ const ForoComunidad = () => {
                                 <div className="flex flex-col gap-4">
                                     <label htmlFor="file-upload-edit" className="w-full cursor-pointer bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-4 text-center text-xs text-slate-500 hover:border-[#FBE000] hover:text-[#0A3D62] hover:bg-[#FBE000]/5 transition-all">
                                         {archivoEdicion ? `✅ ${archivoEdicion.name}` : "📎 ACTUALIZAR IMAGEN (OPCIONAL)"}
-                                        <input id="file-upload-edit" type="file" className="hidden" onChange={(e) => setArchivoEdicion(e.target.files[0])} />
+                                        <input id="file-upload-edit" type="file" className="hidden" accept="image/*" onChange={(e) => setArchivoEdicion(e.target.files[0])} />
                                     </label>
                                     <div className="flex gap-3 pt-2">
-                                        <button type="button" onClick={() => setMostrarModalEdicion(false)} className="flex-1 bg-slate-100 text-slate-600 py-3.5 rounded-xl font-bold text-xs uppercase transition-all hover:bg-slate-200">Cancelar</button>
-                                        <button type="submit" className="flex-[2] bg-[#0A3D62] text-white px-6 py-3.5 rounded-xl font-bold text-xs uppercase shadow-md hover:bg-[#083252] transition-all active:scale-95">Guardar Cambios</button>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => { setMostrarModalEdicion(false); setErrorModal(''); }} 
+                                            className="flex-1 bg-slate-100 text-slate-600 py-3.5 rounded-xl font-bold text-xs uppercase transition-all hover:bg-slate-200"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            disabled={loadingEdicion}
+                                            className="flex-[2] bg-[#0A3D62] text-white px-6 py-3.5 rounded-xl font-bold text-xs uppercase shadow-md hover:bg-[#083252] transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            {loadingEdicion ? (
+                                                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Guardando...</>
+                                            ) : 'Guardar Cambios'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </motion.form>
+                    </div>
+                )}
+
+                {/* 🚩 NUEVO: MODAL DE CONFIRMACIÓN DE ELIMINACIÓN PERSONALIZADO (Heurística #3) */}
+                {modalConfirmacion.visible && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }} 
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl max-w-md w-full text-center shadow-2xl border-t-4 border-t-[#FBE000]"
+                        >
+                            <img src="/idea.png" alt="Confirmar acción" className="w-20 h-20 object-contain mx-auto mb-4 opacity-80" />
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">
+                                {modalConfirmacion.tipo === 'mision' ? '¿Eliminar esta publicación?' : '¿Eliminar este comentario?'}
+                            </h3>
+                            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                                Esta acción no se puede deshacer. ¿Estás seguro de que deseas continuar?
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button 
+                                    onClick={() => setModalConfirmacion({ visible: false, tipo: '', id: null })}
+                                    className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-all text-sm uppercase tracking-wider"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        if (modalConfirmacion.tipo === 'mision') {
+                                            ejecutarEliminarMision(modalConfirmacion.id);
+                                        } else {
+                                            ejecutarEliminarComentario(modalConfirmacion.id);
+                                        }
+                                    }}
+                                    className="flex-1 bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-xl hover:bg-red-100 transition-all text-sm uppercase tracking-wider"
+                                >
+                                    Sí, eliminar
+                                </button>
+                            </div>
+                        </motion.div>
                     </div>
                 )}
             </AnimatePresence>

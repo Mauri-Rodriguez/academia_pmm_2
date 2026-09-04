@@ -4,13 +4,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'shinobi-dark': '#05070A',     // Negro profundo
-        'shinobi-gold': '#D4AF37',     // Oro auténtico
-        'shinobi-gold-light': '#F2D472',
+        // 🚩 PALETA OFICIAL PMM INTERACTIVO
+        'pmm-blue': '#0A3D62',         // Azul institucional (Botones, Títulos, Sidebar)
+        'pmm-gold': '#FBE000',         // Amarillo corporativo (Detalles, bordes, logros)
+        'pmm-blue-light': '#2E5AAC',   // Azul claro (Acentos y enlaces)
       },
       fontFamily: {
-        'scholar': ['"Cinzel"', 'serif'], // Para títulos épicos
-        'modern': ['"Inter"', 'sans-serif'], // Para datos legibles
+        'scholar': ['"Cinzel"', 'serif'],      // Para títulos con peso (opcional, ya usamos font-extrabold)
+        'modern': ['"Inter"', 'sans-serif'],   // Para texto legible y datos
       },
       animation: {
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',

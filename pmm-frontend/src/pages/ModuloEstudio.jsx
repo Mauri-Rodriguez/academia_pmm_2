@@ -11,7 +11,7 @@ const ModuloEstudio = () => {
     const { id_modulo } = useParams();
     const navigate = useNavigate();
 
-    // --- ESTADOS ---
+    // --- ESTADOS (Lógica intacta) ---
     const [ejercicios, setEjercicios] = useState([]);
     const [indice, setIndice] = useState(0);
     const [completado, setCompletado] = useState(false);
@@ -24,7 +24,7 @@ const ModuloEstudio = () => {
     const [datosAscenso, setDatosAscenso] = useState(null);
     const [insigniaNueva, setInsigniaNueva] = useState(null);
 
-    // 🚩 JUTSU DE CELEBRACIÓN: EXPLOSIÓN DORADA
+    // 🚩 JUTSU DE CELEBRACIÓN: Colores actualizados a la paleta oficial
     const dispararConfetiVictoria = () => {
         const duration = 4 * 1000;
         const animationEnd = Date.now() + duration;
@@ -37,10 +37,9 @@ const ModuloEstudio = () => {
             if (timeLeft <= 0) return clearInterval(interval);
 
             const particleCount = 50 * (timeLeft / duration);
-            // Lado izquierdo (Dorado/Blanco)
-            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#C5A059', '#FFFFFF'] });
-            // Lado derecho (Dorado/Esmeralda)
-            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#C5A059', '#10B981'] });
+            // Colores oficiales: Amarillo corporativo, Azul institucional, Azul claro y Blanco
+            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#FBE000', '#0A3D62', '#FFFFFF'] });
+            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#FBE000', '#2E5AAC', '#FFFFFF'] });
         }, 250);
     };
 
@@ -98,11 +97,9 @@ const ModuloEstudio = () => {
                 puntaje_final: ejercicios.length 
             });
 
-            // 🚩 DETECTOR DE INSIGNIAS: Si el backend envía una insignia nueva
             if (res.data.insignia) {
                 setInsigniaNueva(res.data.insignia);
                 dispararConfetiVictoria(); 
-                // Pausa dramática para que el usuario admire su logro
                 setTimeout(() => {
                     setInsigniaNueva(null);
                     manejarFlujoFinal(res.data);
@@ -140,11 +137,11 @@ const ModuloEstudio = () => {
             }
 
             if (esFinDeModulo) {
-                dispararLogro(modoRepaso ? "SABIDURÍA REAFIRMADA" : "PERGAMINO DOMINADO", "Misión completada con éxito");
+                dispararLogro(modoRepaso ? "CONOCIMIENTO REAFIRMADO" : "MÓDULO DOMINADO", "Actividad completada con éxito");
                 setTimeout(() => procesarFinalizacionOficial(), 1500);
             } else {
                 if (nuevoIndice === 5 && !modoRepaso) {
-                    dispararLogro("RACHA NINJA", "¡5 respuestas correctas seguidas!");
+                    dispararLogro("RACHA DE ESTUDIO", "¡5 respuestas correctas seguidas!");
                 }
                 setIndice(nuevoIndice);
             }
@@ -155,9 +152,9 @@ const ModuloEstudio = () => {
                     id_pregunta: ejActual.id_ejercicio,
                     respuesta_dada: itemSeleccionado.campo 
                 });
-                setModalIA({ visible: true, explicacion: res.data.explicacion_ia || "Analiza el sello, ninja." });
+                setModalIA({ visible: true, explicacion: res.data.explicacion_ia || "Revisa el planteamiento e intenta de nuevo." });
             } catch (err) {
-                setModalIA({ visible: true, explicacion: "El oráculo está meditando. Revisa tu lógica." });
+                setModalIA({ visible: true, explicacion: "El sistema está procesando tu respuesta. Revisa tu lógica." });
             } finally {
                 setBloqueado(false);
             }
@@ -165,26 +162,26 @@ const ModuloEstudio = () => {
     };
 
     if (cargando) return (
-        <div className="min-h-screen bg-[#05070A] flex flex-col items-center justify-center">
-            <div className="w-16 h-16 border-4 border-shinobi-gold/20 border-t-shinobi-gold rounded-full animate-spin mb-6"></div>
-            <div className="text-shinobi-gold font-scholar animate-pulse tracking-[0.5em] text-[10px] uppercase">Descifrando Pergamino...</div>
+        <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
+            <img src="/pensando.png" alt="Cargando módulo" className="w-32 h-32 object-contain animate-bounce mb-4" />
+            <div className="text-[#0A3D62] font-bold animate-pulse tracking-[0.3em] text-xs uppercase">Preparando el contenido...</div>
         </div>
     );
 
     if (completado) return (
-        <div className="min-h-screen bg-[#05070A] flex flex-col items-center justify-center text-center p-6">
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-md w-full bg-[#0E121C] border border-emerald-500/20 p-12 rounded-[3rem] shadow-2xl">
-                <span className="text-6xl mb-8 block animate-bounce">🏆</span>
-                <h1 className="text-4xl font-scholar text-emerald-500 tracking-tighter uppercase mb-4">Misión Cumplida</h1>
-                <p className="text-slate-400 text-sm font-modern italic mb-10 leading-relaxed">
-                    Has dominado los sellos de este pergamino. ¿Regresarás a la aldea o seguirás meditando?
+        <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center text-center p-6">
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-md w-full bg-white border border-slate-200 p-8 md:p-12 rounded-3xl shadow-xl border-t-4 border-t-[#FBE000]">
+                <img src="/festejando.png" alt="Completado" className="w-32 h-32 object-contain mx-auto mb-6 animate-bounce" />
+                <h1 className="text-3xl font-extrabold text-[#0A3D62] tracking-tight uppercase mb-4">¡Módulo Completado!</h1>
+                <p className="text-slate-500 text-sm md:text-base mb-10 leading-relaxed">
+                    Has dominado los conceptos de este módulo. ¿Deseas repasar o volver a tu panel principal?
                 </p>
                 <div className="space-y-4">
-                    <button onClick={() => { navigate('/estudiante/dashboard'); window.location.reload(); }} className="w-full bg-emerald-600 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all active:scale-95">
-                        Volver a la Aldea
+                    <button onClick={() => { navigate('/estudiante/dashboard'); window.location.reload(); }} className="w-full bg-[#0A3D62] text-white px-8 py-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 shadow-md hover:bg-[#083252]">
+                        Volver al Panel
                     </button>
-                    <button onClick={iniciarRepaso} className="w-full bg-white/5 text-slate-300 border border-white/10 px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:bg-white/10">
-                        📜 Meditar de nuevo
+                    <button onClick={iniciarRepaso} className="w-full bg-slate-100 text-[#0A3D62] border border-slate-200 px-8 py-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:bg-slate-200">
+                        🔄 Repasar de nuevo
                     </button>
                 </div>
             </motion.div>
@@ -195,45 +192,46 @@ const ModuloEstudio = () => {
     const progresoPorcentaje = Math.round((indice / ejercicios.length) * 100);
 
     return (
-        <div className="min-h-screen bg-[#05070A] text-slate-200 relative overflow-hidden pb-20 selection:bg-shinobi-gold/30">
+        <div className="min-h-screen bg-slate-100 text-slate-800 relative overflow-hidden pb-20 selection:bg-[#FBE000]/30">
             
-            {/* 🚩 OVERLAY ÉPICO: INSIGNIA OBTENIDA (RENDERIZANDO EMOJI) */}
+            {/* 🚩 OVERLAY ÉPICO: INSIGNIA OBTENIDA */}
             <AnimatePresence>
                 {insigniaNueva && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-2xl">
-                        <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} className="text-center">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/80 backdrop-blur-md">
+                        <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} className="text-center p-6">
                             <div className="relative inline-block mb-10">
-                                {/* Aura de poder detrás del emoji */}
-                                <div className="absolute -inset-10 bg-shinobi-gold/20 blur-3xl rounded-full animate-pulse"></div>
-                                {/* El Emoji en lugar de la imagen */}
-                                <span className="text-[120px] md:text-[180px] relative z-10 drop-shadow-[0_0_50px_rgba(197,160,89,0.6)] block leading-none">
+                                <div className="absolute -inset-10 bg-[#FBE000]/30 blur-3xl rounded-full animate-pulse"></div>
+                                <span className="text-[120px] md:text-[180px] relative z-10 drop-shadow-[0_0_50px_rgba(251,224,0,0.6)] block leading-none">
                                     {insigniaNueva.url_imagen || '🏅'}
                                 </span>
                             </div>
-                            <h2 className="text-4xl md:text-6xl font-scholar text-white tracking-tighter uppercase mb-2">¡Sello de Honor!</h2>
-                            <p className="text-shinobi-gold font-black tracking-[0.5em] text-sm md:text-xl uppercase">{insigniaNueva.nombre}</p>
-                            <p className="text-slate-500 font-mono text-[10px] mt-4 uppercase tracking-widest">
-                                Insignia añadida a tu cofre de méritos
+                            <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight uppercase mb-2">¡Nueva Insignia!</h2>
+                            <p className="text-[#FBE000] font-black tracking-[0.3em] text-sm md:text-xl uppercase">{insigniaNueva.nombre}</p>
+                            <p className="text-slate-300 font-medium text-xs mt-4 uppercase tracking-widest">
+                                Insignia añadida a tu perfil
                             </p>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* MODAL DE ASCENSO NINJA */}
+            {/* MODAL DE ASCENSO */}
             {mostrarAscenso && (
                 <AscensoModal datos={datosAscenso} onClose={() => { setMostrarAscenso(false); window.location.href = '/estudiante/dashboard'; }} />
             )}
 
-            <nav className="sticky top-0 z-50 bg-[#0E121C]/90 backdrop-blur-md border-b border-white/5 px-6 py-4 shadow-2xl mb-8 md:mb-16">
+            {/* NAVBAR */}
+            <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-6 py-4 shadow-sm mb-8 md:mb-12">
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/estudiante/dashboard')} className="p-2.5 rounded-full bg-white/5 hover:bg-shinobi-gold hover:text-black text-slate-400 border border-white/10 transition-all group">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    <div className="flex items-center gap-3 md:gap-4">
+                        <button onClick={() => navigate('/estudiante/dashboard')} className="p-2.5 rounded-xl bg-slate-100 hover:bg-[#FBE000]/20 hover:text-[#0A3D62] text-[#0A3D62] transition-all border border-slate-200 group">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                         </button>
-                        <h1 className="text-sm md:text-xl font-scholar text-white tracking-widest uppercase">Aldea <span className="text-shinobi-gold">Digital</span></h1>
+                        <h1 className="text-base md:text-xl font-bold text-[#0A3D62] tracking-tight uppercase">
+                            Módulo de <span className="text-[#FBE000] drop-shadow-sm">Estudio</span>
+                        </h1>
                     </div>
                 </div>
             </nav>
@@ -242,34 +240,45 @@ const ModuloEstudio = () => {
                 {logroActivo && <AchievementToast titulo={logroActivo.titulo} descripcion={logroActivo.descripcion} />}
             </AnimatePresence>
 
-            <div className="max-w-3xl mx-auto px-6">
-                <div className="mb-10 text-center">
-                    <div className="flex justify-between items-end mb-4">
+            <div className="max-w-3xl mx-auto px-4 md:px-6">
+                {/* Barra de Progreso */}
+                <div className="mb-8 md:mb-10">
+                    <div className="flex justify-between items-end mb-3">
                         <div className="text-left">
-                            <h2 className="text-xs font-scholar text-slate-500 tracking-[0.4em] uppercase">Misión en Curso</h2>
-                            <p className="text-[10px] text-slate-600 uppercase tracking-widest">{indice + 1} / {ejercicios.length} Sellos</p>
+                            <h2 className="text-xs font-bold text-slate-400 tracking-[0.2em] uppercase">Progreso del Módulo</h2>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium mt-1">Pregunta {indice + 1} de {ejercicios.length}</p>
                         </div>
-                        <span className="text-shinobi-gold font-scholar text-4xl font-bold">{progresoPorcentaje}%</span>
+                        <span className="text-[#0A3D62] font-black text-2xl md:text-3xl">{progresoPorcentaje}%</span>
                     </div>
-                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${progresoPorcentaje}%` }} className="h-full bg-shinobi-gold shadow-[0_0_20px_rgba(197,160,89,0.4)]" />
+                    <div className="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${progresoPorcentaje}%` }} className="h-full bg-[#0A3D62]" />
                     </div>
                 </div>
 
-                <motion.div key={indice} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#0E121C] border border-white/5 p-8 md:p-14 rounded-[3rem] shadow-2xl relative">
-                    <div className="mb-14">
-                        <h3 className="text-2xl md:text-4xl text-white font-modern italic leading-snug text-center">"{ejActual?.pregunta}"</h3>
+                {/* Tarjeta de Pregunta */}
+                <motion.div key={indice} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 p-6 md:p-10 rounded-3xl shadow-lg border-t-4 border-t-[#FBE000] relative">
+                    <div className="mb-8 md:mb-10 text-center">
+                        <h3 className="text-xl md:text-3xl font-bold text-slate-900 leading-snug">
+                            {ejActual?.pregunta}
+                        </h3>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-3 md:gap-4">
                         {['A', 'B', 'C', 'D'].map((letra) => {
                             const campo = `opcion_${letra.toLowerCase()}`;
                             return (
-                                <button key={letra} onClick={() => responder({ letra, campo })} disabled={bloqueado} className="group w-full flex items-center p-6 bg-[#121620] border border-white/5 rounded-2xl hover:border-shinobi-gold/40 hover:bg-shinobi-gold/5 transition-all active:scale-[0.98]">
-                                    <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center mr-6 group-hover:bg-shinobi-gold transition-all">
-                                        <span className="text-shinobi-gold font-scholar font-bold text-xl group-hover:text-black">{letra}</span>
+                                <button 
+                                    key={letra} 
+                                    onClick={() => responder({ letra, campo })} 
+                                    disabled={bloqueado} 
+                                    className="group w-full flex items-center p-4 md:p-5 bg-slate-50 border-2 border-slate-200 rounded-xl hover:border-[#0A3D62] hover:bg-[#0A3D62]/5 transition-all active:scale-[0.98] text-left"
+                                >
+                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[#0A3D62] border border-[#0A3D62] flex items-center justify-center mr-4 md:mr-6 group-hover:bg-[#FBE000] group-hover:border-[#FBE000] transition-all flex-shrink-0">
+                                        <span className="text-white font-black text-lg group-hover:text-[#0A3D62] transition-colors">{letra}</span>
                                     </div>
-                                    <span className="text-slate-300 text-sm md:text-lg group-hover:text-white transition-colors text-left flex-1">{ejActual?.[campo]}</span>
+                                    <span className="text-slate-700 text-sm md:text-base font-medium group-hover:text-slate-900 transition-colors flex-1">
+                                        {ejActual?.[campo]}
+                                    </span>
                                 </button>
                             );
                         })}
@@ -277,13 +286,20 @@ const ModuloEstudio = () => {
                 </motion.div>
             </div>
 
+            {/* MODAL DE ERROR / EXPLICACIÓN IA */}
             <AnimatePresence>
                 {modalIA.visible && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-                        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-[#0E121C] border border-rose-500/30 p-10 rounded-[3rem] max-w-lg w-full text-center">
-                            <span className="text-rose-500 text-4xl block mb-6 animate-pulse">👁️‍🗨️</span>
-                            <p className="text-slate-300 italic mb-10 leading-relaxed font-modern">"{modalIA.explicacion}"</p>
-                            <button onClick={() => setModalIA({ visible: false, explicacion: '' })} className="w-full bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">Asimilar y Continuar</button>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white border border-slate-200 p-6 md:p-10 rounded-3xl max-w-lg w-full text-center shadow-2xl border-t-4 border-t-red-400">
+                            <img src="/idea.png" alt="Sugerencia" className="w-20 h-20 object-contain mx-auto mb-4" />
+                            <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest mb-3">Oportunidad de Aprendizaje</h4>
+                            <p className="text-slate-600 italic mb-8 leading-relaxed text-sm md:text-base">"{modalIA.explicacion}"</p>
+                            <button 
+                                onClick={() => setModalIA({ visible: false, explicacion: '' })} 
+                                className="w-full bg-[#0A3D62] hover:bg-[#083252] text-white p-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md"
+                            >
+                                Entendido, continuar
+                            </button>
                         </motion.div>
                     </div>
                 )}

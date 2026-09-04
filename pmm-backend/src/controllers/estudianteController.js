@@ -913,27 +913,41 @@ exports.obtenerAnaliticaErrores = async (req, res) => {
 exports.consultarOraculo = async (req, res) => {
     try {
         const { id_pregunta, mensaje_estudiante } = req.body;
+        const id_usuario = extraerIdUsuario(req); // 🚩 OBTENER ID DEL USUARIO
 
         // 1. Buscamos el contexto del ejercicio en la base de datos
         const preguntaDB = await Ejercicio.findByPk(id_pregunta);
         if (!preguntaDB) return res.status(404).json({ error: "Pergamino no encontrado" });
 
-        // 2. Construimos el Prompt (Ingeniería de Prompts)
+        // 🚩 2. OBTENER EL NIVEL DEL ESTUDIANTE DESDE LA TABLA USUARIOS
+        const [usuario] = await db.query(
+            'SELECT rango_actual, rango FROM usuarios WHERE id_usuario = ?',
+            { replacements: [id_usuario], type: db.QueryTypes.SELECT }
+        );
+
+        // Variable que contiene el nivel (Ej: "Chunin (Guerrero)")
+        const nivelEstudiante = usuario?.rango_actual || usuario?.rango || 'Genin (Iniciado)';
+
+        // 🚩 3. Construimos el Prompt con el nivel inyectado
         const prompt = `
-        Eres un maestro de matemáticas. Tu tarea es guiar a tu estudiante academicamente.
-        El estudiante está intentando resolver el siguiente problema: "${preguntaDB.pregunta}".
-        
-        El estudiante te pregunta lo siguiente: "${mensaje_estudiante}"
+Eres un Tutor Virtual Académico de Matemáticas, diseñado para apoyar el aprendizaje autónomo de estudiantes universitarios de ingeniería. Tu metodología se basa en guiar al estudiante dentro de su Zona de Desarrollo Próximo (ZDP), facilitando el descubrimiento del conocimiento sin saturar su carga cognitiva.
 
-        REGLAS ESTRICTAS QUE DEBES CUMPLIR:
-        1. NUNCA des la respuesta final ni la solución directa del ejercicio.
-        2. Actúa como un guía: dale pistas, explícale el concepto matemático (como límites, derivadas, despejes, etc.) o hazle una pregunta que lo haga pensar.
-        3. Mantén tu respuesta breve (máximo 2 o 3 párrafos cortos) y usa lenguaje academico.
-        4. Usa un tono motivador de maestro ninja.
-        5. NO USES FORMATO LaTeX ni signos de peso ($) para las matemáticas. Escribe las fórmulas de manera simple y en texto plano (ej: f(x) = x^2).
-        `;
+CONTEXTO DE LA SESIÓN:
+- Nivel actual del estudiante: ${nivelEstudiante} (Ej: Básico, Intermedio o Avanzado)
+- Ejercicio que está resolviendo: "${preguntaDB.pregunta}"
+- Duda o mensaje del estudiante: "${mensaje_estudiante}"
 
-        // 3. Invocamos a Gemini 2.5 Flash-lite
+REGLAS ESTRICTAS DE INTERACCIÓN (DEBES CUMPLIRLAS SIEMPRE):
+1. PROHIBICIÓN TOTAL DE RESPUESTAS DIRECTAS: NUNCA proporcionas el resultado final, ni resuelves el ejercicio completo por el estudiante. 
+2. ANDAMIAJE PEDAGÓGICO: Identifica el posible error conceptual. Explica brevemente la regla, propiedad o teorema aplicable (ej: leyes de los exponentes, reglas de derivación, factorización) y termina con una pregunta orientadora que lo invite a dar el siguiente paso por sí mismo.
+3. TONO Y ESTILO: Mantén un lenguaje académico, claro, empático y motivador. Puedes incluir un leve guiño a la gamificación de la plataforma para fomentar la resiliencia (ej: "¡Vas por buen camino, sigue fortaleciendo tus fundamentos!"), pero prioriza siempre el rigor matemático sobre el juego de roles.
+4. CONTROL DE CARGA COGNITIVA: Tu respuesta debe ser concisa (máximo 2 o 3 párrafos cortos). Usa viñetas si ayuda a la claridad. Evita divagaciones.
+5. FORMATO DE TEXTO PLANO: NO uses formato LaTeX, ni signos de dólar ($), ni bloques de código. Escribe las expresiones matemáticas de forma legible en texto plano (ejemplo: usa "x^2" para exponentes, "sqrt(x)" para raíces cuadradas, y "a/b" para fracciones).
+
+Comienza tu respuesta directamente con la orientación o la pista, sin saludos genéricos largos.
+`;
+
+        // 4. Invocamos a Gemini 2.5 Flash-lite
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
         const result = await model.generateContent(prompt);
         const respuestaOraculo = result.response.text();

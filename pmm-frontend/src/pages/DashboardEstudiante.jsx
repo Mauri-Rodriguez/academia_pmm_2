@@ -106,9 +106,12 @@ const DashboardEstudiante = () => {
         window.history.replaceState({}, document.title);
     };
 
+    // Helper para navegación activa
+    const isActivePath = (path) => location.pathname === path;
+
     if (loading) return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
-            <img src="/motivacion.png" alt="Cargando" className="w-32 h-32 object-contain animate-bounce mb-4" />
+            <img src="/pensando.png" alt="Cargando" className="w-32 h-32 object-contain animate-bounce mb-4" />
             <div className="text-[#0A3D62] font-bold animate-pulse tracking-[0.3em] text-xs uppercase">Cargando tu progreso...</div>
         </div>
     );
@@ -171,7 +174,7 @@ const DashboardEstudiante = () => {
                                         transition={{ type: "spring", duration: 0.8 }}
                                         className="w-24 h-24 mx-auto bg-slate-100 border-4 border-[#FBE000] rounded-full flex items-center justify-center shadow-lg"
                                     >
-                                        <img src="/subir nivel robot.png" alt="Nuevo nivel" className="w-16 h-16 object-contain" />
+                                        <img src="/festejando.png" alt="Nuevo nivel" className="w-16 h-16 object-contain" />
                                     </motion.div>
 
                                     <h2 className="text-xl font-bold text-[#0A3D62]">
@@ -232,34 +235,46 @@ const DashboardEstudiante = () => {
                 </div>
 
                 <nav className="flex-1 space-y-4">
-                    {navItems.map((item) => (
-                        <button
-                            key={item.label}
-                            onClick={() => navigate(item.path)}
-                            className="group w-full flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-all duration-300"
-                        >
-                            <span className="text-xl group-hover:scale-125 transition-transform">{item.icon}</span>
-                            <span className={`font-bold text-[10px] tracking-widest transition-all duration-500 whitespace-nowrap
-                                ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
-                                {item.label}
-                            </span>
-                        </button>
-                    ))}
+                    {navItems.map((item) => {
+                        const isActive = isActivePath(item.path);
+                        return (
+                            <button
+                                key={item.label}
+                                onClick={() => navigate(item.path)}
+                                className={`group w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-300 ${
+                                    isActive ? 'bg-[#FBE000]/10 border border-[#FBE000]' : 'hover:bg-slate-50'
+                                }`}
+                            >
+                                <span className="text-xl group-hover:scale-125 transition-transform">{item.icon}</span>
+                                <span className={`font-bold text-[10px] tracking-widest transition-all duration-500 whitespace-nowrap
+                                    ${isActive ? 'text-[#0A3D62]' : ''}
+                                    ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                                    {item.label}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </nav>
             </aside>
 
-            {/* 🚩 NAVEGACIÓN MÓVIL (BOTTOM BAR) */}
-            <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-lg border-t border-slate-200 flex justify-around p-3 z-50 pb-safe">
-                {navItems.map((item) => (
-                    <button
-                        key={item.label}
-                        onClick={() => navigate(item.path)}
-                        className="flex flex-col items-center p-2 text-slate-500 hover:text-[#0A3D62] transition-colors"
-                    >
-                        <span className="text-xl mb-1">{item.icon}</span>
-                        <span className="text-[8px] font-bold tracking-widest uppercase">{item.label}</span>
-                    </button>
-                ))}
+            {/* 🚩 NAVEGACIÓN MÓVIL (BOTTOM BAR) - MEJORADA */}
+            <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-lg border-t border-slate-200 flex justify-around p-2 z-50 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                {navItems.map((item) => {
+                    const isActive = isActivePath(item.path);
+                    return (
+                        <button
+                            key={item.label}
+                            onClick={() => navigate(item.path)}
+                            className={`flex flex-col items-center p-2 rounded-xl transition-all duration-300 ${
+                                isActive ? 'text-[#0A3D62] bg-[#FBE000]/20 scale-105' : 'text-slate-400 hover:text-[#0A3D62]'
+                            }`}
+                            aria-label={item.label}
+                        >
+                            <span className="text-xl mb-0.5">{item.icon}</span>
+                            <span className="text-[8px] font-black tracking-widest uppercase">{item.label}</span>
+                        </button>
+                    );
+                })}
             </nav>
 
             {/* 🚩 CONTENIDO PRINCIPAL */}
@@ -294,7 +309,7 @@ const DashboardEstudiante = () => {
                 <div className="mb-8 md:mb-10">
                     {loadingIA ? (
                         <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl animate-pulse flex flex-col md:flex-row items-center gap-6">
-                            <img src="/pensando.png" alt="IA pensando" className="w-20 h-20 object-contain" />
+                            <img src="/MASCOTA CABEZA.png" alt="IA pensando" className="w-20 h-20 object-contain" />
                             <div className="flex-1 w-full space-y-3">
                                 <div className="h-2 w-1/2 bg-slate-100 rounded"></div>
                                 <div className="h-4 w-full bg-slate-100 rounded"></div>
@@ -306,7 +321,7 @@ const DashboardEstudiante = () => {
                             <div className="flex flex-col lg:flex-row items-center gap-6 md:gap-8 relative z-10">
                                 <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full border flex items-center justify-center flex-shrink-0
                                     ${sugerenciaIA.nivel_alerta === 'critico' ? 'bg-red-50 border-red-200' : 'bg-[#FBE000]/10 border-[#FBE000]'}`}>
-                                    <img src="/idea.png" alt="Idea IA" className="w-12 h-12 object-contain" />
+                                    <img src="/MASCOTA CABEZA.png" alt="Idea IA" className="w-12 h-12 object-contain" />
                                 </div>
                                 <div className="flex-1 text-center lg:text-left w-full">
                                     <h4 className={`font-bold text-[10px] md:text-xs uppercase tracking-[0.2em] mb-2 ${sugerenciaIA.nivel_alerta === 'critico' ? 'text-red-500' : 'text-[#0A3D62]'}`}>
@@ -329,8 +344,8 @@ const DashboardEstudiante = () => {
                     )}
                 </div>
 
-                {/* 🚩 SECCIÓN 2: LOGROS ACADÉMICOS */}
-                <div className="mb-8 md:mb-10 bg-white border border-slate-200 p-6 md:p-8 rounded-3xl shadow-xl relative overflow-hidden">
+                {/* 🚩 SECCIÓN 2: LOGROS ACADÉMICOS - MEJORADA */}
+                <div className="mb-8 md:mb-10 bg-white border border-slate-200 p-6 md:p-8 rounded-3xl shadow-xl relative">
                     <div className="flex flex-col sm:flex-row items-center sm:justify-between mb-6 md:mb-8 relative z-10 gap-4 text-center sm:text-left">
                         <div>
                             <h3 className="font-bold text-sm text-slate-900 uppercase tracking-widest">Panel de Logros</h3>
@@ -343,22 +358,30 @@ const DashboardEstudiante = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6 relative z-10">
+                    {/* Contenedor con scroll snap en móvil y grid en desktop */}
+                    <div className="flex md:grid md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6 overflow-x-auto md:overflow-visible snap-x pb-4 md:pb-0 scrollbar-hide">
                         {datos?.todas_insignias?.map((insignia) => {
                             const ganada = datos?.insignias_obtenidas?.some(i => i.id_insignia === insignia.id_insignia);
                             return (
-                                <div key={insignia.id_insignia} className="group relative flex flex-col items-center">
-                                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-full border-2 flex items-center justify-center transition-all duration-700 
+                                <div key={insignia.id_insignia} className="group relative flex flex-col items-center snap-center shrink-0 w-20 md:w-auto">
+                                    <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full border-2 flex items-center justify-center transition-all duration-500 
                                         ${ganada
-                                            ? 'border-[#FBE000] bg-[#FBE000]/10 scale-110'
-                                            : 'border-slate-200 bg-slate-50 opacity-40 grayscale'}`}>
-                                        <span className="text-xl md:text-2xl group-hover:scale-125 transition-transform duration-500">
+                                            ? 'border-[#FBE000] bg-[#FBE000]/10 shadow-lg shadow-[#FBE000]/20'
+                                            : 'border-slate-200 bg-slate-50 opacity-50 grayscale'}`}>
+                                        <span className="text-2xl md:text-3xl filter drop-shadow-sm">
                                             {ganada ? '🏅' : '🔒'}
                                         </span>
                                     </div>
-                                    <div className="mt-3 opacity-0 group-hover:opacity-100 transition-all duration-300 text-center absolute -bottom-8 md:-bottom-10 bg-slate-900 p-2 md:p-3 rounded-xl border border-white/10 shadow-2xl z-50 pointer-events-none w-24 md:min-w-[120px]">
-                                        <p className="text-[7px] md:text-[8px] font-black uppercase text-[#FBE000] leading-tight">{insignia.nombre_insignia}</p>
-                                        <p className="text-[5px] md:text-[6px] text-slate-300 uppercase mt-1 leading-none">{insignia.descripcion}</p>
+                                    
+                                    {/* Texto visible en móvil */}
+                                    <p className="text-[9px] font-bold text-slate-600 text-center mt-2 line-clamp-2 md:hidden">
+                                        {insignia.nombre_insignia}
+                                    </p>
+
+                                    {/* Tooltip solo desktop */}
+                                    <div className="hidden md:block mt-3 opacity-0 group-hover:opacity-100 transition-all duration-300 text-center absolute -bottom-16 bg-slate-900 p-3 rounded-xl border border-[#FBE000]/30 shadow-2xl z-50 pointer-events-none w-32">
+                                        <p className="text-[9px] font-black uppercase text-[#FBE000] leading-tight">{insignia.nombre_insignia}</p>
+                                        <p className="text-[8px] text-slate-300 uppercase mt-1 leading-tight">{insignia.descripcion}</p>
                                     </div>
                                 </div>
                             );
@@ -366,12 +389,12 @@ const DashboardEstudiante = () => {
                     </div>
                 </div>
 
-                {/* 🚩 SECCIÓN 3: ESTADÍSTICAS RÁPIDAS */}
+                {/* 🚩 SECCIÓN 3: ESTADÍSTICAS RÁPIDAS - MASCOTAS CORREGIDAS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
                     
                     {/* 🔥 RACHA DE ESTUDIO */}
                     <div className="bg-white border border-red-100 p-6 md:p-8 rounded-3xl relative overflow-hidden group hover:border-red-200 transition-all shadow-lg">
-                        <img src="/robot con llama.png" alt="Motivación" className="w-20 h-20 object-contain mb-3" />
+                        <img src="/robot con llama.png" alt="llama" className="w-20 h-20 object-contain mb-3" />
                         <p className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest mb-1">Dedicación Continua</p>
                         <p className="text-2xl md:text-3xl font-bold text-red-500">
                             {datos?.estadisticas?.racha_dias || 0} <span className="text-sm text-red-400 uppercase">Días</span>
@@ -469,21 +492,24 @@ const DashboardEstudiante = () => {
                     </div>
                 </div>
 
-                {/* 🚩 SECCIÓN 5: BITÁCORA DE ERRORES */}
+                {/* 🚩 SECCIÓN 5: BITÁCORA DE ERRORES - ENFOQUE CONSTRUCTIVO */}
                 {errores.length > 0 && (
-                    <div className="mb-8 md:mb-10 bg-red-50 border border-red-200 p-5 md:p-6 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="mb-8 md:mb-10 bg-orange-50 border border-orange-200 p-5 md:p-6 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-4 transition-all hover:shadow-md">
                         <div className="flex items-center gap-4 text-center md:text-left">
-                            <img src="/respuesta incorrecta robot.png" alt="Error" className="w-16 h-16 object-contain" />
+                            <img src="/idea.png" alt="Sugerencia de mejora" className="w-16 h-16 object-contain" />
                             <div>
-                                <h4 className="text-red-500 font-bold text-[10px] md:text-xs uppercase tracking-widest">Fallas Detectadas</h4>
-                                <p className="text-[9px] md:text-[11px] text-slate-500 uppercase mt-1">Se detectaron {errores.length} puntos que requieren repaso.</p>
+                                <h4 className="text-[#0A3D62] font-bold text-[10px] md:text-xs uppercase tracking-widest">Oportunidades de Refuerzo</h4>
+                                <p className="text-[9px] md:text-[11px] text-slate-600 mt-1">
+                                    Hemos detectado <span className="font-bold text-[#0A3D62]">{errores.length}</span> temas donde puedes reforzar tu conocimiento. ¡Tú puedes!
+                                </p>
                             </div>
                         </div>
                         <button
                             onClick={() => navigate('/estudiante/historial-errores')}
-                            className="w-full md:w-auto bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg"
+                            className="w-full md:w-auto bg-[#0A3D62] hover:bg-[#083252] text-white px-6 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2"
                         >
-                            Revisar Errores
+                            <span>Repasar Temas</span>
+                            <span>→</span>
                         </button>
                     </div>
                 )}

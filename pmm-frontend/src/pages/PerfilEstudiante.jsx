@@ -12,8 +12,9 @@ const PerfilEstudiante = () => {
     const [fotoPerfil, setFotoPerfil] = useState(null);
     const [subiendoFoto, setSubiendoFoto] = useState(false);
 
+    // Lógica intacta: Genera un color consistente basado en el nombre
     const generarColorAvatar = (nombre = "Ninja") => {
-        const colores = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+        const colores = ['#0A3D62', '#2E5AAC', '#FBE000', '#10B981', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
         let hash = 0;
         for (let i = 0; i < nombre.length; i++) hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
         return colores[Math.abs(hash) % colores.length];
@@ -46,7 +47,6 @@ const PerfilEstudiante = () => {
                     ejercicios_completados: misionesCompletas,
                     efectividad: efectividadReal,
                     racha_dias: dashStats.racha_dias || 0,
-                    // 🚩 AQUÍ EXTRAEMOS LAS INSIGNIAS REALES DE LA BASE DE DATOS
                     insignias_obtenidas: resDash.data?.insignias_obtenidas || [],
                     todas_insignias: resDash.data?.todas_insignias || []
                 });
@@ -88,87 +88,117 @@ const PerfilEstudiante = () => {
     };
 
     if (loading || !datos) return (
-        <div className="min-h-screen bg-[#05070A] flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border-shinobi-gold border-t-transparent rounded-full animate-spin"></div>
+        <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
+            <img src="/pensando.png" alt="Cargando perfil" className="w-32 h-32 object-contain animate-bounce mb-4" />
+            <div className="text-[#0A3D62] font-bold animate-pulse tracking-[0.3em] text-xs uppercase">Preparando tu perfil...</div>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-[#05070A] p-4 md:p-10 flex flex-col items-center">
+        <div className="min-h-screen bg-slate-100 p-4 md:p-10 flex flex-col items-center relative overflow-hidden">
+            {/* Elemento decorativo de fondo */}
+            <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-[#FBE000]/10 blur-[120px] rounded-full -z-10"></div>
+            <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-[#0A3D62]/5 blur-[100px] rounded-full -z-10"></div>
 
             <button
                 onClick={() => navigate('/estudiante/dashboard')}
-                className="self-start mb-6 text-slate-500 hover:text-shinobi-gold transition-all text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2"
+                className="self-start mb-6 text-[#0A3D62] hover:text-[#2E5AAC] transition-all text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 group"
             >
-                ← Volver al Panel
+                <span className="group-hover:-translate-x-1 transition-transform">←</span> Volver al Panel
             </button>
 
-            <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
 
-                {/* COLUMNA IZQUIERDA: PERFIL Y STATS */}
+                {/* 🚩 COLUMNA IZQUIERDA: PERFIL Y ESTADÍSTICAS */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-[#0E121C] border border-white/5 p-8 rounded-[2rem] shadow-2xl text-center relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-shinobi-gold"></div>
+                    {/* Tarjeta de Perfil con Patrón de Diseño Obligatorio */}
+                    <div className="bg-white border border-slate-200 rounded-3xl shadow-xl border-t-4 border-[#FBE000] p-6 md:p-8 text-center relative overflow-hidden">
                         
+                        {/* Mascota decorativa sutil */}
+                        <img src="/mascota.png" alt="Estudiando" className="absolute -bottom-4 -right-4 w-24 h-24 object-contain opacity-20 pointer-events-none" />
+
                         <div className="relative group mx-auto w-32 h-32 mb-6">
                             <div
-                                className="w-full h-full bg-slate-900 rounded-full flex items-center justify-center border-4 border-shinobi-gold shadow-xl overflow-hidden relative cursor-pointer"
+                                className="w-full h-full rounded-full flex items-center justify-center border-4 border-[#FBE000] shadow-lg overflow-hidden relative cursor-pointer transition-transform duration-300 group-hover:scale-105"
                                 onClick={() => fileInputRef.current.click()}
                                 style={{ backgroundColor: !fotoPerfil ? generarColorAvatar(datos.nombre_completo) : 'transparent' }}
                             >
                                 {fotoPerfil ? (
                                     <img src={obtenerUrlImagen(fotoPerfil)} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-6xl text-white font-scholar">{datos.nombre_completo.charAt(0).toUpperCase()}</span>
+                                    <span className="text-5xl text-white font-black drop-shadow-md">
+                                        {datos.nombre_completo.charAt(0).toUpperCase()}
+                                    </span>
                                 )}
 
-                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span className="text-[10px] text-white font-bold uppercase tracking-widest text-center px-2">Cambiar Sello</span>
+                                <div className="absolute inset-0 bg-[#0A3D62]/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <span className="text-[10px] text-white font-bold uppercase tracking-widest text-center px-2">Cambiar Foto</span>
                                 </div>
                             </div>
-                            {subiendoFoto && <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center"><div className="w-5 h-5 border-2 border-shinobi-gold border-t-transparent rounded-full animate-spin"></div></div>}
+                            
+                            {subiendoFoto && (
+                                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                    <div className="w-6 h-6 border-3 border-[#0A3D62] border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            )}
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleSubirFoto} />
                         </div>
 
-                        <h3 className="text-2xl font-scholar text-white leading-tight uppercase">{datos.nombre_completo}</h3>
-                        <p className="text-[10px] text-slate-500 uppercase font-bold mt-1 tracking-widest">{datos.correo}</p>
+                        <h3 className="text-2xl font-bold text-slate-900 leading-tight uppercase tracking-tight">{datos.nombre_completo}</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-1">{datos.correo}</p>
 
-                        <div className="mt-6 px-4 py-2 bg-shinobi-gold/10 border border-shinobi-gold/30 text-shinobi-gold text-[10px] font-black uppercase tracking-[0.2em] rounded-full inline-block">
+                        <div className="mt-6 px-4 py-2 bg-[#FBE000]/10 border border-[#FBE000] text-[#0A3D62] text-[10px] font-black uppercase tracking-[0.2em] rounded-full inline-block shadow-sm">
                             Nivel: {datos.rango_actual}
                         </div>
                     </div>
 
-                    <div className="bg-[#0E121C] border border-white/5 p-6 rounded-[2rem]">
-                        <h4 className="text-[10px] text-slate-500 uppercase font-black mb-4 tracking-widest">Nivel de Dominio</h4>
-                        <div className="flex justify-between items-center text-white mb-2">
-                            <span className="text-xs font-bold text-slate-400">Efectividad</span>
-                            <span className="text-shinobi-gold font-bold text-lg">{datos.efectividad}%</span>
+                    {/* Tarjeta de Estadísticas Rápidas */}
+                    <div className="bg-white border border-slate-200 rounded-3xl shadow-xl p-6 md:p-8">
+                        <h4 className="text-[10px] text-slate-500 uppercase font-black mb-4 tracking-widest flex items-center gap-2">
+                            <span>📊</span> Nivel de Dominio
+                        </h4>
+                        
+                        <div className="flex justify-between items-center text-slate-800 mb-2">
+                            <span className="text-xs font-bold text-slate-500">Efectividad Global</span>
+                            <span className="text-[#0A3D62] font-black text-xl">{datos.efectividad}%</span>
                         </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${datos.efectividad}%` }} className="h-full bg-shinobi-gold" />
+                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden mb-6 border border-slate-200">
+                            <motion.div 
+                                initial={{ width: 0 }} 
+                                animate={{ width: `${datos.efectividad}%` }} 
+                                transition={{ duration: 1, ease: "easeOut" }}
+                                className="h-full bg-[#0A3D62]" 
+                            />
                         </div>
-                        <div className="mt-6 flex justify-between border-t border-white/5 pt-4">
-                            <div className="text-center w-1/2 border-r border-white/5">
-                                <p className="text-2xl text-white font-scholar">{datos.puntaje_total}</p>
-                                <p className="text-[8px] text-slate-500 uppercase tracking-widest font-bold">XP TOTAL</p>
+                        
+                        <div className="flex justify-between border-t border-slate-100 pt-5">
+                            <div className="text-center w-1/2 border-r border-slate-100">
+                                <p className="text-2xl font-black text-[#2E5AAC]">{datos.puntaje_total}</p>
+                                <p className="text-[9px] text-slate-400 uppercase tracking-widest font-bold mt-1">Puntos IA</p>
                             </div>
                             <div className="text-center w-1/2">
-                                <p className="text-2xl text-white font-scholar">{datos.ejercicios_completados}</p>
-                                <p className="text-[8px] text-slate-500 uppercase tracking-widest font-bold">MÓDULOS</p>
+                                <p className="text-2xl font-black text-[#2E5AAC]">{datos.ejercicios_completados}</p>
+                                <p className="text-[9px] text-slate-400 uppercase tracking-widest font-bold mt-1">Módulos</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* 🚩 COLUMNA DERECHA: RÉCORDS E HITOS (AHORA SÍ 100% DINÁMICOS DESDE LA BD) */}
+                {/* 🚩 COLUMNA DERECHA: RÉCORDS E HITOS (DINÁMICO DESDE BD) */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-[#0E121C] border border-white/5 p-8 rounded-[2rem] shadow-xl">
-                        <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+                    <div className="bg-white border border-slate-200 rounded-3xl shadow-xl border-t-4 border-[#FBE000] p-6 md:p-8 h-full">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-slate-100 pb-4 gap-4">
                             <div>
-                                <h4 className="text-sm font-scholar text-white uppercase tracking-[0.2em]">Registro de Hitos</h4>
-                                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mt-1">Tu Colección de Insignias</p>
+                                <h4 className="text-base md:text-lg font-bold text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                                    <span>🏆</span> Registro de Hitos
+                                </h4>
+                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Tu colección de insignias académicas</p>
                             </div>
-                            <span className="text-2xl animate-pulse">🏆</span>
+                            <div className="bg-[#0A3D62]/5 px-4 py-2 rounded-full border border-[#0A3D62]/10">
+                                <span className="text-[#0A3D62] font-black text-[10px] md:text-xs tracking-widest">
+                                    {datos.insignias_obtenidas.length} / {datos.todas_insignias.length} DESBLOQUEADAS
+                                </span>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -177,30 +207,37 @@ const PerfilEstudiante = () => {
                                     const ganada = datos.insignias_obtenidas.some(i => i.id_insignia === insignia.id_insignia);
                                     
                                     return (
-                                        <div 
-                                            key={insignia.id_insignia} 
-                                            className={`p-5 rounded-2xl border transition-all duration-500 flex items-center gap-4
+                                        <motion.div 
+                                            key={insignia.id_insignia}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className={`p-5 rounded-2xl border transition-all duration-300 flex items-center gap-4 group
                                                 ${ganada 
-                                                    ? 'bg-shinobi-gold/10 border-shinobi-gold/30 hover:bg-shinobi-gold/20 hover:border-shinobi-gold/50 shadow-[0_0_15px_rgba(197,160,89,0.1)]' 
-                                                    : 'bg-slate-900/50 border-white/5 opacity-60 grayscale'}`}
+                                                    ? 'bg-[#FBE000]/5 border-[#FBE000] hover:bg-[#FBE000]/10 hover:shadow-md' 
+                                                    : 'bg-slate-50 border-slate-200 opacity-70 hover:opacity-100'}`}
                                         >
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-inner flex-shrink-0
-                                                ${ganada ? 'bg-shinobi-gold/20 border border-shinobi-gold/50' : 'bg-black border border-white/10'}`}>
+                                            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-sm flex-shrink-0 transition-transform duration-300 group-hover:scale-110
+                                                ${ganada ? 'bg-[#FBE000]/20 border-2 border-[#FBE000]' : 'bg-slate-200 border-2 border-slate-300 grayscale'}`}>
                                                 {ganada ? '🏅' : '🔒'}
                                             </div>
-                                            <div>
-                                                <h5 className={`text-xs font-black uppercase tracking-wider mb-1 ${ganada ? 'text-shinobi-gold' : 'text-slate-400'}`}>
+                                            <div className="flex-1 min-w-0">
+                                                <h5 className={`text-xs md:text-sm font-black uppercase tracking-wider mb-1 truncate ${ganada ? 'text-[#0A3D62]' : 'text-slate-500'}`}>
                                                     {insignia.nombre_insignia}
                                                 </h5>
-                                                <p className="text-[10px] text-slate-400 leading-tight">
+                                                <p className="text-[10px] md:text-[11px] text-slate-500 leading-relaxed line-clamp-2">
                                                     {insignia.descripcion}
                                                 </p>
                                             </div>
-                                        </div>
+                                        </motion.div>
                                     );
                                 })
                             ) : (
-                                <p className="text-slate-500 italic text-sm p-4 col-span-full">Aún no hay insignias registradas en la academia.</p>
+                                <div className="text-center p-8 col-span-full bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                                    <img src="/idea.png" alt="Sin insignias" className="w-16 h-16 object-contain mx-auto mb-3 opacity-50" />
+                                    <p className="text-slate-500 text-sm font-medium">Aún no hay insignias registradas.</p>
+                                    <p className="text-slate-400 text-xs mt-1">¡Completa módulos para desbloquear tus primeros logros!</p>
+                                </div>
                             )}
                         </div>
                     </div>

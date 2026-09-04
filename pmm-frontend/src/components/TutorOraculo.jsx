@@ -6,7 +6,7 @@ const TutorOraculo = ({ idPreguntaActual }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [mensaje, setMensaje] = useState('');
     const [historial, setHistorial] = useState([
-        { rol: 'ia', texto: 'Saludos, joven ninja. ¿En qué parte de este sello matemático necesitas mi guía?' }
+        { rol: 'ia', texto: '¡Hola! Soy tu Tutor IA. ¿En qué parte de este ejercicio necesitas una pista o explicación?' }
     ]);
     const [cargando, setLoading] = useState(false);
     const chatRef = useRef(null);
@@ -36,7 +36,7 @@ const TutorOraculo = ({ idPreguntaActual }) => {
         } catch (error) {
             setHistorial(prev => [...prev, { 
                 rol: 'ia', 
-                texto: error.response?.data?.respuesta || 'Una interferencia bloqueó mi mensaje. Intenta de nuevo.' 
+                texto: error.response?.data?.respuesta || 'El sistema está procesando tu consulta. Por favor, intenta de nuevo en unos segundos.' 
             }]);
         } finally {
             setLoading(false);
@@ -44,73 +44,85 @@ const TutorOraculo = ({ idPreguntaActual }) => {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 font-modern">
+        <div className="fixed bottom-6 right-6 z-50">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div 
-                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 50, scale: 0.9 }}
-                        className="absolute bottom-20 right-0 w-80 md:w-96 bg-[#0B0F19] border border-shinobi-gold/30 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
+                        exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute bottom-20 right-0 w-80 md:w-96 bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col border-t-4 border-t-[#FBE000]"
                         style={{ height: '28rem' }}
                     >
                         {/* Header del Chat */}
-                        <div className="bg-gradient-to-r from-slate-900 to-[#0B0F19] border-b border-shinobi-gold/20 p-4 flex justify-between items-center">
+                        <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-shinobi-gold/10 border border-shinobi-gold/50 flex items-center justify-center text-lg animate-pulse">
-                                    🤖
-                                </div>
+                                <img src="/idea.png" alt="Tutor IA" className="w-9 h-9 object-contain drop-shadow-sm" />
                                 <div>
-                                    <h3 className="font-scholar text-shinobi-gold text-xs uppercase tracking-widest">Oráculo IA</h3>
-                                    <p className="text-[9px] text-emerald-400 font-bold tracking-widest uppercase">Conexión Activa</p>
+                                    <h3 className="text-[#0A3D62] font-bold text-sm uppercase tracking-wider">Tutor IA</h3>
+                                    <p className="text-[10px] text-green-600 font-bold uppercase tracking-widest flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                        En línea
+                                    </p>
                                 </div>
                             </div>
-                            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
-                                ✖
+                            <button 
+                                onClick={() => setIsOpen(false)} 
+                                className="text-slate-400 hover:text-[#0A3D62] hover:bg-slate-200 p-1.5 rounded-lg transition-colors"
+                                aria-label="Cerrar chat"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
                             </button>
                         </div>
 
                         {/* Área de Mensajes */}
-                        <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-shinobi-gold/20 scrollbar-track-transparent">
+                        <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
                             {historial.map((msg, i) => (
                                 <div key={i} className={`flex ${msg.rol === 'usuario' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed ${
+                                    <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm ${
                                         msg.rol === 'usuario' 
-                                            ? 'bg-shinobi-gold text-black rounded-tr-sm font-medium' 
-                                            : 'bg-slate-800/80 border border-white/5 text-slate-300 rounded-tl-sm'
+                                            ? 'bg-[#0A3D62] text-white rounded-tr-sm' 
+                                            : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
                                     }`}>
                                         {msg.texto}
                                     </div>
                                 </div>
                             ))}
+                            
                             {cargando && (
                                 <div className="flex justify-start">
-                                    <div className="bg-slate-800/80 border border-white/5 p-3 rounded-2xl rounded-tl-sm flex gap-2">
-                                        <span className="w-2 h-2 bg-shinobi-gold rounded-full animate-bounce"></span>
-                                        <span className="w-2 h-2 bg-shinobi-gold rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-                                        <span className="w-2 h-2 bg-shinobi-gold rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+                                    <div className="bg-white border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm flex gap-1.5 shadow-sm">
+                                        <span className="w-2 h-2 bg-[#0A3D62] rounded-full animate-bounce"></span>
+                                        <span className="w-2 h-2 bg-[#0A3D62] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></span>
+                                        <span className="w-2 h-2 bg-[#0A3D62] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></span>
                                     </div>
                                 </div>
                             )}
                         </div>
 
                         {/* Input de Mensaje */}
-                        <form onSubmit={enviarMensaje} className="p-3 border-t border-white/5 bg-slate-900/50">
+                        <form onSubmit={enviarMensaje} className="p-4 border-t border-slate-200 bg-white rounded-b-3xl">
                             <div className="relative">
                                 <input 
                                     type="text" 
                                     value={mensaje}
                                     onChange={(e) => setMensaje(e.target.value)}
-                                    placeholder="Pregunta tu duda al maestro..."
-                                    className="w-full bg-[#05070A] border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-white focus:outline-none focus:border-shinobi-gold/50 transition-colors placeholder:text-slate-600"
+                                    placeholder="Escribe tu duda aquí..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-4 pr-12 text-sm text-slate-800 focus:outline-none focus:border-[#0A3D62] focus:ring-1 focus:ring-[#0A3D62] transition-all placeholder:text-slate-400"
                                     disabled={cargando}
                                 />
                                 <button 
                                     type="submit" 
                                     disabled={cargando || !mensaje.trim()}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-shinobi-gold text-black rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-[#0A3D62] text-white rounded-lg hover:bg-[#083252] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                    aria-label="Enviar mensaje"
                                 >
-                                    ➤
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
                                 </button>
                             </div>
                         </form>
@@ -118,16 +130,25 @@ const TutorOraculo = ({ idPreguntaActual }) => {
                 )}
             </AnimatePresence>
 
-            {/* Botón Flotante */}
+            {/* Botón Flotante (FAB) */}
             <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 rounded-full shadow-[0_0_20px_rgba(197,160,89,0.3)] flex items-center justify-center text-2xl border-2 transition-colors ${
-                    isOpen ? 'bg-slate-900 border-shinobi-gold text-shinobi-gold' : 'bg-shinobi-gold border-shinobi-gold text-black hover:bg-white hover:border-white'
+                className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center border-2 transition-all duration-300 ${
+                    isOpen 
+                        ? 'bg-white border-slate-200 text-[#0A3D62] shadow-xl' 
+                        : 'bg-[#0A3D62] border-[#0A3D62] text-white hover:bg-[#083252]'
                 }`}
+                aria-label={isOpen ? "Cerrar tutor" : "Abrir tutor IA"}
             >
-                {isOpen ? '💬' : '🤖'}
+                {isOpen ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                ) : (
+                    <img src="/MASCOTA CABEZA.png" alt="Abrir Tutor" className="w-8 h-8 object-contain drop-shadow-sm" />
+                )}
             </motion.button>
         </div>
     );

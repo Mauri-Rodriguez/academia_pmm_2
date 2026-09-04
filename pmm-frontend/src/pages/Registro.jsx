@@ -91,7 +91,7 @@ const Registro = () => {
                 
                 {/* Mascota */}
                 <div className="flex justify-center mb-6">
-                    <img src="/mascota.png" alt="Mascota PMM" className="w-28 h-28 object-contain drop-shadow-lg" />
+                    <img src="/MASCOTA CABEZA.png" alt="Mascota PMM" className="w-28 h-28 object-contain drop-shadow-lg" />
                 </div>
 
                 <div className="text-center mb-8">
@@ -152,18 +152,6 @@ const Registro = () => {
                         className="w-full bg-[#0A3D62] text-white font-bold py-3.5 rounded-xl hover:bg-[#083252] transition-all uppercase text-sm tracking-wide shadow-md hover:shadow-xl disabled:opacity-50">
                         {loading ? 'Registrando...' : 'Confirmar Registro'}
                     </button>
-
-                    {/* Misión y Gamificación (Estilo Duolingo) */}
-                    <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl mt-4 border border-slate-200">
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl">🎯</span>
-                            <div>
-                                <p className="text-xs font-bold text-slate-700">Completa tu primer diagnóstico</p>
-                                <p className="text-[10px] text-slate-400">Gana 100 XP</p>
-                            </div>
-                        </div>
-                        <div className="bg-[#0A3D62] text-white text-[10px] font-bold px-3 py-1 rounded-full">Misión</div>
-                    </div>
 
                     {/* Insignias por desbloquear */}
                     <div className="flex justify-center gap-4 mt-4">

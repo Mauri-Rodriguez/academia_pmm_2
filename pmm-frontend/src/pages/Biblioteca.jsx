@@ -23,40 +23,51 @@ const Biblioteca = () => {
     }, []);
 
     if (loading) return (
-        <div className="min-h-screen bg-[#05070A] flex flex-col items-center justify-center">
-            <div className="w-16 h-16 border-4 border-shinobi-gold/20 border-t-shinobi-gold rounded-full animate-spin mb-4"></div>
-            <div className="text-shinobi-gold font-scholar animate-pulse tracking-[0.5em] text-[10px]">Consultando Archivos Prohibidos...</div>
+        <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
+            <img src="/pensando.png" alt="Cargando recursos" className="w-32 h-32 object-contain animate-bounce mb-4" />
+            <div className="text-[#0A3D62] font-bold animate-pulse tracking-[0.3em] text-xs uppercase">Cargando recursos de aprendizaje...</div>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-[#05070A] p-6 md:p-12 text-slate-300 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,rgba(212,175,55,0.05),transparent)] pointer-events-none"></div>
+        <div className="min-h-screen bg-slate-100 p-4 md:p-10 lg:p-16 text-slate-800 relative overflow-hidden">
+            {/* Elementos decorativos de fondo sutiles */}
+            <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-[#FBE000]/10 blur-[120px] rounded-full -z-10"></div>
+            <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-[#0A3D62]/5 blur-[100px] rounded-full -z-10"></div>
 
             <div className="max-w-7xl mx-auto relative z-10">
                 
                 <button 
                     onClick={() => navigate('/estudiante/dashboard')}
-                    className="mb-10 flex items-center gap-3 text-shinobi-gold/60 hover:text-shinobi-gold transition-all font-scholar text-[10px] uppercase tracking-[0.4em] group"
+                    className="mb-8 flex items-center gap-2 text-[#0A3D62] hover:text-[#2E5AAC] transition-all font-bold text-[10px] uppercase tracking-[0.2em] group"
                 >
-                    <span className="text-xl group-hover:-translate-x-2 transition-transform">←</span>
-                    Volver al Dojo
+                    <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                    Volver al Panel
                 </button>
 
-                <header className="mb-16">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="h-[1px] w-12 bg-shinobi-gold/50"></div>
-                        <span className="text-shinobi-gold font-scholar text-xs tracking-[0.4em] uppercase opacity-70">Repositorio de Sabiduría</span>
+                <header className="mb-10 md:mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="flex items-center gap-3 mb-3 justify-center md:justify-start">
+                            <div className="h-[2px] w-8 bg-[#FBE000]"></div>
+                            <span className="text-[#0A3D62] font-bold text-xs tracking-[0.3em] uppercase opacity-80">Centro de Recursos</span>
+                        </div>
+                        <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight uppercase leading-tight">
+                            Biblioteca de <span className="text-[#0A3D62]">Aprendizaje</span>
+                        </h1>
+                        <p className="text-slate-500 text-sm md:text-base mt-4 max-w-2xl leading-relaxed mx-auto md:mx-0">
+                            "El conocimiento es la herramienta más poderosa. Estudia los materiales disponibles para fortalecer tus fundamentos antes de avanzar al siguiente módulo."
+                        </p>
                     </div>
-                    <h1 className="text-5xl font-scholar text-white tracking-tighter uppercase leading-none">
-                        📜 Biblioteca de <span className="text-shinobi-gold">Pergaminos</span>
-                    </h1>
-                    <p className="text-slate-500 font-modern italic text-sm mt-4 max-w-2xl">
-                        "El conocimiento es la técnica definitiva. Estudia los manuscritos para perfeccionar tu chakra matemático antes de la batalla."
-                    </p>
+                    
+                    {/* Mascota 3D de Biblioteca (CORREGIDO PARA MÓVIL) */}
+                    <img 
+                        src="/leyendo un libro robot.png" 
+                        alt="Mascota estudiando" 
+                        className="w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-xl block mx-auto md:mx-0"
+                    />
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {pergaminos.length > 0 ? (
                         pergaminos.map((p) => {
                             // 🚩 Sincronizado con nombres de tu BD: tipo_recurso y url_recurso
@@ -65,60 +76,70 @@ const Biblioteca = () => {
                             return (
                                 <div 
                                     key={p.id_pergamino} 
-                                    className="group relative bg-[#0E121C]/60 border border-white/5 p-8 rounded-[2rem] hover:bg-[#121826] hover:-translate-y-2 transition-all duration-500 shadow-2xl overflow-hidden flex flex-col justify-between h-[450px]"
+                                    className="group relative bg-white border border-slate-200 p-6 md:p-8 rounded-3xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-lg overflow-hidden flex flex-col h-full border-t-4 border-t-[#FBE000]"
                                 >
-                                    <div className={`absolute -top-24 -right-24 w-48 h-48 blur-[80px] opacity-0 group-hover:opacity-10 transition-opacity ${esVideo ? 'bg-rose-500' : 'bg-shinobi-gold'}`}></div>
+                                    {/* Efecto de brillo sutil al hacer hover */}
+                                    <div className={`absolute -top-24 -right-24 w-48 h-48 blur-[80px] opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${esVideo ? 'bg-[#2E5AAC]' : 'bg-[#FBE000]'}`}></div>
 
-                                    <div>
-                                        <div className="flex justify-between items-start mb-6">
-                                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${esVideo ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-shinobi-gold/10 text-shinobi-gold border-shinobi-gold/20'}`}>
-                                                {esVideo ? '📺 Video Tutorial' : (p.categoria || '📜 Pergamino')}
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="flex justify-between items-start mb-5">
+                                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${
+                                                esVideo 
+                                                    ? 'bg-[#2E5AAC]/10 text-[#2E5AAC] border-[#2E5AAC]/20' 
+                                                    : 'bg-[#FBE000]/10 text-[#0A3D62] border-[#FBE000]/30'
+                                            }`}>
+                                                {esVideo ? '▶ Video Tutorial' : '📄 Material de Lectura'}
                                             </span>
-                                            <div className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter bg-black/40 px-2 py-1 rounded border border-white/5">
-                                                {p.nivel_requerido}
+                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                                                {p.nivel_requerido || 'General'}
                                             </div>
                                         </div>
 
-                                        <h3 className="text-2xl font-scholar text-white mb-4 group-hover:text-shinobi-gold transition-colors leading-tight line-clamp-2">
+                                        <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-3 group-hover:text-[#0A3D62] transition-colors leading-tight line-clamp-2">
                                             {p.titulo}
                                         </h3>
-                                        <p className="text-xs text-slate-400 mb-8 leading-relaxed line-clamp-4 italic opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <p className="text-xs md:text-sm text-slate-500 mb-6 leading-relaxed line-clamp-4 italic flex-1">
                                             "{p.descripcion}"
                                         </p>
                                     </div>
 
                                     <button 
                                         onClick={() => window.open(p.url_recurso, '_blank')}
-                                        className={`w-full py-4 rounded-xl font-scholar text-[10px] tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 border shadow-lg
+                                        className={`w-full py-3.5 rounded-xl font-bold text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95
                                             ${esVideo 
-                                                ? 'bg-rose-600/10 border-rose-600/30 text-rose-500 hover:bg-rose-600 hover:text-white' 
-                                                : 'bg-shinobi-gold/10 border-shinobi-gold/30 text-shinobi-gold hover:bg-shinobi-gold hover:text-black'}`}
+                                                ? 'bg-[#2E5AAC] text-white hover:bg-[#1e4a8a]' 
+                                                : 'bg-[#0A3D62] text-white hover:bg-[#083252]'}`}
                                     >
                                         {esVideo ? (
-                                            <><span>▶</span> REPRODUCIR ENTRENAMIENTO</>
+                                            <><span>▶</span> Ver Video</>
                                         ) : (
-                                            <><span>📜</span> DESENROLLAR MANUSCRITO</>
+                                            <><span>📄</span> Abrir Recurso</>
                                         )}
                                     </button>
                                 </div>
                             );
                         })
                     ) : (
-                        <div className="col-span-full bg-[#0E121C]/40 border-2 border-dashed border-white/5 p-20 text-center rounded-[3rem]">
-                            <span className="text-4xl mb-4 block opacity-20">📂</span>
-                            <p className="text-slate-500 font-scholar uppercase text-sm tracking-widest">No hay pergaminos disponibles para tu rango actual.</p>
-                            <p className="text-[10px] text-slate-700 mt-2 uppercase tracking-widest italic">Sigue entrenando para desbloquear archivos prohibidos.</p>
+                        <div className="col-span-full bg-white border-2 border-dashed border-slate-300 p-12 md:p-20 text-center rounded-3xl shadow-sm">
+                            <img src="/estudiando.png" alt="Sin recursos" className="w-24 h-24 object-contain mx-auto mb-4 opacity-60" />
+                            <p className="text-slate-700 font-bold uppercase text-sm tracking-widest mb-2">No hay recursos disponibles para tu nivel actual.</p>
+                            <p className="text-slate-400 text-xs md:text-sm max-w-md mx-auto leading-relaxed">
+                                ¡Sigue completando módulos y mejorando tu rango para desbloquear nuevo material de estudio!
+                            </p>
                         </div>
                     )}
                 </div>
 
-                <footer className="mt-32 mb-10 text-center opacity-40 hover:opacity-100 transition-opacity duration-700">
-                    <div className="max-w-3xl mx-auto bg-white/5 border border-white/5 p-8 rounded-3xl backdrop-blur-sm">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest leading-loose">
-                            ⚠️ <span className="text-shinobi-gold font-bold">Protocolo de Curaduría:</span> Los pergaminos vinculados son propiedad de maestros externos 
-                            (<span className="text-slate-300">Khan Academy, YouTube, WolframAlpha</span>). 
-                            La <span className="text-shinobi-gold">Academia PMM</span> facilita el acceso al conocimiento y no reclama derechos sobre el material externo.
-                        </p>
+                <footer className="mt-16 md:mt-24 mb-8">
+                    <div className="max-w-4xl mx-auto bg-white border border-slate-200 p-6 md:p-8 rounded-3xl shadow-sm flex flex-col md:flex-row items-center gap-4 md:gap-6 text-center md:text-left">
+                        <img src="/idea.png" alt="Información" className="w-12 h-12 object-contain flex-shrink-0" />
+                        <div>
+                            <p className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wider leading-relaxed">
+                                <span className="text-[#0A3D62] font-black">Protocolo de Curaduría:</span> Los recursos vinculados son propiedad de sus respectivos creadores 
+                                (<span className="text-slate-700 font-medium">Khan Academy, YouTube, WolframAlpha</span>). 
+                                La <span className="text-[#0A3D62] font-black">Plataforma PMM</span> facilita el acceso al conocimiento con fines educativos y no reclama derechos sobre el material externo.
+                            </p>
+                        </div>
                     </div>
                 </footer>
             </div>

@@ -7,6 +7,11 @@ import AchievementToast from './AchievementToast';
 import AscensoModal from './AscensoModal';
 import TutorOraculo from '../components/TutorOraculo';
 
+// 🚩 IMPORTS PARA MATEMÁTICAS PROFESIONALES (KaTeX)
+import 'katex/dist/katex.min.css';
+// En la parte superior de ModuloEstudio.jsx
+import { renderizarConMatematicas } from '../utils/mathConverter.jsx'; 
+
 // 🚩 HELPER: Tooltip de Ayuda Contextual (Heurísticas #6 y #10)
 const InfoTooltip = ({ text }) => (
     <div className="group relative inline-flex items-center">
@@ -24,7 +29,7 @@ const ModuloEstudio = () => {
     const { id_modulo } = useParams();
     const navigate = useNavigate();
 
-    // --- ESTADOS (Lógica intacta) ---
+    // --- ESTADOS ---
     const [ejercicios, setEjercicios] = useState([]);
     const [indice, setIndice] = useState(0);
     const [completado, setCompletado] = useState(false);
@@ -36,22 +41,18 @@ const ModuloEstudio = () => {
     const [mostrarAscenso, setMostrarAscenso] = useState(false);
     const [datosAscenso, setDatosAscenso] = useState(null);
     const [insigniaNueva, setInsigniaNueva] = useState(null);
-    
-    // 🚩 NUEVO: Estado para confirmación de salida (Heurística #3)
     const [mostrarConfirmacionSalida, setMostrarConfirmacionSalida] = useState(false);
 
-    // 🚩 CELEBRACIÓN: Colores actualizados a la paleta oficial
+    // 🚩 CELEBRACIÓN
     const dispararConfetiVictoria = () => {
         const duration = 4 * 1000;
         const animationEnd = Date.now() + duration;
         const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 200 };
-
         const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
         const interval = setInterval(function() {
             const timeLeft = animationEnd - Date.now();
             if (timeLeft <= 0) return clearInterval(interval);
-
             const particleCount = 50 * (timeLeft / duration);
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#FBE000', '#0A3D62', '#FFFFFF'] });
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#FBE000', '#2E5AAC', '#FFFFFF'] });
@@ -107,18 +108,11 @@ const ModuloEstudio = () => {
 
     const procesarFinalizacionOficial = async () => {
         try {
-            const res = await api.post('/api/estudiante/finalizar', { 
-                id_modulo, 
-                puntaje_final: ejercicios.length 
-            });
-
+            const res = await api.post('/api/estudiante/finalizar', { id_modulo, puntaje_final: ejercicios.length });
             if (res.data.insignia) {
                 setInsigniaNueva(res.data.insignia);
                 dispararConfetiVictoria(); 
-                setTimeout(() => {
-                    setInsigniaNueva(null);
-                    manejarFlujoFinal(res.data);
-                }, 4500);
+                setTimeout(() => { setInsigniaNueva(null); manejarFlujoFinal(res.data); }, 4500);
             } else {
                 manejarFlujoFinal(res.data);
             }
@@ -132,7 +126,6 @@ const ModuloEstudio = () => {
     const responder = async (itemSeleccionado) => {
         if (bloqueado) return;
         const ejActual = ejercicios[indice];
-        
         const letraUsuario = itemSeleccionado.letra.toLowerCase().trim();
         const letraCorrectaDB = String(ejActual.respuesta_correcta).toLowerCase().replace('opcion_', '').trim();
 
@@ -144,29 +137,21 @@ const ModuloEstudio = () => {
             
             if (!modoRepaso && !esFinDeModulo) {
                 const nuevoPorcentaje = Math.round((nuevoIndice / ejercicios.length) * 100);
-                try {
-                    await api.post('/api/estudiante/actualizar-progreso', { id_modulo, porcentaje: nuevoPorcentaje });
-                } catch (err) {
-                    console.error("Error guardando progreso:", err);
-                }
+                try { await api.post('/api/estudiante/actualizar-progreso', { id_modulo, porcentaje: nuevoPorcentaje }); } 
+                catch (err) { console.error("Error guardando progreso:", err); }
             }
 
             if (esFinDeModulo) {
                 dispararLogro(modoRepaso ? "CONOCIMIENTO REAFIRMADO" : "MÓDULO DOMINADO", "Actividad completada con éxito");
                 setTimeout(() => procesarFinalizacionOficial(), 1500);
             } else {
-                if (nuevoIndice === 5 && !modoRepaso) {
-                    dispararLogro("RACHA DE ESTUDIO", "¡5 respuestas correctas seguidas!");
-                }
+                if (nuevoIndice === 5 && !modoRepaso) dispararLogro("RACHA DE ESTUDIO", "¡5 respuestas correctas seguidas!");
                 setIndice(nuevoIndice);
             }
             setBloqueado(false);
         } else {
             try {
-                const res = await api.post('/api/estudiante/registrar-fallo', {
-                    id_pregunta: ejActual.id_ejercicio,
-                    respuesta_dada: itemSeleccionado.campo 
-                });
+                const res = await api.post('/api/estudiante/registrar-fallo', { id_pregunta: ejActual.id_ejercicio, respuesta_dada: itemSeleccionado.campo });
                 setModalIA({ visible: true, explicacion: res.data.explicacion_ia || "Revisa el planteamiento e intenta de nuevo." });
             } catch (err) {
                 setModalIA({ visible: true, explicacion: "El sistema está procesando tu respuesta. Revisa tu lógica." });
@@ -176,13 +161,9 @@ const ModuloEstudio = () => {
         }
     };
 
-    // 🚩 Manejo seguro de salida (Heurística #3)
     const handleIntentoSalida = () => {
-        if (indice > 0 && !completado) {
-            setMostrarConfirmacionSalida(true);
-        } else {
-            navigate('/estudiante/dashboard');
-        }
+        if (indice > 0 && !completado) setMostrarConfirmacionSalida(true);
+        else navigate('/estudiante/dashboard');
     };
 
     if (cargando) return (
@@ -197,16 +178,10 @@ const ModuloEstudio = () => {
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-md w-full bg-white border border-slate-200 p-8 md:p-12 rounded-3xl shadow-xl border-t-4 border-t-[#FBE000]">
                 <img src="/logro.png" alt="Completado" className="w-32 h-32 object-contain mx-auto mb-6 animate-bounce" />
                 <h1 className="text-3xl font-extrabold text-[#0A3D62] tracking-tight uppercase mb-4">¡Módulo Completado!</h1>
-                <p className="text-slate-500 text-sm md:text-base mb-10 leading-relaxed">
-                    Has dominado los conceptos de este módulo. ¿Deseas repasar o volver a tu panel principal?
-                </p>
+                <p className="text-slate-500 text-sm md:text-base mb-10 leading-relaxed">Has dominado los conceptos de este módulo. ¿Deseas repasar o volver a tu panel principal?</p>
                 <div className="space-y-4">
-                    <button onClick={() => { navigate('/estudiante/dashboard'); window.location.reload(); }} className="w-full bg-[#0A3D62] text-white px-8 py-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 shadow-md hover:bg-[#083252]">
-                        Volver al Panel
-                    </button>
-                    <button onClick={iniciarRepaso} className="w-full bg-slate-100 text-[#0A3D62] border border-slate-200 px-8 py-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:bg-slate-200">
-                        🔄 Repasar de nuevo
-                    </button>
+                    <button onClick={() => { navigate('/estudiante/dashboard'); window.location.reload(); }} className="w-full bg-[#0A3D62] text-white px-8 py-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 shadow-md hover:bg-[#083252]">Volver al Panel</button>
+                    <button onClick={iniciarRepaso} className="w-full bg-slate-100 text-[#0A3D62] border border-slate-200 px-8 py-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:bg-slate-200">🔄 Repasar de nuevo</button>
                 </div>
             </motion.div>
         </div>
@@ -218,92 +193,60 @@ const ModuloEstudio = () => {
     return (
         <div className="min-h-screen bg-slate-100 text-slate-800 relative overflow-hidden pb-20 selection:bg-[#FBE000]/30">
             
-            {/* 🚩 OVERLAY ÉPICO: INSIGNIA OBTENIDA */}
+            {/* OVERLAY ÉPICO: INSIGNIA OBTENIDA */}
             <AnimatePresence>
                 {insigniaNueva && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/80 backdrop-blur-md">
                         <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} className="text-center p-6">
                             <div className="relative inline-block mb-10">
                                 <div className="absolute -inset-10 bg-[#FBE000]/30 blur-3xl rounded-full animate-pulse"></div>
-                                <span className="text-[120px] md:text-[180px] relative z-10 drop-shadow-[0_0_50px_rgba(251,224,0,0.6)] block leading-none">
-                                    {insigniaNueva.url_imagen || '🏅'}
-                                </span>
+                                <span className="text-[120px] md:text-[180px] relative z-10 drop-shadow-[0_0_50px_rgba(251,224,0,0.6)] block leading-none">{insigniaNueva.url_imagen || '🏅'}</span>
                             </div>
                             <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight uppercase mb-2">¡Nueva Insignia!</h2>
                             <p className="text-[#FBE000] font-black tracking-[0.3em] text-sm md:text-xl uppercase">{insigniaNueva.nombre}</p>
-                            <p className="text-slate-300 font-medium text-xs mt-4 uppercase tracking-widest">
-                                Insignia añadida a tu perfil
-                            </p>
+                            <p className="text-slate-300 font-medium text-xs mt-4 uppercase tracking-widest">Insignia añadida a tu perfil</p>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* MODAL DE ASCENSO */}
-            {mostrarAscenso && (
-                <AscensoModal datos={datosAscenso} onClose={() => { setMostrarAscenso(false); window.location.href = '/estudiante/dashboard'; }} />
-            )}
+            {mostrarAscenso && <AscensoModal datos={datosAscenso} onClose={() => { setMostrarAscenso(false); window.location.href = '/estudiante/dashboard'; }} />}
 
-            {/* 🚩 MODAL DE CONFIRMACIÓN DE SALIDA (Heurística #3: Control y libertad) */}
+            {/* MODAL DE CONFIRMACIÓN DE SALIDA (Heurística #3) */}
             <AnimatePresence>
                 {mostrarConfirmacionSalida && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0 }} 
-                            animate={{ scale: 1, opacity: 1 }} 
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl max-w-md w-full text-center shadow-2xl border-t-4 border-t-[#FBE000]"
-                        >
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl max-w-md w-full text-center shadow-2xl border-t-4 border-t-[#FBE000]">
                             <img src="/pensando.png" alt="Confirmar salida" className="w-20 h-20 object-contain mx-auto mb-4" />
                             <h3 className="text-xl font-bold text-slate-900 mb-2">¿Deseas salir del módulo?</h3>
-                            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                                Tu progreso actual ya ha sido guardado. Puedes retomar este ejercicio más tarde desde tu panel principal sin perder tu avance.
-                            </p>
+                            <p className="text-sm text-slate-600 mb-6 leading-relaxed">Tu progreso actual ya ha sido guardado. Puedes retomar este ejercicio más tarde desde tu panel principal sin perder tu avance.</p>
                             <div className="flex flex-col sm:flex-row gap-3">
-                                <button 
-                                    onClick={() => setMostrarConfirmacionSalida(false)}
-                                    className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-all text-sm uppercase tracking-wider"
-                                >
-                                    Seguir estudiando
-                                </button>
-                                <button 
-                                    onClick={() => navigate('/estudiante/dashboard')}
-                                    className="flex-1 bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-xl hover:bg-red-100 transition-all text-sm uppercase tracking-wider"
-                                >
-                                    Salir al Panel
-                                </button>
+                                <button onClick={() => setMostrarConfirmacionSalida(false)} className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-all text-sm uppercase tracking-wider">Seguir estudiando</button>
+                                <button onClick={() => navigate('/estudiante/dashboard')} className="flex-1 bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-xl hover:bg-red-100 transition-all text-sm uppercase tracking-wider">Salir al Panel</button>
                             </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
 
-            {/* NAVBAR */}
+            {/* NAVBAR MODO ENFOQUE (Heurística #8: Minimalista) */}
             <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-6 py-4 shadow-sm mb-8 md:mb-12">
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3 md:gap-4">
-                        <button 
-                            onClick={handleIntentoSalida} 
-                            className="p-2.5 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-600 text-[#0A3D62] transition-all border border-slate-200 group"
-                            title="Salir del módulo"
-                        >
+                        <button onClick={handleIntentoSalida} className="p-2.5 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-600 text-[#0A3D62] transition-all border border-slate-200 group" title="Salir del módulo">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                         </button>
-                        <h1 className="text-base md:text-xl font-bold text-[#0A3D62] tracking-tight uppercase">
-                            Módulo de <span className="text-[#FBE000] drop-shadow-sm">Estudio</span>
-                        </h1>
+                        <h1 className="text-base md:text-xl font-bold text-[#0A3D62] tracking-tight uppercase">Módulo de <span className="text-[#FBE000] drop-shadow-sm">Estudio</span></h1>
                     </div>
                 </div>
             </nav>
 
-            <AnimatePresence>
-                {logroActivo && <AchievementToast titulo={logroActivo.titulo} descripcion={logroActivo.descripcion} />}
-            </AnimatePresence>
+            <AnimatePresence>{logroActivo && <AchievementToast titulo={logroActivo.titulo} descripcion={logroActivo.descripcion} />}</AnimatePresence>
 
             <div className="max-w-3xl mx-auto px-4 md:px-6">
-                {/* Barra de Progreso con Ayuda Contextual (Heurística #10) */}
+                {/* Barra de Progreso con Ayuda Contextual */}
                 <div className="mb-8 md:mb-10">
                     <div className="flex justify-between items-end mb-3">
                         <div className="text-left flex items-center gap-2">
@@ -317,11 +260,12 @@ const ModuloEstudio = () => {
                     </div>
                 </div>
 
-                {/* Tarjeta de Pregunta */}
+                {/* 🚩 Tarjeta de Pregunta con Renderizado KaTeX */}
                 <motion.div key={indice} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 p-6 md:p-10 rounded-3xl shadow-lg border-t-4 border-t-[#FBE000] relative">
                     <div className="mb-8 md:mb-10 text-center">
                         <h3 className="text-xl md:text-3xl font-bold text-slate-900 leading-snug">
-                            {ejActual?.pregunta}
+                            {/* 🚩 Aquí se aplica la conversión automática de matemáticas */}
+                            {renderizarConMatematicas(ejActual?.pregunta)}
                         </h3>
                     </div>
 
@@ -339,7 +283,8 @@ const ModuloEstudio = () => {
                                         <span className="text-white font-black text-lg group-hover:text-[#0A3D62] transition-colors">{letra}</span>
                                     </div>
                                     <span className="text-slate-700 text-sm md:text-base font-medium group-hover:text-slate-900 transition-colors flex-1">
-                                        {ejActual?.[campo]}
+                                        {/* 🚩 Aquí se aplica la conversión automática a las opciones */}
+                                        {renderizarConMatematicas(ejActual?.[campo])}
                                     </span>
                                 </button>
                             );
@@ -356,12 +301,7 @@ const ModuloEstudio = () => {
                             <img src="/idea.png" alt="Sugerencia" className="w-20 h-20 object-contain mx-auto mb-4" />
                             <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest mb-3">Oportunidad de Aprendizaje</h4>
                             <p className="text-slate-600 italic mb-8 leading-relaxed text-sm md:text-base">"{modalIA.explicacion}"</p>
-                            <button 
-                                onClick={() => setModalIA({ visible: false, explicacion: '' })} 
-                                className="w-full bg-[#0A3D62] hover:bg-[#083252] text-white p-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md"
-                            >
-                                Entendido, continuar
-                            </button>
+                            <button onClick={() => setModalIA({ visible: false, explicacion: '' })} className="w-full bg-[#0A3D62] hover:bg-[#083252] text-white p-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md">Entendido, continuar</button>
                         </motion.div>
                     </div>
                 )}

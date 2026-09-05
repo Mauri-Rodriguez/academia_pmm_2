@@ -27,8 +27,6 @@ const DashboardEstudiante = () => {
     const [errores, setErrores] = useState([]);
     const [sugerenciaIA, setSugerenciaIA] = useState(null);
     const [isExpanded, setIsExpanded] = useState(false);
-    
-    // 🚩 NUEVO: Estado para el modal de cierre de sesión personalizado
     const [mostrarModalLogout, setMostrarModalLogout] = useState(false);
 
     const [nombreUsuario, setNombreUsuario] = useState(localStorage.getItem('user_name') || 'Estudiante');
@@ -145,6 +143,19 @@ const DashboardEstudiante = () => {
         index === self.findIndex((m) => m.id_modulo === modulo.id_modulo)
     ) || [];
 
+    // 🚩 NUEVO 1: Lógica para determinar el siguiente rango (Gamificación)
+    const getNextRank = (currentRank) => {
+        const r = currentRank?.toLowerCase() || '';
+        if (r.includes('genin') || r.includes('básico') || r.includes('iniciado')) return 'Chunin (Guerrero)';
+        if (r.includes('chunin') || r.includes('intermedio') || r.includes('guerrero')) return 'Jonin (Maestro)';
+        if (r.includes('jonin') || r.includes('avanzado') || r.includes('maestro')) return 'Kage (Leyenda)';
+        return 'Experto';
+    };
+    const siguienteRango = getNextRank(datos?.estadisticas?.rango_actual);
+
+    // 🚩 NUEVO 2: Detectar el módulo en el que el estudiante se quedó (Quick Resume)
+    const moduloEnProgreso = rutaUnica.find(m => m.porcentaje_avance > 0 && m.porcentaje_avance < 100) || rutaUnica.find(m => m.porcentaje_avance === 0) || rutaUnica[0];
+
     const navItems = [
         { label: 'INICIO', path: '/estudiante/dashboard', icon: '📊' },
         { label: 'PERFIL', path: '/estudiante/perfil', icon: '👤' },
@@ -220,7 +231,6 @@ const DashboardEstudiante = () => {
                 ${isExpanded ? 'w-72 shadow-2xl' : 'w-24'}`}
             >
                 <button
-                    // 🚩 HEURÍSTICA #3: Modal personalizado en lugar de window.confirm
                     onClick={(e) => {
                         e.preventDefault();
                         setMostrarModalLogout(true);
@@ -309,6 +319,24 @@ const DashboardEstudiante = () => {
                         <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tighter leading-tight">
                             ¡Hola, <span className={`${configGlobal.color}`}>{nombreUsuario}</span>! 👋
                         </h1>
+                        
+                        {/* 🚩 MEJORA 1: Barra de Progreso hacia el Siguiente Rango (Heurística #1 y Gamificación) */}
+                        <div className="mt-4 max-w-md">
+                            <div className="flex justify-between items-end mb-1.5">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Progreso hacia <span className="text-[#0A3D62] font-black">{siguienteRango}</span>
+                                </span>
+                                <span className="text-[10px] font-black text-[#0A3D62]">{misionesCompletas} / {totalMisiones} Módulos</span>
+                            </div>
+                            <div className="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                                <motion.div 
+                                    initial={{ width: 0 }} 
+                                    animate={{ width: `${Math.min(100, Math.round((misionesCompletas / Math.max(totalMisiones, 1)) * 100))}%` }} 
+                                    transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
+                                    className="h-full bg-gradient-to-r from-[#FBE000] to-[#0A3D62] rounded-full" 
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="absolute top-0 right-0 md:relative flex items-center gap-2 md:gap-4 z-50">
@@ -316,7 +344,6 @@ const DashboardEstudiante = () => {
                             <CampanaNotificaciones />
                         </div>
                         <button
-                            // 🚩 HEURÍSTICA #3: Modal personalizado en lugar de window.confirm
                             onClick={() => setMostrarModalLogout(true)}
                             className="md:hidden flex flex-col items-center justify-center text-red-500/60 hover:text-red-500 transition-all active:scale-95 bg-red-50 w-10 h-10 rounded-xl border border-red-100"
                         >
@@ -364,6 +391,28 @@ const DashboardEstudiante = () => {
                     )}
                 </div>
 
+                {/* 🚩 MEJORA 2: Tarjeta "Retoma tu Racha" (Quick Resume - Heurísticas #6 y #7) */}
+                {moduloEnProgreso && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }} 
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-8 md:mb-10 bg-gradient-to-r from-[#0A3D62] to-[#2E5AAC] p-6 rounded-3xl text-white shadow-lg relative overflow-hidden group cursor-pointer hover:shadow-xl transition-all duration-300"
+                        onClick={() => navigate(`/estudiante/modulo/${moduloEnProgreso.id_modulo}`)}
+                    >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FBE000] mb-1">🚀 Retoma tu racha</p>
+                                <h3 className="text-xl md:text-2xl font-bold mb-2">{moduloEnProgreso.nombre_modulo}</h3>
+                                <p className="text-sm text-white/80">Estabas en el {moduloEnProgreso.porcentaje_avance}% de completado. ¡No pierdas el impulso!</p>
+                            </div>
+                            <button className="bg-[#FBE000] text-[#0A3D62] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-white transition-all shadow-md flex items-center gap-2 flex-shrink-0 active:scale-95">
+                                Continuar <span>→</span>
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* 🚩 SECCIÓN 2: LOGROS ACADÉMICOS */}
                 <div className="mb-8 md:mb-10 bg-white border border-slate-200 p-6 md:p-8 rounded-3xl shadow-xl relative">
                     <div className="flex flex-col sm:flex-row items-center sm:justify-between mb-6 md:mb-8 relative z-10 gap-4 text-center sm:text-left">
@@ -406,8 +455,6 @@ const DashboardEstudiante = () => {
 
                 {/* 🚩 SECCIÓN 3: ESTADÍSTICAS RÁPIDAS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 mb-10 md:mb-12">
-                    
-                    {/* 🔥 RACHA DE ESTUDIO */}
                     <div className="bg-white border border-slate-200 rounded-3xl relative group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-red-500">
                         <div className="p-5 md:p-6 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
@@ -426,7 +473,6 @@ const DashboardEstudiante = () => {
                         </div>
                     </div>
 
-                    {/* 🤔 DESEMPEÑO INICIAL */}
                     <div className="bg-white border border-slate-200 rounded-3xl relative group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-[#2E5AAC]">
                         <div className="p-5 md:p-6 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
@@ -445,7 +491,6 @@ const DashboardEstudiante = () => {
                         </div>
                     </div>
 
-                    {/* 😎 CATEGORÍA ACTUAL */}
                     <div className="bg-white border border-slate-200 rounded-3xl relative group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-emerald-500">
                         <div className="p-5 md:p-6 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
@@ -461,7 +506,6 @@ const DashboardEstudiante = () => {
                         </div>
                     </div>
 
-                    {/* 📈 PROGRESO GENERAL */}
                     <div className="bg-white border border-slate-200 rounded-3xl relative group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-md border-t-4 border-t-[#0A3D62]">
                         <div className="p-5 md:p-6 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
@@ -661,7 +705,7 @@ const DashboardEstudiante = () => {
                 </div>
             </main>
 
-            {/* 🚩 MODAL DE CONFIRMACIÓN DE CIERRE DE SESIÓN (Heurística #3 y #4) */}
+            {/* 🚩 MODAL DE CONFIRMACIÓN DE CIERRE DE SESIÓN */}
             <AnimatePresence>
                 {mostrarModalLogout && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">

@@ -29,7 +29,7 @@ const Login = () => {
         if (usuario.rol === 'docente') {
             navigate('/docente/dashboard');
             return;
-        }   
+        }
 
         if (usuario && (usuario.nombre || usuario.nombre_completo)) {
             const nombreCompleto = usuario.nombre || usuario.nombre_completo;
@@ -62,7 +62,7 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(''); 
+        setError('');
 
         const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!regexCorreo.test(correo)) {
@@ -89,11 +89,11 @@ const Login = () => {
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 md:p-8">
             {/* 🚩 CAMBIO: flex-col en móvil, md:flex-row en escritorio. min-h-auto en móvil, md:min-h-[650px] en escritorio */}
             <div className="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row w-full max-w-5xl md:min-h-[650px]">
-                
+
                 {/* === COLUMNA IZQUIERDA: MARCA Y MASCOTA === */}
                 {/* 🚩 CAMBIO: Visible en móvil pero más compacta (justify-center, min-h-[300px]). En escritorio vuelve a su tamaño original. */}
                 <div className="w-full md:w-1/2 bg-[#0A3D62] flex flex-col justify-center md:justify-between p-8 md:p-12 text-white relative overflow-hidden min-h-[300px] md:min-h-0">
-                    
+
                     {/* Texto superior */}
                     <div className="relative z-10 mb-6 md:mb-0">
                         <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Bienvenido a</p>
@@ -104,10 +104,10 @@ const Login = () => {
 
                     {/* Mascota (Escala según el dispositivo) */}
                     <div className="relative z-10 flex justify-center my-4 md:my-8">
-                        <img 
-                            src="/mascota.png" 
-                            alt="Mascota PMM" 
-                            className="w-40 h-40 md:w-72 md:h-72 object-contain drop-shadow-2xl transition-all duration-500" 
+                        <img
+                            src="/mascota.png"
+                            alt="Mascota PMM"
+                            className="w-40 h-40 md:w-72 md:h-72 object-contain drop-shadow-2xl transition-all duration-500"
                         />
                     </div>
 
@@ -142,25 +142,25 @@ const Login = () => {
                         <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">Correo electrónico</label>
-                                <input 
-                                    required 
-                                    type="email" 
-                                    value={correo} 
-                                    onChange={(e) => setCorreo(e.target.value)} 
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 md:p-3.5 focus:border-[#0A3D62] focus:bg-white focus:ring-2 focus:ring-[#0A3D62]/10 outline-none text-slate-900 transition-all" 
-                                    placeholder="usuario@uniajc.edu.co" 
+                                <input
+                                    required
+                                    type="email"
+                                    value={correo}
+                                    onChange={(e) => setCorreo(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 md:p-3.5 focus:border-[#0A3D62] focus:bg-white focus:ring-2 focus:ring-[#0A3D62]/10 outline-none text-slate-900 transition-all"
+                                    placeholder="usuario@uniajc.edu.co"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
-                                <input 
-                                    required 
-                                    type="password" 
-                                    value={password} 
-                                    onChange={(e) => setPassword(e.target.value)} 
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 md:p-3.5 focus:border-[#0A3D62] focus:bg-white focus:ring-2 focus:ring-[#0A3D62]/10 outline-none text-slate-900 transition-all" 
-                                    placeholder="••••••••" 
+                                <input
+                                    required
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 md:p-3.5 focus:border-[#0A3D62] focus:bg-white focus:ring-2 focus:ring-[#0A3D62]/10 outline-none text-slate-900 transition-all"
+                                    placeholder="••••••••"
                                 />
                                 <div className="flex justify-end mt-2">
                                     <Link to="/recuperar-password" className="text-xs text-slate-500 hover:text-[#0A3D62] font-semibold transition-colors">
@@ -169,9 +169,9 @@ const Login = () => {
                                 </div>
                             </div>
 
-                            <button 
-                                type="submit" 
-                                disabled={loading} 
+                            <button
+                                type="submit"
+                                disabled={loading}
                                 className="w-full bg-[#0A3D62] text-white font-bold py-3 md:py-3.5 rounded-xl hover:bg-[#083252] transition-all uppercase text-sm tracking-wide shadow-md disabled:opacity-70 disabled:cursor-not-allowed mt-2"
                             >
                                 {loading ? (
@@ -192,9 +192,9 @@ const Login = () => {
                             <div className="flex-1 h-px bg-slate-200"></div>
                         </div>
 
-                        <div className="flex justify-center w-full">
-                            {/* Contenedor responsive para el botón de Google */}
-                            <div className="w-full flex justify-center">
+                        {/* 🚩 CORRECCIÓN RESPONSIVE: Contenedor con z-index y eliminación del width porcentual */}
+                        <div className="flex justify-center w-full relative z-20">
+                            <div className="w-full flex justify-center max-w-[320px]">
                                 <GoogleLogin
                                     onSuccess={handleGoogleSuccess}
                                     onError={() => setError('Fallo en la conexión con Google.')}
@@ -202,12 +202,12 @@ const Login = () => {
                                     theme="outline"
                                     size="large"
                                     shape="pill"
-                                    width="100%"
+                                // ⚠️ No usar width="100%" aquí, rompe el hitbox táctil del iframe en móviles
                                 />
                             </div>
                         </div>
 
-                        <div className="text-center mt-6 md:mt-8">
+                        <div className="text-center mt-6 md:mt-8 relative z-20">
                             <p className="text-slate-500 text-sm font-medium">
                                 ¿No tienes cuenta? <Link to="/registro" className="text-[#0A3D62] font-bold hover:underline transition-all">Regístrate aquí</Link>
                             </p>

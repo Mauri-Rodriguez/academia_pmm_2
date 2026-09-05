@@ -100,7 +100,7 @@ const Diagnostico = () => {
 
                     <div className="bg-slate-50 rounded-2xl p-6 md:p-8 space-y-4 mb-8">
                         <p className="text-slate-700 leading-relaxed">
-                            Este cuestionario evaluará tu nivel actual en matemáticas para <strong>recomendarte ejercicios personalizados</strong> y adaptar tu ruta de aprendizaje.
+                            Este cuestionario evaluará tu nivel actual en matemáticas para <strong>proporcionarte una ruta de aprendizaje</strong> y apoyarte en tu desarrollo académico.
                         </p>
                         <p className="text-slate-700 leading-relaxed">
                             Responde con honestidad. Si no sabes una respuesta, confía en tu intuición.

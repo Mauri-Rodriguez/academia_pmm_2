@@ -18,6 +18,7 @@ const InfoTooltip = ({ text }) => (
 const Biblioteca = () => {
     const [pergaminos, setPergaminos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [busqueda, setBusqueda] = useState(''); // 🚩 NUEVO: Estado para el buscador
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -33,6 +34,17 @@ const Biblioteca = () => {
         };
         cargarBiblioteca();
     }, []);
+
+    // 🚩 NUEVO: Lógica de filtrado en tiempo real (Case insensitive)
+    const pergaminosFiltrados = pergaminos.filter(p => {
+        const termino = busqueda.toLowerCase();
+        return (
+            p.titulo?.toLowerCase().includes(termino) ||
+            p.descripcion?.toLowerCase().includes(termino) ||
+            p.nivel_requerido?.toLowerCase().includes(termino) ||
+            p.tipo_recurso?.toLowerCase().includes(termino)
+        );
+    });
 
     if (loading) return (
         <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
@@ -57,7 +69,7 @@ const Biblioteca = () => {
                     Volver al Panel
                 </button>
 
-                <header className="mb-10 md:mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <header className="mb-10 md:mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="flex-1 text-center md:text-left">
                         <div className="flex items-center gap-3 mb-3 justify-center md:justify-start">
                             <div className="h-[2px] w-8 bg-[#FBE000]"></div>
@@ -82,9 +94,36 @@ const Biblioteca = () => {
                     />
                 </header>
 
+                {/* 🚩 NUEVO: BUSCADOR DE RECURSOS (Heurísticas #6 y #7) */}
+                <div className="mb-8 md:mb-10 relative max-w-xl mx-auto md:mx-0">
+                    <div className="relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input 
+                            type="text"
+                            placeholder="Buscar por tema, título o nivel..."
+                            value={busqueda}
+                            onChange={(e) => setBusqueda(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl pl-12 pr-12 py-3.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#0A3D62] focus:ring-2 focus:ring-[#0A3D62]/10 outline-none transition-all shadow-sm"
+                        />
+                        {busqueda && (
+                            <button 
+                                onClick={() => setBusqueda('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors p-1"
+                                title="Limpiar búsqueda"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                    {pergaminos.length > 0 ? (
-                        pergaminos.map((p) => {
+                    {pergaminosFiltrados.length > 0 ? (
+                        pergaminosFiltrados.map((p) => {
                             const esVideo = p.tipo_recurso?.toLowerCase() === 'video' || p.url_recurso?.includes('youtube');
 
                             return (
@@ -116,7 +155,6 @@ const Biblioteca = () => {
                                         </p>
                                     </div>
 
-                                    {/* 🚩 HEURÍSTICA #1 y #2: Ícono de enlace externo para indicar salida de la plataforma */}
                                     <button 
                                         onClick={() => window.open(p.url_recurso, '_blank')}
                                         className={`w-full py-3.5 rounded-xl font-bold text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95
@@ -148,11 +186,27 @@ const Biblioteca = () => {
                         })
                     ) : (
                         <div className="col-span-full bg-white border-2 border-dashed border-slate-300 p-12 md:p-20 text-center rounded-3xl shadow-sm">
-                            <img src="/estudiando.png" alt="Sin recursos" className="w-24 h-24 object-contain mx-auto mb-4 opacity-60" />
-                            <p className="text-slate-700 font-bold uppercase text-sm tracking-widest mb-2">No hay recursos disponibles para tu nivel actual.</p>
-                            <p className="text-slate-400 text-xs md:text-sm max-w-md mx-auto leading-relaxed">
-                                ¡Sigue completando módulos y mejorando tu rango para desbloquear nuevo material de estudio!
+                            <img 
+                                src={busqueda ? "/pensando.png" : "/estudiando.png"} 
+                                alt={busqueda ? "Sin resultados" : "Sin recursos"} 
+                                className="w-24 h-24 object-contain mx-auto mb-4 opacity-60" 
+                            />
+                            <p className="text-slate-700 font-bold uppercase text-sm tracking-widest mb-2">
+                                {busqueda ? 'No se encontraron recursos' : 'No hay recursos disponibles para tu nivel actual.'}
                             </p>
+                            <p className="text-slate-400 text-xs md:text-sm max-w-md mx-auto leading-relaxed">
+                                {busqueda 
+                                    ? 'Intenta con otros términos de búsqueda o revisa más adelante cuando se agreguen nuevos materiales.' 
+                                    : '¡Sigue completando módulos y mejorando tu rango para desbloquear nuevo material de estudio!'}
+                            </p>
+                            {busqueda && (
+                                <button 
+                                    onClick={() => setBusqueda('')}
+                                    className="mt-6 text-[#0A3D62] font-bold text-xs uppercase tracking-wider hover:underline bg-[#0A3D62]/5 px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    Limpiar búsqueda
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

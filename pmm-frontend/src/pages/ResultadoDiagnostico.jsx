@@ -119,7 +119,7 @@ const ResultadoDiagnostico = () => {
                     {/* Mascota 3D Dinámica */}
                     <div className="flex justify-center mb-6">
                         <img 
-                            src={nivel.mascota} 
+                            src="/mascota.png"
                             alt="Mascota PMM" 
                             className="w-28 h-28 md:w-36 md:h-36 object-contain drop-shadow-lg animate-[bounce_3s_infinite]" 
                         />

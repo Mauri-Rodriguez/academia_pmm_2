@@ -10,6 +10,9 @@ const Registro = () => {
         confirmarPassword: '',
     });
     
+    // 🚩 NUEVO: Estado para el consentimiento legal
+    const [aceptaTerminos, setAceptaTerminos] = useState(false);
+    
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [loading, setLoading] = useState(false);
     const [passwordMatch, setPasswordMatch] = useState(true);
@@ -55,6 +58,10 @@ const Registro = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
+        // 🚩 VALIDACIÓN LEGAL: Bloquear registro si no acepta términos
+        if (!aceptaTerminos) {
+            return setMensaje({ texto: 'Debes aceptar los Términos y la Política de Privacidad para continuar.', tipo: 'error' });
+        }
         if (!passwordMatch) return setMensaje({ texto: 'Las contraseñas no coinciden.', tipo: 'error' });
         if (formData.password.length < 6) return setMensaje({ texto: 'La contraseña debe tener mínimo 6 caracteres.', tipo: 'error' });
 
@@ -68,7 +75,8 @@ const Registro = () => {
             await api.post('/api/auth/register', {
                 nombre_completo: formData.nombre_completo,
                 correo: formData.correo,
-                password: formData.password
+                password: formData.password,
+                acepta_politica_privacidad: true // 🚩 Se envía al backend como evidencia de consentimiento
             });
 
             setMensaje({ texto: '¡Registro exitoso! Revisa tu correo de activación.', tipo: 'success' });
@@ -87,16 +95,16 @@ const Registro = () => {
 
     return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-10 w-full max-w-md border-t-4 border-[#FBE000]">
+            <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-10 w-full max-w-md border-t-4 border-[#FBE000]">
                 
                 {/* Mascota */}
                 <div className="flex justify-center mb-6">
-                    <img src="/icono mascota app.png" alt="Mascota PMM" className="w-28 h-28 object-contain drop-shadow-lg" />
+                    <img src="/icono mascota app.png" alt="Mascota PMM" className="w-24 h-24 md:w-28 md:h-28 object-contain drop-shadow-lg" />
                 </div>
 
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-[#0A3D62] uppercase tracking-wide">
-                        Crear <span className="text-blue-600">Cuenta</span>
+                <div className="text-center mb-6">
+                    <h1 className="text-2xl md:text-3xl font-bold text-[#0A3D62] uppercase tracking-wide">
+                        Crear <span className="text-[#2E5AAC]">Cuenta</span>
                     </h1>
                     <p className="text-slate-500 text-sm mt-2">
                         Empieza tu aventura en PMM Interactivo
@@ -104,7 +112,7 @@ const Registro = () => {
                 </div>
 
                 {mensaje.texto && (
-                    <div className={`p-3 mb-6 text-xs font-bold border-l-4 ${
+                    <div className={`p-3 mb-6 text-xs font-bold border-l-4 rounded-r-lg ${
                         mensaje.tipo === 'success' ? 'bg-green-50 border-green-500 text-green-700' : 'bg-red-50 border-red-500 text-red-700'
                     }`}>
                         {mensaje.tipo === 'success' ? '✅ ' : '⚠️ '} {mensaje.texto}
@@ -127,7 +135,7 @@ const Registro = () => {
                             className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 focus:border-[#0A3D62] focus:bg-white outline-none text-slate-900 transition-all" placeholder="usuario@uniajc.edu.co" />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Contraseña</label>
                             <input name="password" required type="password" value={formData.password} onChange={handleChange}
@@ -148,13 +156,33 @@ const Registro = () => {
                         </div>
                     </div>
 
-                    <button type="submit" disabled={loading || !passwordMatch}
-                        className="w-full bg-[#0A3D62] text-white font-bold py-3.5 rounded-xl hover:bg-[#083252] transition-all uppercase text-sm tracking-wide shadow-md hover:shadow-xl disabled:opacity-50">
+                    {/* 🚩 SECCIÓN LEGAL: Consentimiento explícito (Ley 1581 de 2012) */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input 
+                                type="checkbox" 
+                                required
+                                checked={aceptaTerminos}
+                                onChange={(e) => setAceptaTerminos(e.target.checked)}
+                                className="mt-1 w-4 h-4 text-[#0A3D62] border-slate-300 rounded focus:ring-[#0A3D62] cursor-pointer" 
+                            />
+                            <span className="text-[11px] text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
+                                He leído y acepto los{' '}
+                                <Link to="/terminos" className="text-[#0A3D62] font-bold underline hover:text-[#2E5AAC]">Términos y Condiciones</Link>{' '}
+                                y la{' '}
+                                <Link to="/privacidad" className="text-[#0A3D62] font-bold underline hover:text-[#2E5AAC]">Política de Privacidad</Link>. 
+                                Autorizo el tratamiento de mis datos personales para fines académicos, de personalización con IA y seguimiento de progreso.
+                            </span>
+                        </label>
+                    </div>
+
+                    <button type="submit" disabled={loading || !passwordMatch || !aceptaTerminos}
+                        className="w-full bg-[#0A3D62] text-white font-bold py-3.5 rounded-xl hover:bg-[#083252] transition-all uppercase text-sm tracking-wide shadow-md hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
                         {loading ? 'Registrando...' : 'Confirmar Registro'}
                     </button>
 
                     {/* Insignias por desbloquear */}
-                    <div className="flex justify-center gap-4 mt-4">
+                    <div className="flex justify-center gap-6 mt-2">
                         <div className="text-center">
                             <span className="text-2xl grayscale opacity-40">🏆</span>
                             <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">Principiante</p>
@@ -170,7 +198,7 @@ const Registro = () => {
                     </div>
                 </form>
 
-                <div className="text-center mt-8">
+                <div className="text-center mt-8 pt-6 border-t border-slate-100">
                     <Link to="/" className="text-sm text-slate-500 hover:text-[#0A3D62] font-semibold transition-colors">
                         ¿Ya tienes cuenta? <span className="text-[#0A3D62] font-bold">Inicia sesión</span>
                     </Link>

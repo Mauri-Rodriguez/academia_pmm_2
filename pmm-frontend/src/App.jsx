@@ -18,7 +18,8 @@ import DashboardDocente from './pages/DashboardDocente';
 import ReporteDetalladoEstudiante from './pages/ReporteDetalladoEstudiante';
 import VerificarCorreo from './pages/VerificarCorreo';
 import ProtectedRoute from './components/ProtectedRoute';
-
+import Terminos from './pages/Terminos'; // Ajusta la ruta si están en otra carpeta
+import Privacidad from './pages/Privacidad';
 
 function App() {
   return (
@@ -34,22 +35,28 @@ function App() {
 
         {/* 🛡️ RUTAS PROTEGIDAS: SOLO ESTUDIANTES */}
         <Route element={<ProtectedRoute allowedRoles={['estudiante']} />}>
-            <Route path="/estudiante/diagnostico" element={<Diagnostico />} />
-            <Route path="/estudiante/resultado" element={<ResultadoDiagnostico />} />
-            <Route path="/estudiante/dashboard" element={<DashboardEstudiante />} />
-            <Route path="/estudiante/modulo/:id_modulo" element={<ModuloEstudio />} />
-            <Route path="/estudiante/perfil" element={<PerfilEstudiante />} />
-            <Route path="/estudiante/ranking" element={<LibroDeBingo />} />
-            <Route path="/estudiante/biblioteca" element={<Biblioteca />} />
-            <Route path="/estudiante/foro" element={<ForoComunidad />} />
-            <Route path="/estudiante/historial-errores" element={<HistorialErrores />} />
+          <Route path="/estudiante/diagnostico" element={<Diagnostico />} />
+          <Route path="/estudiante/resultado" element={<ResultadoDiagnostico />} />
+          <Route path="/estudiante/dashboard" element={<DashboardEstudiante />} />
+          <Route path="/estudiante/modulo/:id_modulo" element={<ModuloEstudio />} />
+          <Route path="/estudiante/perfil" element={<PerfilEstudiante />} />
+          <Route path="/estudiante/ranking" element={<LibroDeBingo />} />
+          <Route path="/estudiante/biblioteca" element={<Biblioteca />} />
+          <Route path="/estudiante/foro" element={<ForoComunidad />} />
+          <Route path="/estudiante/historial-errores" element={<HistorialErrores />} />
         </Route>
 
         {/* 🛡️ RUTAS PROTEGIDAS: SOLO DOCENTES */}
         <Route element={<ProtectedRoute allowedRoles={['docente']} />}>
-            <Route path="/docente/dashboard" element={<DashboardDocente />} />
-            <Route path="/docente/reporte-estudiante/:id" element={<ReporteDetalladoEstudiante />} />
+          <Route path="/docente/dashboard" element={<DashboardDocente />} />
+          <Route path="/docente/reporte-estudiante/:id" element={<ReporteDetalladoEstudiante />} />
         </Route>
+
+
+        {/* 🚩 RUTAS LEGALES (Públicas, accesibles desde el registro) */}
+        <Route path="/terminos" element={<Terminos />} />
+        <Route path="/privacidad" element={<Privacidad />} />
+
 
         {/* 🚫 RUTA NOT FOUND */}
         <Route path="*" element={<NotFoundNinja />} />

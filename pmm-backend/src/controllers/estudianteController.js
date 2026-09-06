@@ -507,7 +507,6 @@ exports.obtenerDashboard = async (req, res) => {
         if (!id_usuario) return res.status(401).json({ mensaje: "No autorizado" });
 
         // 🚩 1. CONSULTA BLINDADA CONTRA ZONAS HORARIAS
-        // Usamos DATE_FORMAT en SQL para que MySQL nos dé la fecha estricta como texto (YYYY-MM-DD)
         const [usuarioDB] = await db.query(
             `SELECT 
                 rango, 
@@ -523,58 +522,50 @@ exports.obtenerDashboard = async (req, res) => {
 
         const nivelIA = usuarioDB.rango || usuarioDB.rango_actual || 'Genin (Iniciado)';
 
-        // 🚩 2. MOTOR DE RACHAS (Anti-Bucle y Anti-React Strict Mode)
-        // Sacamos la fecha actual estricta de Colombia
+        // 🚩 2. MOTOR DE RACHAS CORREGIDO Y BLINDADO
         const hoyStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-
+        const ultimaStr = usuarioDB.fecha_ultima_str;
+        
         let rachaActual = usuarioDB.racha_dias || 0;
         let necesitaActualizar = false;
 
-        if (!usuarioDB.fecha_ultima_str) {
+        if (!ultimaStr) {
+            // Primer inicio de sesión de la historia
             rachaActual = 1;
             necesitaActualizar = true;
-        } else {
-            const ultimaStr = usuarioDB.fecha_ultima_str; // Ej: '2026-04-02'
+        } else if (hoyStr !== ultimaStr) {
+            // El día ha cambiado desde la última conexión
+            const utcHoy = new Date(`${hoyStr}T00:00:00Z`);
+            const utcUltima = new Date(`${ultimaStr}T00:00:00Z`);
+            const diferenciaDias = Math.round((utcHoy - utcUltima) / (1000 * 60 * 60 * 24));
 
-            // Solo entramos a la matemática si REALMENTE cambió el día
-            if (hoyStr !== ultimaStr) {
-                // Forzamos ambas fechas a UTC 00:00 para que la resta de días sea exacta
-                const utcHoy = new Date(`${hoyStr}T00:00:00Z`);
-                const utcUltima = new Date(`${ultimaStr}T00:00:00Z`);
-
-                const diferenciaDias = Math.round((utcHoy - utcUltima) / (1000 * 60 * 60 * 24));
-
-                if (diferenciaDias === 1) {
-                    rachaActual += 1;
-
-                    // 🚩 NOTIFICACIONES DE HITOS DE RACHA
-                    if (rachaActual === 3) {
-                        crearNotificacion(id_usuario, "🔥 ¡3 días seguidos! Tu Voluntad de Fuego empieza a arder.");
-                    } else if (rachaActual === 7) {
-                        crearNotificacion(id_usuario, "🔥 ¡Una semana perfecta! Eres un ejemplo de disciplina ninja.");
-                    } else if (rachaActual === 30) {
-                        crearNotificacion(id_usuario, "👑 ¡30 DÍAS! Tu dominio del chakra matemático es legendario.");
-                    }
-
-                } else if (diferenciaDias > 1) {
-                    // Si pierde la racha y era mayor a 3, le mandamos un mensaje motivacional
-                    if (rachaActual >= 3) {
-                        crearNotificacion(id_usuario, "💨 Tu fuego se ha apagado por inactividad. ¡Vuelve a encender la llama hoy!");
-                    }
-                    rachaActual = 1; // Pierde la racha
-                }
-
-                necesitaActualizar = true;
+            if (diferenciaDias === 1) {
+                rachaActual += 1; // Día consecutivo, se suma 1
+                
+                // Notificaciones de hitos
+                if (rachaActual === 3) crearNotificacion(id_usuario, "🔥 ¡3 días seguidos! Tu Voluntad de Fuego empieza a arder.");
+                if (rachaActual === 7) crearNotificacion(id_usuario, "🔥 ¡Una semana perfecta! Eres un ejemplo de disciplina ninja.");
+                if (rachaActual === 30) crearNotificacion(id_usuario, "👑 ¡30 DÍAS! Tu dominio del chakra matemático es legendario.");
+                
+            } else if (diferenciaDias > 1) {
+                // Pasaron 2 o más días, se rompe la racha pero se reinicia en 1 (no en 0)
+                if (rachaActual >= 3) crearNotificacion(id_usuario, "💨 Tu fuego se ha apagado por inactividad. ¡Vuelve a encender la llama hoy!");
+                rachaActual = 1; 
             }
+            necesitaActualizar = true;
+            
+        } else if (rachaActual === 0) {
+            // 🚩 CORRECCIÓN CLAVE: Si es el mismo día pero la racha es 0, la iniciamos en 1
+            rachaActual = 1;
+            necesitaActualizar = true;
         }
 
+        // 🚩 3. ACTUALIZACIÓN EN BASE DE DATOS
         if (necesitaActualizar) {
-            // Generamos la hora exacta de Colombia y la enviamos como String a MySQL
-            // Así evitamos que Sequelize la guarde con UTC erróneo
             const fechaActual = new Date();
-            const offsetBogota = -5 * 60 * 60 * 1000; // -5 horas en milisegundos
+            const offsetBogota = -5 * 60 * 60 * 1000; // -5 horas para Colombia
             const localBogota = new Date(fechaActual.getTime() + offsetBogota);
-            const sqlDateTime = localBogota.toISOString().slice(0, 19).replace('T', ' '); // "2026-04-02 11:52:00"
+            const sqlDateTime = localBogota.toISOString().slice(0, 19).replace('T', ' ');
 
             await db.query(
                 'UPDATE usuarios SET racha_dias = ?, ultima_conexion = ? WHERE id_usuario = ?',
@@ -582,13 +573,12 @@ exports.obtenerDashboard = async (req, res) => {
             );
         }
 
-        // 🚩 3. CARGA PARALELA DE DATOS (Rendimiento Ninja)
+        // 🚩 4. CARGA PARALELA DE DATOS
         const [diag, modulos, todasInsignias, insigniasGanadas] = await Promise.all([
             db.query('SELECT puntaje_obtenido FROM diagnostico WHERE id_usuario = ? ORDER BY fecha_realizacion DESC LIMIT 1', { replacements: [id_usuario], type: db.QueryTypes.SELECT }),
             Modulo.findAll({
                 where: {
                     nivel: {
-                        // 🚩 LA LLAVE MAESTRA DE KAGE AÑADIDA AQUÍ
                         [Op.in]: (nivelIA.includes('Kage') || nivelIA.includes('Leyenda'))
                             ? ['Genin (Iniciado)', 'Bajo', 'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio', 'Jonin (Maestro)', 'Jonin (Avanzado)', 'Alto', 'Kage (Leyenda)']
                             : nivelIA.includes('Jonin')
@@ -605,15 +595,12 @@ exports.obtenerDashboard = async (req, res) => {
             db.query(`SELECT id_insignia FROM usuarios_insignias WHERE id_usuario = ?`, { replacements: [id_usuario], type: db.QueryTypes.SELECT })
         ]);
 
-        // 🛑 EL MURO DE CRISTAL (BLOQUEO DE DESERTORES) 🛑
-        // Si el arreglo 'diag' está vacío, significa que el estudiante NUNCA terminó el diagnóstico.
         if (!diag || diag.length === 0) {
             return res.status(403).json({ mensaje: 'El ninja aún no ha completado su prueba de rango.' });
         }
 
         const puntajeInicial = diag[0].puntaje_obtenido;
 
-        // 🚩 4. PROCESAR PROGRESO POR MÓDULO
         const rutaConProgreso = await Promise.all(modulos.map(async (m) => {
             const p = await ProgresoEstudiante.findOne({
                 where: { id_usuario, id_modulo: m.id_modulo },
@@ -623,14 +610,13 @@ exports.obtenerDashboard = async (req, res) => {
             return { ...m, porcentaje_avance: p ? Math.round(p.porcentaje_avance) : 0 };
         }));
 
-        // 🚩 5. RESPUESTA FINAL CONSOLIDADA
         res.json({
             estadisticas: {
                 rango_actual: nivelIA,
                 puntaje: puntajeInicial,
                 modulos_completados: rutaConProgreso.filter(m => parseInt(m.porcentaje_avance) === 100).length,
                 total_misiones: rutaConProgreso.length,
-                racha_dias: rachaActual
+                racha_dias: rachaActual // 🚩 Aquí se envía la racha ya actualizada al frontend
             },
             ruta_ia_asignada: rutaConProgreso,
             todas_insignias: todasInsignias,
@@ -642,7 +628,6 @@ exports.obtenerDashboard = async (req, res) => {
         res.status(500).json({ mensaje: 'Error motor dashboard' });
     }
 };
-
 /**
  * Actualiza el progreso en un módulo con protección de "Piso de Cristal"
  * (no permite que un porcentaje menor pise uno mayor ya alcanzado).

@@ -114,7 +114,7 @@ exports.registrarFallo = async (req, res) => {
         const textoRespuestaAlumno = preguntaDB[columnaDada];
         const textoRespuestaCorrecta = preguntaDB[formatColumna(preguntaDB.respuesta_correcta)];
 
-                // 🚩 Recuerda extraer el nivel del estudiante antes de armar el prompt
+        // 🚩 Recuerda extraer el nivel del estudiante antes de armar el prompt
         const usuario = await Usuario.findByPk(id_usuario);
         const nivelEstudiante = usuario?.rango_actual || usuario?.rango || 'Estudiante';
 
@@ -525,51 +525,50 @@ exports.obtenerDashboard = async (req, res) => {
         // 🚩 2. MOTOR DE RACHAS CORREGIDO Y BLINDADO
         const hoyStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
         const ultimaStr = usuarioDB.fecha_ultima_str;
-        
+
         let rachaActual = usuarioDB.racha_dias || 0;
-        let necesitaActualizar = false;
+        let necesitaActualizar = false; // Bandera para decidir si actualizamos la base de datos
 
         if (!ultimaStr) {
             // Primer inicio de sesión de la historia
             rachaActual = 1;
-            necesitaActualizar = true;
+            necesitaActualizar = true; // Marcamos para actualizar la base de datos
         } else if (hoyStr !== ultimaStr) {
             // El día ha cambiado desde la última conexión
-            const utcHoy = new Date(`${hoyStr}T00:00:00Z`);
-            const utcUltima = new Date(`${ultimaStr}T00:00:00Z`);
-            const diferenciaDias = Math.round((utcHoy - utcUltima) / (1000 * 60 * 60 * 24));
+            const utcHoy = new Date(`${hoyStr}T00:00:00Z`); // Convertimos a UTC para evitar problemas de zona horaria
+            const utcUltima = new Date(`${ultimaStr}T00:00:00Z`); // Convertimos a UTC para evitar problemas de zona horaria
+            const diferenciaDias = Math.round((utcHoy - utcUltima) / (1000 * 60 * 60 * 24)); // Diferencia en días
 
             if (diferenciaDias === 1) {
                 rachaActual += 1; // Día consecutivo, se suma 1
-                
+
                 // Notificaciones de hitos
-                if (rachaActual === 3) crearNotificacion(id_usuario, "🔥 ¡3 días seguidos! Tu Voluntad de Fuego empieza a arder.");
-                if (rachaActual === 7) crearNotificacion(id_usuario, "🔥 ¡Una semana perfecta! Eres un ejemplo de disciplina ninja.");
-                if (rachaActual === 30) crearNotificacion(id_usuario, "👑 ¡30 DÍAS! Tu dominio del chakra matemático es legendario.");
-                
+                if (rachaActual === 3) crearNotificacion(id_usuario, "🔥 ¡3 días consecutivos! Estás construyendo un hábito de estudio sólido.");
+                if (rachaActual === 7) crearNotificacion(id_usuario, " ¡Una semana completa! Tu constancia está dando frutos. Sigue así.");
+                if (rachaActual === 30) crearNotificacion(id_usuario, "👑 ¡30 días de estudio continuo! Tu dedicación es excepcional.");
             } else if (diferenciaDias > 1) {
                 // Pasaron 2 o más días, se rompe la racha pero se reinicia en 1 (no en 0)
-                if (rachaActual >= 3) crearNotificacion(id_usuario, "💨 Tu fuego se ha apagado por inactividad. ¡Vuelve a encender la llama hoy!");
-                rachaActual = 1; 
+                if (rachaActual >= 3) crearNotificacion(id_usuario, "💨 Tu fuego se ha apagado por inactividad. ¡Vuelve a encender la llama hoy!"); 
+                rachaActual = 1;
             }
             necesitaActualizar = true;
-            
+
         } else if (rachaActual === 0) {
-            // 🚩 CORRECCIÓN CLAVE: Si es el mismo día pero la racha es 0, la iniciamos en 1
+            // 🚩 Si es el mismo día pero la racha es 0, la iniciamos en 1
             rachaActual = 1;
             necesitaActualizar = true;
         }
 
         // 🚩 3. ACTUALIZACIÓN EN BASE DE DATOS
         if (necesitaActualizar) {
-            const fechaActual = new Date();
+            const fechaActual = new Date(); // Hora actual en UTC
             const offsetBogota = -5 * 60 * 60 * 1000; // -5 horas para Colombia
-            const localBogota = new Date(fechaActual.getTime() + offsetBogota);
-            const sqlDateTime = localBogota.toISOString().slice(0, 19).replace('T', ' ');
+            const localBogota = new Date(fechaActual.getTime() + offsetBogota); // Ajuste a hora local de Bogotá
+            const sqlDateTime = localBogota.toISOString().slice(0, 19).replace('T', ' '); // Formato YYYY-MM-DD HH:MM:SS para SQL
 
             await db.query(
                 'UPDATE usuarios SET racha_dias = ?, ultima_conexion = ? WHERE id_usuario = ?',
-                { replacements: [rachaActual, sqlDateTime, id_usuario] }
+                { replacements: [rachaActual, sqlDateTime, id_usuario] } // Parámetros para la consulta SQL
             );
         }
 
@@ -827,7 +826,7 @@ exports.obtenerNotificaciones = async (req, res) => {
             'SELECT * FROM notificaciones WHERE id_usuario = ? ORDER BY fecha_creacion DESC LIMIT 15',
             { replacements: [extraerIdUsuario(req)], type: db.QueryTypes.SELECT }
         );
-        res.json(rows); 
+        res.json(rows);
     } catch (error) {
         console.error("Error al obtener notificaciones:", error);
         res.json([]); // Si hay error, envía lista vacía para no romper React

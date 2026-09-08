@@ -6,7 +6,7 @@ const { OAuth2Client } = require('google-auth-library');
 const db = require('../config/database');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-//  INFRAESTRUCTURA DE CORREO (Fallback Seguro)
+// 🛡️ INFRAESTRUCTURA DE CORREO (Fallback Seguro)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 if (!resend) console.warn("⚠️ [CONFIG] RESEND_API_KEY no detectada. Modo simulacro activo.");
 
@@ -43,12 +43,12 @@ exports.register = async (req, res) => {
         const hash_password = await bcrypt.hash(password, salt);
 
         // 💾 Crear Usuario (Nace Inactivo)
-        const nuevoUsuario = await Usuario.create({
+        const nuevoUsuario = await Usuario.create({ 
             nombre_completo,
             correo,
             hash_password,
             rol: rolAsignado,
-            verificado: false, // Auto-verificado para evitar fricción inicial, se puede cambiar a false si se desea verificación manual
+            verificado: false,
             estado: 'Inactivo',
             fecha_registro: new Date()
         });
@@ -65,10 +65,11 @@ exports.register = async (req, res) => {
         nuevoUsuario.verification_token_expiry = Date.now() + 172800000; // 48h
         await nuevoUsuario.save();
 
-const urlConfirmacion = `${process.env.FRONTEND_URL}/verificar-correo/${tokenVerificacion}`;        // ✉️ Envío de Correo vía Resend
+        const urlConfirmacion = `${process.env.FRONTEND_URL}/verificar-correo/${tokenVerificacion}`;
+
+        // ✉️ Envío de Correo vía Resend
         if (resend) {
             try {
-                // TODO: Cambiar 'onboarding@resend.dev' por dominio real en producción
                 await resend.emails.send({
                     from: 'Academia PMM <admin@academiapmm.online>',
                     to: correo,
@@ -106,7 +107,7 @@ const urlConfirmacion = `${process.env.FRONTEND_URL}/verificar-correo/${tokenVer
                                                         Tu cuenta ha sido creada exitosamente. Para comenzar tu ruta de aprendizaje personalizada y acceder a todos los recursos de la plataforma, es necesario activar tu cuenta.
                                                     </p>
                                                     
-                                                    <!-- Botón de Acción (Estilo Oficial PMM) -->
+                                                    <!-- Botón de Acción -->
                                                     <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
                                                         <tr>
                                                             <td align="center" style="border-radius: 12px; background-color: #0A3D62;">
@@ -123,7 +124,7 @@ const urlConfirmacion = `${process.env.FRONTEND_URL}/verificar-correo/${tokenVer
                                             <tr>
                                                 <td align="center" style="padding: 20px 40px 40px 40px; border-top: 1px solid #E2E8F0;">
                                                     <p style="color: #94A3B8; font-size: 12px; line-height: 1.5; margin: 0;">
-                                                        Este enlace de activación expirará en 24 horas por motivos de seguridad.<br>
+                                                        Este enlace de activación expirará en 48 horas por motivos de seguridad.<br>
                                                         Si no solicitaste esta cuenta, puedes ignorar este mensaje de forma segura.
                                                     </p>
                                                     <p style="color: #94A3B8; font-size: 11px; margin-top: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
@@ -197,7 +198,6 @@ exports.verificarCorreo = async (req, res) => {
         console.error('Nombre del error:', error.name);
         console.error('Mensaje técnico:', error.message);
 
-        // Esto nos dirá si el problema es la firma (llave) o el tiempo (reloj)
         if (error.name === 'JsonWebTokenError') console.error('❌ ERROR: La firma no coincide. Revisa el JWT_SECRET.');
         if (error.name === 'TokenExpiredError') console.error('❌ ERROR: El token expiró según el reloj del servidor.');
 
@@ -234,9 +234,8 @@ exports.login = async (req, res) => {
 
         const requiereDiagnostico = hasDiag ? false : true;
 
-        // Actualizar última conexión
-        usuario.ultima_conexion = new Date();
-        await usuario.save();
+        // 💡 NOTA: Se omite la actualización de `ultima_conexion` aquí para evitar 
+        // conflictos con el cálculo del motor de rachas en el Dashboard.
 
         const token = jwt.sign(
             { id_usuario: usuario.id_usuario, rol: usuario.rol },
@@ -303,8 +302,7 @@ exports.googleLogin = async (req, res) => {
             });
             esNuevo = true;
         } else {
-            usuario.ultima_conexion = new Date();
-            await usuario.save();
+            // 💡 NOTA: Se omite actualizar `ultima_conexion` aquí para no pisar la racha.
         }
 
         // 🚩 Evaluación de Diagnóstico
@@ -374,7 +372,6 @@ exports.forgotPassword = async (req, res) => {
 
         const urlRecuperacion = `${process.env.FRONTEND_URL}/reset-password/${tokenRecuperacion}`;
 
-        // 🛡️ Logs limpios en producción
         if (process.env.NODE_ENV !== "production") {
             console.log(`🗝️ [DEV LOG] Token de recuperación para ${correo}: ${urlRecuperacion}`);
         }
@@ -391,7 +388,7 @@ exports.forgotPassword = async (req, res) => {
                         <a href="${urlRecuperacion}" style="background: #8B0000; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 15px;">
                             Restablecer Contraseña
                         </a>
-                        <p style="font-size: 11px; color: #666; margin-top: 20px;">Este enlace es válido solo por 15 minutos.</p>
+                        <p style="font-size: 11px; color: #666; margin-top: 20px;">Este enlace es válido solo por 2 horas.</p>
                     </div>
                 `
             });

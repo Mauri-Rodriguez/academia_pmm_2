@@ -1,0 +1,59 @@
+name: Desplegar frontend en Vercel
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'pmm-frontend/**'
+      - '.github/workflows/vercel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Validar secrets
+        shell: bash
+        run: |
+          for name in VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_TOKEN; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Falta el secret $name en GitHub Actions."
+              exit 1
+            fi
+          done
+
+      - name: Instalar Vercel CLI
+        run: npm install --global vercel@latest
+
+      # Ejecutar desde la raiz: Vercel aplica Root Directory = pmm-frontend.
+      - name: Descargar configuracion de produccion
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Compilar frontend
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Desplegar en produccion
+        shell: bash
+        run: |
+          deployment_url=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          printf 'Frontend desplegado: %s\n' "$deployment_url" >> "$GITHUB_STEP_SUMMARY"

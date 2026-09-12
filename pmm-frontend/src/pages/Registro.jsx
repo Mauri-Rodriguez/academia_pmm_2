@@ -9,10 +9,10 @@ const Registro = () => {
         password: '',
         confirmarPassword: '',
     });
-    
+
     // 🚩 NUEVO: Estado para el consentimiento legal
     const [aceptaTerminos, setAceptaTerminos] = useState(false);
-    
+
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [loading, setLoading] = useState(false);
     const [passwordMatch, setPasswordMatch] = useState(true);
@@ -22,7 +22,7 @@ const Registro = () => {
     const DOMINIOS_DOCENTES = ['profesores.uniajc.edu.co', 'admon.uniajc.edu.co'];
     const DOMINIOS_PERMITIDOS = [
         ...DOMINIOS_DOCENTES,
-        'estudiante.uniajc.edu.co', 
+        'estudiante.uniajc.edu.co',
         'gmail.com', 'outlook.com', 'hotmail.com'
     ];
 
@@ -57,7 +57,7 @@ const Registro = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // 🚩 VALIDACIÓN LEGAL: Bloquear registro si no acepta términos
         if (!aceptaTerminos) {
             return setMensaje({ texto: 'Debes aceptar los Términos y la Política de Privacidad para continuar.', tipo: 'error' });
@@ -76,15 +76,20 @@ const Registro = () => {
                 nombre_completo: formData.nombre_completo,
                 correo: formData.correo,
                 password: formData.password,
-                acepta_politica_privacidad: true // 🚩 Se envía al backend como evidencia de consentimiento
+
+                acepta_politica_privacidad: aceptaTerminos,
+                acepta_terminos: aceptaTerminos,
+
+                version_politica_privacidad: '1.0',
+                version_terminos: '1.0'
             });
 
             setMensaje({ texto: '¡Registro exitoso! Revisa tu correo de activación.', tipo: 'success' });
             setTimeout(() => navigate('/'), 4000);
         } catch (err) {
-            setMensaje({ 
-                texto: err.response?.data?.mensaje || 'Fallo en el registro.', 
-                tipo: 'error' 
+            setMensaje({
+                texto: err.response?.data?.mensaje || 'Fallo en el registro.',
+                tipo: 'error'
             });
         } finally {
             setLoading(false);
@@ -96,7 +101,7 @@ const Registro = () => {
     return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-10 w-full max-w-md border-t-4 border-[#FBE000]">
-                
+
                 {/* Mascota */}
                 <div className="flex justify-center mb-6">
                     <img src="/icono mascota app.png" alt="Mascota PMM" className="w-24 h-24 md:w-28 md:h-28 object-contain drop-shadow-lg" />
@@ -112,9 +117,8 @@ const Registro = () => {
                 </div>
 
                 {mensaje.texto && (
-                    <div className={`p-3 mb-6 text-xs font-bold border-l-4 rounded-r-lg ${
-                        mensaje.tipo === 'success' ? 'bg-green-50 border-green-500 text-green-700' : 'bg-red-50 border-red-500 text-red-700'
-                    }`}>
+                    <div className={`p-3 mb-6 text-xs font-bold border-l-4 rounded-r-lg ${mensaje.tipo === 'success' ? 'bg-green-50 border-green-500 text-green-700' : 'bg-red-50 border-red-500 text-red-700'
+                        }`}>
                         {mensaje.tipo === 'success' ? '✅ ' : '⚠️ '} {mensaje.texto}
                     </div>
                 )}
@@ -149,9 +153,8 @@ const Registro = () => {
                         <div>
                             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Confirmar</label>
                             <input name="confirmarPassword" required type="password" value={formData.confirmarPassword} onChange={handleChange}
-                                className={`w-full bg-slate-50 border rounded-xl p-3.5 outline-none transition-all ${
-                                    passwordMatch ? 'border-slate-300 focus:border-[#0A3D62] focus:bg-white text-slate-900' : 'border-red-500 bg-red-50 text-red-900'
-                                }`} placeholder="••••••••" />
+                                className={`w-full bg-slate-50 border rounded-xl p-3.5 outline-none transition-all ${passwordMatch ? 'border-slate-300 focus:border-[#0A3D62] focus:bg-white text-slate-900' : 'border-red-500 bg-red-50 text-red-900'
+                                    }`} placeholder="••••••••" />
                             {!passwordMatch && <p className="text-[10px] text-red-600 font-bold mt-1 uppercase">No coinciden</p>}
                         </div>
                     </div>
@@ -159,18 +162,18 @@ const Registro = () => {
                     {/* 🚩 SECCIÓN LEGAL: Consentimiento explícito (Ley 1581 de 2012) */}
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <label className="flex items-start gap-3 cursor-pointer group">
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 required
                                 checked={aceptaTerminos}
                                 onChange={(e) => setAceptaTerminos(e.target.checked)}
-                                className="mt-1 w-4 h-4 text-[#0A3D62] border-slate-300 rounded focus:ring-[#0A3D62] cursor-pointer" 
+                                className="mt-1 w-4 h-4 text-[#0A3D62] border-slate-300 rounded focus:ring-[#0A3D62] cursor-pointer"
                             />
                             <span className="text-[11px] text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
                                 He leído y acepto los{' '}
                                 <Link to="/terminos" className="text-[#0A3D62] font-bold underline hover:text-[#2E5AAC]">Términos y Condiciones</Link>{' '}
                                 y la{' '}
-                                <Link to="/privacidad" className="text-[#0A3D62] font-bold underline hover:text-[#2E5AAC]">Política de Privacidad</Link>. 
+                                <Link to="/privacidad" className="text-[#0A3D62] font-bold underline hover:text-[#2E5AAC]">Política de Privacidad</Link>.
                                 Autorizo el tratamiento de mis datos personales para fines académicos, de personalización con IA y seguimiento de progreso.
                             </span>
                         </label>

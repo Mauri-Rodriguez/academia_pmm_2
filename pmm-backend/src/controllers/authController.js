@@ -4,441 +4,1079 @@ const { Resend } = require('resend');
 const Usuario = require('../models/Usuario');
 const { OAuth2Client } = require('google-auth-library');
 const db = require('../config/database');
+
+// ============================================================================
+// CONFIGURACIÓN
+// ============================================================================
+
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// 🛡️ INFRAESTRUCTURA DE CORREO (Fallback Seguro)
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-if (!resend) console.warn("⚠️ [CONFIG] RESEND_API_KEY no detectada. Modo simulacro activo.");
+const resend = process.env.RESEND_API_KEY
+    ? new Resend(process.env.RESEND_API_KEY)
+    : null;
 
-// -----------------------------------------------------------------
-// 1. Registro Manual (Arquitectura Startup)
-// -----------------------------------------------------------------
-/**
- * Registra un nuevo usuario en la base de datos y envía un correo de activación.
- * Asigna el rol ('docente' o 'estudiante') basado en el dominio del correo.
- * @param {import('express').Request} req - Petición Express (body: nombre_completo, correo, password).
- * @param {import('express').Response} res - Respuesta Express.
- */
+if (!resend) {
+    console.warn(
+        '⚠️ [CONFIG] RESEND_API_KEY no detectada. Modo simulacro activo.'
+    );
+}
+
+// Versiones actuales de documentos legales
+const VERSION_POLITICA = '1.0';
+const VERSION_TERMINOS = '1.0';
+
+// ============================================================================
+// 1. REGISTRO MANUAL
+// ============================================================================
+
 exports.register = async (req, res) => {
     try {
-        const { nombre_completo, correo, password } = req.body;
+        const {
+            nombre_completo,
+            correo,
+            password,
+            acepta_politica_privacidad,
+            acepta_terminos,
+            version_politica_privacidad,
+            version_terminos
+        } = req.body;
 
-        // 🛡️ Validación de Formato (Evita crashes)
-        if (!correo || !correo.includes('@')) {
-            return res.status(400).json({ mensaje: 'Formato de correo inválido.' });
+        // Validaciones básicas
+        if (!nombre_completo || !correo || !password) {
+            return res.status(400).json({
+                mensaje:
+                    'Todos los campos obligatorios deben estar completos.'
+            });
         }
 
-        const usuarioExistente = await Usuario.findOne({ where: { correo } });
+        if (!correo.includes('@')) {
+            return res.status(400).json({
+                mensaje: 'Formato de correo inválido.'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                mensaje:
+                    'La contraseña debe tener mínimo 6 caracteres.'
+            });
+        }
+
+        // Consentimiento obligatorio
+        if (!acepta_politica_privacidad || !acepta_terminos) {
+            return res.status(400).json({
+                mensaje:
+                    'Debes aceptar los Términos y la Política de Privacidad para registrarte.'
+            });
+        }
+
+        const usuarioExistente = await Usuario.findOne({
+            where: { correo }
+        });
+
         if (usuarioExistente) {
-            return res.status(400).json({ mensaje: 'El correo ya está registrado en la aldea.' });
+            return res.status(400).json({
+                mensaje:
+                    'El correo ya está registrado en la aldea.'
+            });
         }
 
-        // 🚩 Asignación de Roles por Dominio
-        const dominioUsuario = correo.split('@')[1].toLowerCase();
-        const dominiosDocente = process.env.DOMINIOS_DOCENTES ? process.env.DOMINIOS_DOCENTES.split(',') : [];
-        let rolAsignado = dominiosDocente.includes(dominioUsuario) ? 'docente' : 'estudiante';
+        // Asignación de rol por dominio
+        const dominioUsuario = correo
+            .split('@')[1]
+            .toLowerCase();
 
-        // 🔐 Encriptación de contraseña
+        const dominiosDocente = process.env.DOMINIOS_DOCENTES
+            ? process.env.DOMINIOS_DOCENTES
+                .split(',')
+                .map(d => d.trim().toLowerCase())
+            : [];
+
+        const rolAsignado = dominiosDocente.includes(dominioUsuario)
+            ? 'docente'
+            : 'estudiante';
+
+        // Hash de contraseña
         const salt = await bcrypt.genSalt(10);
         const hash_password = await bcrypt.hash(password, salt);
 
-        // 💾 Crear Usuario (Nace Inactivo)
-        const nuevoUsuario = await Usuario.create({ 
+        const ahora = new Date();
+
+        // Crear usuario
+        const nuevoUsuario = await Usuario.create({
             nombre_completo,
             correo,
             hash_password,
             rol: rolAsignado,
             verificado: false,
             estado: 'Inactivo',
-            fecha_registro: new Date()
+            fecha_registro: ahora,
+
+            // CONSENTIMIENTO
+            acepta_politica_privacidad: true,
+            fecha_aceptacion_politica: ahora,
+            version_politica_privacidad:
+                version_politica_privacidad || VERSION_POLITICA,
+
+            acepta_terminos: true,
+            fecha_aceptacion_terminos: ahora,
+            version_terminos:
+                version_terminos || VERSION_TERMINOS
         });
 
-        // 🔐 Generar Token Criptográfico (Con ID inmutable)
+        // Token de verificación
         const tokenVerificacion = jwt.sign(
-            { id_usuario: nuevoUsuario.id_usuario },
+            {
+                id_usuario: nuevoUsuario.id_usuario
+            },
             process.env.JWT_SECRET,
-            { expiresIn: '48h' }
+            {
+                expiresIn: '48h'
+            }
         );
 
-        // 🛡️ Persistencia del token de verificación
         nuevoUsuario.verification_token = tokenVerificacion;
-        nuevoUsuario.verification_token_expiry = Date.now() + 172800000; // 48h
+
+        nuevoUsuario.verification_token_expiry =
+            Date.now() + 172800000;
+
         await nuevoUsuario.save();
 
-        const urlConfirmacion = `${process.env.FRONTEND_URL}/verificar-correo/${tokenVerificacion}`;
+        const urlConfirmacion =
+            `${process.env.FRONTEND_URL}/verificar-correo/${tokenVerificacion}`;
 
-        // ✉️ Envío de Correo vía Resend
+        // Correo
         if (resend) {
             try {
                 await resend.emails.send({
-                    from: 'Academia PMM <admin@academiapmm.online>',
+                    from:
+                        'PMM Interactivo <admin@academiapmm.online>',
                     to: correo,
-                    subject: "Activa tu cuenta en PMM Interactivo",
+                    subject:
+                        'Activa tu cuenta en PMM Interactivo',
                     html: `
                         <!DOCTYPE html>
                         <html>
                         <head>
                             <meta charset="utf-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <meta
+                                name="viewport"
+                                content="width=device-width, initial-scale=1.0"
+                            >
                         </head>
-                        <body style="margin: 0; padding: 0; background-color: #F1F5F9; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
-                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F1F5F9; padding: 40px 20px;">
+
+                        <body style="
+                            margin:0;
+                            padding:0;
+                            background-color:#F1F5F9;
+                            font-family:Inter,system-ui,-apple-system,sans-serif;
+                        ">
+
+                            <table
+                                width="100%"
+                                cellpadding="0"
+                                cellspacing="0"
+                                style="
+                                    background-color:#F1F5F9;
+                                    padding:40px 20px;
+                                "
+                            >
                                 <tr>
                                     <td align="center">
-                                        <!-- Tarjeta Principal -->
-                                        <table width="100%" max-width="560" cellpadding="0" cellspacing="0" style="background-color: #FFFFFF; border-radius: 24px; overflow: hidden; border-top: 6px solid #FBE000; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
-                                            
-                                            <!-- Encabezado -->
+
+                                        <table
+                                            width="100%"
+                                            cellpadding="0"
+                                            cellspacing="0"
+                                            style="
+                                                max-width:560px;
+                                                background-color:#FFFFFF;
+                                                border-radius:24px;
+                                                overflow:hidden;
+                                                border-top:6px solid #FBE000;
+                                            "
+                                        >
+
                                             <tr>
-                                                <td align="center" style="padding: 40px 40px 20px 40px;">
-                                                    <h1 style="color: #0A3D62; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px; text-transform: uppercase;">
-                                                        PMM <span style="color: #FBE000;">Interactivo</span>
+                                                <td
+                                                    align="center"
+                                                    style="padding:40px 40px 20px 40px;"
+                                                >
+                                                    <h1 style="
+                                                        color:#0A3D62;
+                                                        font-size:24px;
+                                                        font-weight:800;
+                                                        margin:0;
+                                                        text-transform:uppercase;
+                                                    ">
+                                                        PMM
+                                                        <span style="color:#FBE000;">
+                                                            Interactivo
+                                                        </span>
                                                     </h1>
                                                 </td>
                                             </tr>
 
-                                            <!-- Cuerpo del Mensaje -->
                                             <tr>
-                                                <td align="center" style="padding: 0 40px 30px 40px;">
-                                                    <h2 style="color: #0F172A; font-size: 20px; font-weight: 700; margin: 0 0 16px 0;">
-                                                        ¡Bienvenido, ${nombre_completo || 'Estudiante'}!
+                                                <td
+                                                    align="center"
+                                                    style="padding:0 40px 30px 40px;"
+                                                >
+
+                                                    <h2 style="
+                                                        color:#0F172A;
+                                                        font-size:20px;
+                                                        margin:0 0 16px 0;
+                                                    ">
+                                                        ¡Bienvenido,
+                                                        ${nombre_completo || 'Estudiante'}!
                                                     </h2>
-                                                    <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0; text-align: left;">
-                                                        Tu cuenta ha sido creada exitosamente. Para comenzar tu ruta de aprendizaje personalizada y acceder a todos los recursos de la plataforma, es necesario activar tu cuenta.
+
+                                                    <p style="
+                                                        color:#475569;
+                                                        font-size:15px;
+                                                        line-height:1.6;
+                                                        margin:0 0 24px 0;
+                                                        text-align:left;
+                                                    ">
+                                                        Tu cuenta ha sido creada exitosamente.
+                                                        Para comenzar tu ruta de aprendizaje
+                                                        y acceder a los recursos de la plataforma,
+                                                        es necesario activar tu cuenta.
                                                     </p>
-                                                    
-                                                    <!-- Botón de Acción -->
-                                                    <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
-                                                        <tr>
-                                                            <td align="center" style="border-radius: 12px; background-color: #0A3D62;">
-                                                                <a href="${urlConfirmacion}" style="display: inline-block; padding: 14px 32px; color: #FFFFFF; text-decoration: none; font-weight: 700; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase; border-radius: 12px;">
-                                                                    Activar mi cuenta
-                                                                </a>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
+
+                                                    <a
+                                                        href="${urlConfirmacion}"
+                                                        style="
+                                                            display:inline-block;
+                                                            padding:14px 32px;
+                                                            color:#FFFFFF;
+                                                            background-color:#0A3D62;
+                                                            text-decoration:none;
+                                                            font-weight:700;
+                                                            border-radius:12px;
+                                                        "
+                                                    >
+                                                        Activar mi cuenta
+                                                    </a>
+
                                                 </td>
                                             </tr>
 
-                                            <!-- Pie de página / Disclaimer -->
                                             <tr>
-                                                <td align="center" style="padding: 20px 40px 40px 40px; border-top: 1px solid #E2E8F0;">
-                                                    <p style="color: #94A3B8; font-size: 12px; line-height: 1.5; margin: 0;">
-                                                        Este enlace de activación expirará en 48 horas por motivos de seguridad.<br>
-                                                        Si no solicitaste esta cuenta, puedes ignorar este mensaje de forma segura.
-                                                    </p>
-                                                    <p style="color: #94A3B8; font-size: 11px; margin-top: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
-                                                        © 2025 Academia PMM Interactivo
+                                                <td
+                                                    align="center"
+                                                    style="
+                                                        padding:20px 40px 40px 40px;
+                                                        border-top:1px solid #E2E8F0;
+                                                    "
+                                                >
+                                                    <p style="
+                                                        color:#94A3B8;
+                                                        font-size:12px;
+                                                        line-height:1.5;
+                                                    ">
+                                                        Este enlace de activación
+                                                        expirará en 48 horas.<br>
+                                                        Si no solicitaste esta cuenta,
+                                                        puedes ignorar este mensaje.
                                                     </p>
                                                 </td>
                                             </tr>
 
                                         </table>
+
                                     </td>
                                 </tr>
                             </table>
+
                         </body>
                         </html>
                     `
                 });
-            } catch (err) { console.error("📧 Fallo envío Resend:", err.message); }
+            } catch (err) {
+                console.error(
+                    '📧 Fallo envío Resend:',
+                    err.message
+                );
+            }
         }
 
-        // 🛡️ Cero exposición en producción, visible en desarrollo
-        if (process.env.NODE_ENV !== "production") {
-            console.log(`[DEV LOG] Link de verificación para ${correo}: ${urlConfirmacion}`);
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(
+                `[DEV LOG] Link de verificación para ${correo}: ${urlConfirmacion}`
+            );
         }
 
         return res.status(201).json({
-            mensaje: 'Registro exitoso. Revisa tu correo para activar tu cuenta.',
+            mensaje:
+                'Registro exitoso. Revisa tu correo para activar tu cuenta.',
             rol: rolAsignado
         });
 
     } catch (error) {
-        console.error('🚨 Error en registro:', error);
-        res.status(500).json({ mensaje: 'Error interno al forjar el registro.' });
+        console.error(
+            '🚨 Error en registro:',
+            error
+        );
+
+        return res.status(500).json({
+            mensaje:
+                'Error interno al forjar el registro.'
+        });
     }
 };
 
-// -----------------------------------------------------------------
-// 2. Verificar Correo (Triple-Check Validado)
-// -----------------------------------------------------------------
-/**
- * Verifica el correo del usuario validando el token enviado a su email.
- * @param {import('express').Request} req - Petición Express (params: token).
- * @param {import('express').Response} res - Respuesta Express.
- */
+// ============================================================================
+// 2. VERIFICAR CORREO
+// ============================================================================
+
 exports.verificarCorreo = async (req, res) => {
     try {
         const { token } = req.params;
 
-        // 1. Validar existencia en DB
-        const usuario = await Usuario.findOne({ where: { verification_token: token } });
-        if (!usuario) return res.status(401).json({ mensaje: 'Token de verificación inválido o ya utilizado.' });
-
-        // 2. Validar expiración temporal
-        if (Date.now() > usuario.verification_token_expiry) {
-            return res.status(401).json({ mensaje: 'El enlace de activación ha caducado. Solicita uno nuevo.' });
-        }
-
-        // 3. Validar integridad JWT
-        jwt.verify(token, process.env.JWT_SECRET);
-
-        // 4. Activación Real e Invalidación de Token
-        usuario.verificado = true;
-        usuario.estado = 'Activo';
-        usuario.verification_token = "";
-        usuario.verification_token_expiry = null;
-        await usuario.save();
-
-        res.status(200).json({ mensaje: '¡Tu cuenta ha sido activada exitosamente! Ya puedes iniciar sesión.' });
-
-    } catch (error) {
-        console.error('---  FALLO CRÍTICO DE TOKEN  ---');
-        console.error('Nombre del error:', error.name);
-        console.error('Mensaje técnico:', error.message);
-
-        if (error.name === 'JsonWebTokenError') console.error('❌ ERROR: La firma no coincide. Revisa el JWT_SECRET.');
-        if (error.name === 'TokenExpiredError') console.error('❌ ERROR: El token expiró según el reloj del servidor.');
-
-        res.status(401).json({ mensaje: 'Token corrupto o expirado.' });
-    }
-};
-
-// -----------------------------------------------------------------
-// 3. Inicio de Sesión (Login Clásico)
-// -----------------------------------------------------------------
-/**
- * Inicia la sesión de un usuario de forma clásica (correo y contraseña).
- * @param {import('express').Request} req - Petición Express (body: correo, password).
- * @param {import('express').Response} res - Respuesta Express.
- */
-exports.login = async (req, res) => {
-    try {
-        const { correo, password } = req.body;
-        const usuario = await Usuario.findOne({ where: { correo } });
-
-        if (!usuario) return res.status(404).json({ mensaje: 'Credenciales inválidas.' });
-
-        // 🛡️ Validación de Cuenta Activa
-        if (!usuario.verificado) return res.status(403).json({ mensaje: 'Cuenta no activa. Por favor, verifica tu correo.' });
-
-        const esPasswordValido = await bcrypt.compare(password, usuario.hash_password);
-        if (!esPasswordValido) return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
-
-        // 🚩 Buscador de Huellas: Diagnóstico inicial
-        const [hasDiag] = await db.query(
-            'SELECT id_diagnostico FROM diagnostico WHERE id_usuario = ? LIMIT 1',
-            { replacements: [usuario.id_usuario], type: db.QueryTypes.SELECT }
-        );
-
-        const requiereDiagnostico = hasDiag ? false : true;
-
-        // 💡 NOTA: Se omite la actualización de `ultima_conexion` aquí para evitar 
-        // conflictos con el cálculo del motor de rachas en el Dashboard.
-
-        const token = jwt.sign(
-            { id_usuario: usuario.id_usuario, rol: usuario.rol },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' }
-        );
-
-        res.status(200).json({
-            mensaje: 'Inicio de sesión exitoso.',
-            token,
-            requiereDiagnostico: requiereDiagnostico,
-            usuario: {
-                id_usuario: usuario.id_usuario,
-                nombre_completo: usuario.nombre_completo,
-                correo: usuario.correo,
-                rol: usuario.rol,
-                rango: usuario.rango || usuario.rango_actual
+        const usuario = await Usuario.findOne({
+            where: {
+                verification_token: token
             }
         });
+
+        if (!usuario) {
+            return res.status(401).json({
+                mensaje:
+                    'Token de verificación inválido o ya utilizado.'
+            });
+        }
+
+        if (
+            Date.now() >
+            usuario.verification_token_expiry
+        ) {
+            return res.status(401).json({
+                mensaje:
+                    'El enlace de activación ha caducado. Solicita uno nuevo.'
+            });
+        }
+
+        jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
+
+        usuario.verificado = true;
+        usuario.estado = 'Activo';
+        usuario.verification_token = '';
+        usuario.verification_token_expiry = null;
+
+        await usuario.save();
+
+        return res.status(200).json({
+            mensaje:
+                '¡Tu cuenta ha sido activada exitosamente! Ya puedes iniciar sesión.'
+        });
+
     } catch (error) {
-        console.error('Error en Login:', error);
-        res.status(500).json({ mensaje: 'Error interno del servidor.' });
+        console.error(
+            '--- FALLO CRÍTICO DE TOKEN ---'
+        );
+
+        console.error(
+            error.message
+        );
+
+        return res.status(401).json({
+            mensaje:
+                'Token corrupto o expirado.'
+        });
     }
 };
 
-// -----------------------------------------------------------------
-// 4. Lógica Google OAuth (Auto-verificado)
-// -----------------------------------------------------------------
-/**
- * Inicia sesión o registra automáticamente a un usuario mediante Google OAuth2.
- * @param {import('express').Request} req - Petición Express (body: token).
- * @param {import('express').Response} res - Respuesta Express.
- */
+// ============================================================================
+// 3. LOGIN NORMAL
+// ============================================================================
+
+exports.login = async (req, res) => {
+    try {
+        const {
+            correo,
+            password
+        } = req.body;
+
+        const usuario = await Usuario.findOne({
+            where: { correo }
+        });
+
+        if (!usuario) {
+            return res.status(404).json({
+                mensaje:
+                    'Credenciales inválidas.'
+            });
+        }
+
+        if (!usuario.verificado) {
+            return res.status(403).json({
+                mensaje:
+                    'Cuenta no activa. Por favor, verifica tu correo.'
+            });
+        }
+
+        const esPasswordValido =
+            await bcrypt.compare(
+                password,
+                usuario.hash_password
+            );
+
+        if (!esPasswordValido) {
+            return res.status(401).json({
+                mensaje:
+                    'Credenciales inválidas.'
+            });
+        }
+
+        // ========================================================
+        // VERIFICAR SI REALMENTE EXISTE UN DIAGNÓSTICO
+        // ========================================================
+
+        const [hasDiag] = await db.query(
+            `SELECT id_diagnostico
+             FROM diagnostico
+             WHERE id_usuario = ?
+             LIMIT 1`,
+            {
+                replacements: [
+                    usuario.id_usuario
+                ],
+                type: db.QueryTypes.SELECT
+            }
+        );
+
+        const requiereDiagnostico = !hasDiag;
+
+        console.log(
+            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+        );
+
+        console.log(
+            '🔐 LOGIN NORMAL'
+        );
+
+        console.log(
+            '👤 ID USUARIO:',
+            usuario.id_usuario
+        );
+
+        console.log(
+            '📚 TIENE DIAGNÓSTICO:',
+            !!hasDiag
+        );
+
+        console.log(
+            '🎯 REQUIERE DIAGNÓSTICO:',
+            requiereDiagnostico
+        );
+
+        // ========================================================
+        // JWT DE PMM
+        // ========================================================
+
+        const token = jwt.sign(
+            {
+                id_usuario:
+                    usuario.id_usuario,
+                rol:
+                    usuario.rol
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: '8h'
+            }
+        );
+
+        return res.status(200).json({
+            mensaje:
+                'Inicio de sesión exitoso.',
+            token,
+            requiereDiagnostico,
+
+            usuario: {
+                id_usuario:
+                    usuario.id_usuario,
+
+                nombre_completo:
+                    usuario.nombre_completo,
+
+                correo:
+                    usuario.correo,
+
+                rol:
+                    usuario.rol,
+
+                rango:
+                    usuario.rango ||
+                    usuario.rango_actual
+            }
+        });
+
+    } catch (error) {
+        console.error(
+            'Error en Login:',
+            error
+        );
+
+        return res.status(500).json({
+            mensaje:
+                'Error interno del servidor.'
+        });
+    }
+};
+
+// ============================================================================
+// 4. GOOGLE OAUTH
+// ============================================================================
+
 exports.googleLogin = async (req, res) => {
     try {
-        const { token } = req.body;
+        const {
+            token,
+            acepta_politica_privacidad,
+            acepta_terminos,
+            version_politica_privacidad,
+            version_terminos
+        } = req.body;
+
+        // ========================================================
+        // VALIDAR TOKEN GOOGLE
+        // ========================================================
+
+        if (!token) {
+            return res.status(400).json({
+                mensaje:
+                    'Token de Google requerido.'
+            });
+        }
 
         const ticket = await client.verifyIdToken({
             idToken: token,
-            audience: process.env.GOOGLE_CLIENT_ID,
+            audience:
+                process.env.GOOGLE_CLIENT_ID
         });
 
-        const { email, name } = ticket.getPayload();
+        const {
+            email,
+            name,
+            picture
+        } = ticket.getPayload();
 
-        // 🚩 Lógica de roles por dominio
-        const dominioUsuario = email.split('@')[1].toLowerCase();
-        const dominiosDocente = process.env.DOMINIOS_DOCENTES ? process.env.DOMINIOS_DOCENTES.split(',') : [];
-        let rolAsignado = dominiosDocente.includes(dominioUsuario) ? 'docente' : 'estudiante';
+        if (!email) {
+            return res.status(400).json({
+                mensaje:
+                    'Google no proporcionó un correo válido.'
+            });
+        }
 
-        let usuario = await Usuario.findOne({ where: { correo: email } });
+        const dominioUsuario =
+            email
+                .split('@')[1]
+                ?.toLowerCase();
+
+        const dominiosDocente =
+            process.env.DOMINIOS_DOCENTES
+                ? process.env.DOMINIOS_DOCENTES
+                    .split(',')
+                    .map(d =>
+                        d.trim().toLowerCase()
+                    )
+                : [];
+
+        const rolAsignado =
+            dominiosDocente.includes(
+                dominioUsuario
+            )
+                ? 'docente'
+                : 'estudiante';
+
+        // ========================================================
+        // BUSCAR USUARIO
+        // ========================================================
+
+        let usuario =
+            await Usuario.findOne({
+                where: {
+                    correo: email
+                }
+            });
+
         let esNuevo = false;
 
+        // ========================================================
+        // NUEVO USUARIO GOOGLE
+        // ========================================================
+
         if (!usuario) {
-            // Usuario de Google nace activo y verificado automáticamente
-            usuario = await Usuario.create({
-                nombre_completo: name,
-                correo: email,
-                rol: rolAsignado,
-                hash_password: 'LOGIN_GOOGLE_OAUTH', // Dummy password
-                verificado: true,
-                estado: 'Activo',
-                fecha_registro: new Date(),
-                ultima_conexion: new Date()
-            });
+
+            if (
+                !acepta_politica_privacidad ||
+                !acepta_terminos
+            ) {
+                return res.status(428).json({
+                    codigo:
+                        'CONSENTIMIENTO_REQUERIDO',
+
+                    mensaje:
+                        'Debes aceptar los Términos y la Política de Privacidad para crear tu cuenta.'
+                });
+            }
+
+            const ahora =
+                new Date();
+
+            usuario =
+                await Usuario.create({
+
+                    nombre_completo:
+                        name || email,
+
+                    correo:
+                        email,
+
+                    rol:
+                        rolAsignado,
+
+                    hash_password:
+                        'LOGIN_GOOGLE_OAUTH',
+
+                    verificado:
+                        true,
+
+                    estado:
+                        'Activo',
+
+                    fecha_registro:
+                        ahora,
+
+                    ultima_conexion:
+                        ahora,
+
+                    foto_perfil:
+                        picture || null,
+
+                    // CONSENTIMIENTO
+
+                    acepta_politica_privacidad:
+                        true,
+
+                    fecha_aceptacion_politica:
+                        ahora,
+
+                    version_politica_privacidad:
+                        version_politica_privacidad ||
+                        VERSION_POLITICA,
+
+                    acepta_terminos:
+                        true,
+
+                    fecha_aceptacion_terminos:
+                        ahora,
+
+                    version_terminos:
+                        version_terminos ||
+                        VERSION_TERMINOS
+                });
+
             esNuevo = true;
-        } else {
-            // 💡 NOTA: Se omite actualizar `ultima_conexion` aquí para no pisar la racha.
-        }
 
-        // 🚩 Evaluación de Diagnóstico
-        let requiereDiagnostico = true;
-
-        if (!esNuevo) {
-            const [hasDiag] = await db.query(
-                'SELECT id_diagnostico FROM diagnostico WHERE id_usuario = ? LIMIT 1',
-                { replacements: [usuario.id_usuario], type: db.QueryTypes.SELECT }
+            console.log(
+                '✅ NUEVO USUARIO GOOGLE CREADO'
             );
 
-            if (usuario.rango || usuario.rango_actual || hasDiag) {
-                requiereDiagnostico = false;
-            }
+            console.log(
+                '👤 ID:',
+                usuario.id_usuario
+            );
+
+            console.log(
+                '📧 CORREO:',
+                usuario.correo
+            );
         }
 
-        const payloadJWT = { id_usuario: usuario.id_usuario, rol: usuario.rol };
-        const tokenPMM = jwt.sign(payloadJWT, process.env.JWT_SECRET, { expiresIn: '8h' });
+        // ========================================================
+        // ACTUALIZAR ÚLTIMA CONEXIÓN
+        // ========================================================
 
-        res.status(200).json({
-            mensaje: 'Sello de Google validado exitosamente.',
-            token: tokenPMM,
-            requiereDiagnostico: requiereDiagnostico,
+        usuario.ultima_conexion =
+            new Date();
+
+        await usuario.save();
+
+        // ========================================================
+        // EVALUACIÓN DEL DIAGNÓSTICO
+        //
+        // IMPORTANTE:
+        // NO usamos rango ni rango_actual.
+        // Solo importa si existe un registro en diagnostico.
+        // ========================================================
+
+        const [hasDiag] =
+            await db.query(
+                `SELECT id_diagnostico
+                 FROM diagnostico
+                 WHERE id_usuario = ?
+                 LIMIT 1`,
+                {
+                    replacements: [
+                        usuario.id_usuario
+                    ],
+                    type:
+                        db.QueryTypes.SELECT
+                }
+            );
+
+        const requiereDiagnostico =
+            !hasDiag;
+
+        console.log(
+            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+        );
+
+        console.log(
+            '🔐 GOOGLE LOGIN'
+        );
+
+        console.log(
+            '👤 ID USUARIO:',
+            usuario.id_usuario
+        );
+
+        console.log(
+            '📧 CORREO:',
+            usuario.correo
+        );
+
+        console.log(
+            '🆕 USUARIO NUEVO:',
+            esNuevo
+        );
+
+        console.log(
+            '📚 TIENE DIAGNÓSTICO:',
+            !!hasDiag
+        );
+
+        console.log(
+            '🎯 REQUIERE DIAGNÓSTICO:',
+            requiereDiagnostico
+        );
+
+        // ========================================================
+        // CREAR JWT DE PMM
+        // ========================================================
+
+        const payloadJWT = {
+            id_usuario:
+                usuario.id_usuario,
+
+            rol:
+                usuario.rol
+        };
+
+        const tokenPMM =
+            jwt.sign(
+                payloadJWT,
+                process.env.JWT_SECRET,
+                {
+                    expiresIn:
+                        '8h'
+                }
+            );
+
+        // ========================================================
+        // RESPUESTA
+        // ========================================================
+
+        return res.status(200).json({
+
+            mensaje:
+                'Sello de Google validado exitosamente.',
+
+            token:
+                tokenPMM,
+
+            requiereDiagnostico:
+
+                requiereDiagnostico,
+
             usuario: {
-                id_usuario: usuario.id_usuario,
-                nombre_completo: usuario.nombre_completo,
-                correo: usuario.correo,
-                rol: usuario.rol,
-                rango: usuario.rango
+
+                id_usuario:
+                    usuario.id_usuario,
+
+                nombre_completo:
+                    usuario.nombre_completo,
+
+                correo:
+                    usuario.correo,
+
+                rol:
+                    usuario.rol,
+
+                rango:
+                    usuario.rango ||
+                    usuario.rango_actual
             }
         });
 
     } catch (error) {
-        console.error("Error validando Google Token:", error);
-        res.status(401).json({ mensaje: "El sello de Google no es válido o expiró." });
+
+        console.error(
+            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+        );
+
+        console.error(
+            '❌ ERROR GOOGLE LOGIN'
+        );
+
+        console.error(
+            'TIPO:',
+            error.name
+        );
+
+        console.error(
+            'MENSAJE:',
+            error.message
+        );
+
+        console.error(
+            'STACK:',
+            error.stack
+        );
+
+        console.error(
+            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+        );
+
+        // Solo errores reales de validación
+        // del token de Google reciben 401.
+
+        if (
+            error.name ===
+                'JsonWebTokenError' ||
+            error.name ===
+                'TokenExpiredError'
+        ) {
+            return res.status(401).json({
+                mensaje:
+                    'El sello de Google no es válido o expiró.'
+            });
+        }
+
+        return res.status(500).json({
+            mensaje:
+                'No fue posible iniciar sesión con Google.',
+            error:
+                process.env.NODE_ENV !==
+                'production'
+                    ? error.message
+                    : undefined
+        });
     }
 };
 
-// -----------------------------------------------------------------
-// 5. Recuperación de Contraseña (OWASP Anti-Enumeración)
-// -----------------------------------------------------------------
-/**
- * Inicia el proceso de recuperación de contraseña enviando un token al correo del usuario.
- * @param {import('express').Request} req - Petición Express (body: correo).
- * @param {import('express').Response} res - Respuesta Express.
- */
+// ============================================================================
+// 5. RECUPERACIÓN DE CONTRASEÑA
+// ============================================================================
+
 exports.forgotPassword = async (req, res) => {
     try {
         const { correo } = req.body;
-        const usuario = await Usuario.findOne({ where: { correo } });
 
-        // 🛡️ Anti-enumeración: Siempre responde lo mismo exista o no
+        const usuario =
+            await Usuario.findOne({
+                where: { correo }
+            });
+
+        // Anti-enumeración
         if (!usuario) {
-            return res.status(200).json({ mensaje: 'Si el correo es válido, recibirás instrucciones pronto.' });
+            return res.status(200).json({
+                mensaje:
+                    'Si el correo es válido, recibirás instrucciones pronto.'
+            });
         }
 
-        const tokenRecuperacion = jwt.sign(
-            { id_usuario: usuario.id_usuario },
-            process.env.JWT_SECRET,
-            { expiresIn: '2h' }
-        );
+        const tokenRecuperacion =
+            jwt.sign(
+                {
+                    id_usuario:
+                        usuario.id_usuario
+                },
+                process.env.JWT_SECRET,
+                {
+                    expiresIn: '2h'
+                }
+            );
 
-        // 🛡️ Persistencia de Reset Token
-        usuario.reset_token = tokenRecuperacion;
-        usuario.reset_token_expiry = Date.now() + 7200000; // 2 hours
+        usuario.reset_token =
+            tokenRecuperacion;
+
+        usuario.reset_token_expiry =
+            Date.now() + 7200000;
+
         await usuario.save();
 
-        const urlRecuperacion = `${process.env.FRONTEND_URL}/reset-password/${tokenRecuperacion}`;
+        const urlRecuperacion =
+            `${process.env.FRONTEND_URL}/reset-password/${tokenRecuperacion}`;
 
-        if (process.env.NODE_ENV !== "production") {
-            console.log(`🗝️ [DEV LOG] Token de recuperación para ${correo}: ${urlRecuperacion}`);
+        if (
+            process.env.NODE_ENV !==
+            'production'
+        ) {
+            console.log(
+                `[DEV LOG] Token de recuperación para ${correo}: ${urlRecuperacion}`
+            );
         }
 
         if (resend) {
             await resend.emails.send({
-                from: 'Seguridad PMM <admin@academiapmm.online>',
-                to: correo,
-                subject: "🗝️ Recuperación de acceso a PMM Interactivo",
+                from:
+                    'Seguridad PMM <admin@academiapmm.online>',
+
+                to:
+                    correo,
+
+                subject:
+                    'Recuperación de acceso a PMM Interactivo',
+
                 html: `
-                    <div style="font-family: sans-serif; text-align: center; padding: 20px;">
-                        <h2>Restablecer Sello Ninja</h2>
-                        <p>Hola ${usuario.nombre_completo}, hemos recibido una solicitud para cambiar tu contraseña.</p>
-                        <a href="${urlRecuperacion}" style="background: #8B0000; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 15px;">
+                    <div style="
+                        font-family:sans-serif;
+                        text-align:center;
+                        padding:20px;
+                    ">
+
+                        <h2>
+                            Restablecer acceso
+                        </h2>
+
+                        <p>
+                            Hola ${usuario.nombre_completo},
+                            hemos recibido una solicitud
+                            para cambiar tu contraseña.
+                        </p>
+
+                        <a
+                            href="${urlRecuperacion}"
+                            style="
+                                background:#8B0000;
+                                color:white;
+                                padding:12px 25px;
+                                text-decoration:none;
+                                border-radius:5px;
+                                display:inline-block;
+                                margin-top:15px;
+                            "
+                        >
                             Restablecer Contraseña
                         </a>
-                        <p style="font-size: 11px; color: #666; margin-top: 20px;">Este enlace es válido solo por 2 horas.</p>
+
+                        <p style="
+                            font-size:11px;
+                            color:#666;
+                            margin-top:20px;
+                        ">
+                            Este enlace es válido durante 2 horas.
+                        </p>
+
                     </div>
                 `
             });
         }
 
-        res.status(200).json({ mensaje: 'Si el correo es válido, recibirás instrucciones pronto.' });
+        return res.status(200).json({
+            mensaje:
+                'Si el correo es válido, recibirás instrucciones pronto.'
+        });
 
     } catch (error) {
-        console.error('Error en forgotPassword:', error);
-        res.status(500).json({ mensaje: 'Error interno al procesar recuperación.' });
+
+        console.error(
+            'Error en forgotPassword:',
+            error
+        );
+
+        return res.status(500).json({
+            mensaje:
+                'Error interno al procesar recuperación.'
+        });
     }
 };
 
-// -----------------------------------------------------------------
-// 6. Restablecer Contraseña (Triple Validación OWASP)
-// -----------------------------------------------------------------
-/**
- * Restablece la contraseña del usuario utilizando un token temporal.
- * @param {import('express').Request} req - Petición Express (params: token, body: nuevaPassword).
- * @param {import('express').Response} res - Respuesta Express.
- */
+// ============================================================================
+// 6. RESTABLECER CONTRASEÑA
+// ============================================================================
+
 exports.resetPassword = async (req, res) => {
     try {
         const { token } = req.params;
         const { nuevaPassword } = req.body;
 
-        // 1. Validar unicidad y existencia en DB
-        const usuario = await Usuario.findOne({ where: { reset_token: token } });
-        if (!usuario) return res.status(401).json({ mensaje: 'Token inválido, ya utilizado o no autorizado.' });
+        const usuario =
+            await Usuario.findOne({
+                where: {
+                    reset_token: token
+                }
+            });
 
-        // 2. Validar expiración de tiempo real
-        if (Date.now() > usuario.reset_token_expiry) {
-            return res.status(401).json({ mensaje: 'El tiempo del token ha expirado. Solicita uno nuevo.' });
+        if (!usuario) {
+            return res.status(401).json({
+                mensaje:
+                    'Token inválido, ya utilizado o no autorizado.'
+            });
         }
 
-        // 3. Validar firma criptográfica
-        jwt.verify(token, process.env.JWT_SECRET);
+        if (
+            Date.now() >
+            usuario.reset_token_expiry
+        ) {
+            return res.status(401).json({
+                mensaje:
+                    'El tiempo del token ha expirado. Solicita uno nuevo.'
+            });
+        }
 
-        // 🔐 Encriptar nueva clave
-        const salt = await bcrypt.genSalt(10);
-        usuario.hash_password = await bcrypt.hash(nuevaPassword, salt);
+        jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
 
-        // 🛡️ Invalidar tokens (Single Use)
-        usuario.reset_token = "";
+        const salt =
+            await bcrypt.genSalt(10);
+
+        usuario.hash_password =
+            await bcrypt.hash(
+                nuevaPassword,
+                salt
+            );
+
+        usuario.reset_token = '';
         usuario.reset_token_expiry = null;
+
         await usuario.save();
 
-        res.status(200).json({ mensaje: '¡Contraseña actualizada! Sello restaurado exitosamente.' });
+        return res.status(200).json({
+            mensaje:
+                '¡Contraseña actualizada! Sello restaurado exitosamente.'
+        });
 
     } catch (error) {
-        res.status(401).json({ mensaje: 'El enlace de recuperación es inválido o corrupto.' });
+
+        console.error(
+            'Error en resetPassword:',
+            error.message
+        );
+
+        return res.status(401).json({
+            mensaje:
+                'El enlace de recuperación es inválido o corrupto.'
+        });
     }
 };

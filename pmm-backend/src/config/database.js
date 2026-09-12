@@ -1,33 +1,43 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-// Inicializamos Sequelize con las variables de entorno y el "Fix" de Zona Horaria
-const sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASSWORD,
-    {
-        host: process.env.DB_HOST || 'localhost',
-        dialect: process.env.DB_DIALECT || 'mysql',
-        logging: false, 
-        
-        // CONFIGURACIÓN DE ZONA HORARIA (Colombia UTC-5)
-        // Esto evita que los tokens expiren antes de tiempo y que los logs digan "Hace 1 día"
-        timezone: '-05:00', 
-        dialectOptions: {
-            dateStrings: true,
-            typeCast: true,
-            timezone: '-05:00', // Sincroniza la sesión de MySQL con la app
-        },
-
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        }
+// Extraemos tus opciones personalizadas para reutilizarlas
+const opcionesSequelize = {
+    dialect: process.env.DB_DIALECT || 'mysql',
+    logging: false, 
+    
+    // CONFIGURACIÓN DE ZONA HORARIA (Colombia UTC-5)
+    timezone: '-05:00', 
+    dialectOptions: {
+        dateStrings: true,
+        typeCast: true,
+        timezone: '-05:00',
+    },
+    pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
     }
-);
+};
+
+let sequelize;
+
+// 🚩 EL CAMBIO VITAL: Si Railway nos da MYSQL_URL, la usamos.
+if (process.env.MYSQL_URL) {
+    sequelize = new Sequelize(process.env.MYSQL_URL, opcionesSequelize);
+} else {
+    // Si no estamos en Railway, usa las variables locales de tu .env
+    sequelize = new Sequelize(
+        process.env.DB_NAME,
+        process.env.DB_USER,
+        process.env.DB_PASSWORD,
+        {
+            host: process.env.DB_HOST || 'localhost',
+            ...opcionesSequelize
+        }
+    );
+}
 
 // Función para probar la conexión
 const testConnection = async () => {

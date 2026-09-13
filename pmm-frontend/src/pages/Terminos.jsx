@@ -46,12 +46,12 @@ const Terminos = () => {
 
                     <section>
                         <h2 className="text-lg font-bold text-[#0A3D62] mb-2">4. Propiedad Intelectual</h2>
-                        <p>Todo el contenido educativo, diseño de interfaz, código fuente y materiales de la plataforma son propiedad de los autores del proyecto y/o de la Institución Universitaria Antonio José Camacho, protegidos por las leyes de derechos de autor.</p>
+                        <p>Los derechos sobre el contenido, diseño, código fuente y demás materiales de la plataforma corresponden a sus respectivos titulares, de conformidad con la normativa colombiana sobre derecho de autor y los acuerdos institucionales que resulten aplicables.</p>
                     </section>
 
                     <section>
                         <h2 className="text-lg font-bold text-[#0A3D62] mb-2">5. Limitación de Responsabilidad</h2>
-                        <p>Al ser un entorno controlado de investigación, los autores no se hacen responsables por interrupciones temporales del servicio o por el uso indebido que el estudiante haga de las herramientas de la plataforma.</p>
+                        <p>PMM Interactivo constituye un prototipo académico desarrollado dentro del alcance de la presente investigación. Su disponibilidad y funcionamiento pueden verse afectados por factores técnicos, de infraestructura o servicios externos. La plataforma se proporciona como recurso de apoyo educativo y no sustituye las evaluaciones oficiales ni la orientación académica institucional.</p>
                     </section>
                 </div>
 

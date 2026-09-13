@@ -41,7 +41,7 @@ const Privacidad = () => {
                         <h2 className="text-lg font-bold text-[#0A3D62] mb-2 flex items-center gap-2">
                             <Brain size={18} /> 3. Uso de Inteligencia Artificial (Aviso Importante)
                         </h2>
-                        <p>La plataforma utiliza la API de Google Gemini para generar explicaciones y pistas sobre los errores cometidos. <strong>Advertencia:</strong> El usuario se compromete a NO compartir información personal sensible (números de documento, direcciones, datos financieros) en el chat con el Tutor IA, ya que es una herramienta de apoyo académico.</p>
+                        <p>La plataforma utiliza la API de Google Gemini para generar retroalimentación y orientación en lenguaje natural durante determinadas actividades. Para esta función se envía al servicio información contextual necesaria para responder, como el nivel o rango del estudiante, el enunciado del ejercicio y, según la funcionalidad utilizada, la respuesta seleccionada o el mensaje introducido por el estudiante. No se envían deliberadamente datos como el nombre, correo electrónico o identificador interno del usuario al modelo dentro de estas solicitudes. <strong>Advertencia:</strong> El usuario se compromete a NO compartir información personal sensible (números de documento, direcciones, datos financieros) en el chat con el Tutor IA, ya que es una herramienta de apoyo académico.</p>
                     </section>
 
                     <section>

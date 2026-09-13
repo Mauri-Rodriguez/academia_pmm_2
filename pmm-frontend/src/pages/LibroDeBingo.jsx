@@ -24,7 +24,7 @@ const LibroDeBingo = () => {
         if (n.includes('genin') || n.includes('bajo')) return { label: 'BÁSICO', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200' };
         if (n.includes('chunin') || n.includes('intermedio') || n.includes('guerrero')) return { label: 'INTERMEDIO', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' };
         if (n.includes('jonin') || n.includes('alto') || n.includes('maestro')) return { label: 'AVANZADO', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' };
-        return { label: 'EXPERTO', color: 'text-[#0A3D62]', bg: 'bg-[#0A3D62]/10', border: 'border-[#0A3D62]/20' };
+        return { label: 'RECLUTA', color: 'text-[#0A3D62]', bg: 'bg-[#0A3D62]/10', border: 'border-[#0A3D62]/20' };
     };
 
     // Helper para definir los estilos del Podio en tema claro

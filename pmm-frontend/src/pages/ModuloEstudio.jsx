@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti'; 
+import confetti from 'canvas-confetti';
 import api from '../api/api';
 import AchievementToast from './AchievementToast';
 import AscensoModal from './AscensoModal';
@@ -9,8 +9,7 @@ import TutorOraculo from '../components/TutorOraculo';
 
 // 🚩 IMPORTS PARA MATEMÁTICAS PROFESIONALES (KaTeX)
 import 'katex/dist/katex.min.css';
-// En la parte superior de ModuloEstudio.jsx
-import { renderizarConMatematicas } from '../utils/mathConverter.jsx'; 
+import { renderizarConMatematicas } from '../utils/mathConverter.jsx';
 
 // 🚩 HELPER: Tooltip de Ayuda Contextual (Heurísticas #6 y #10)
 const InfoTooltip = ({ text }) => (
@@ -31,13 +30,14 @@ const ModuloEstudio = () => {
 
     // --- ESTADOS ---
     const [ejercicios, setEjercicios] = useState([]);
+    const [nombreModulo, setNombreModulo] = useState("Estudio");
     const [indice, setIndice] = useState(0);
     const [completado, setCompletado] = useState(false);
     const [cargando, setCargando] = useState(true);
     const [bloqueado, setBloqueado] = useState(false);
     const [modoRepaso, setModoRepaso] = useState(false);
     const [modalIA, setModalIA] = useState({ visible: false, explicacion: '' });
-    const [logroActivo, setLogroActivo] = useState(null); 
+    const [logroActivo, setLogroActivo] = useState(null);
     const [mostrarAscenso, setMostrarAscenso] = useState(false);
     const [datosAscenso, setDatosAscenso] = useState(null);
     const [insigniaNueva, setInsigniaNueva] = useState(null);
@@ -50,7 +50,7 @@ const ModuloEstudio = () => {
         const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 200 };
         const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
-        const interval = setInterval(function() {
+        const interval = setInterval(function () {
             const timeLeft = animationEnd - Date.now();
             if (timeLeft <= 0) return clearInterval(interval);
             const particleCount = 50 * (timeLeft / duration);
@@ -68,6 +68,11 @@ const ModuloEstudio = () => {
 
                 const resProgreso = await api.get(`/api/estudiante/dashboard`);
                 const moduloActual = resProgreso.data.ruta_ia_asignada?.find(m => m.id_modulo === parseInt(id_modulo));
+
+                // 🚩 Extraer el nombre real del módulo desde la respuesta del dashboard
+                if (moduloActual?.nombre_modulo) {
+                    setNombreModulo(moduloActual.nombre_modulo);
+                }
 
                 if (moduloActual && moduloActual.porcentaje_avance === 100) {
                     setCompletado(true);
@@ -87,13 +92,13 @@ const ModuloEstudio = () => {
     // --- 2. HELPERS ---
     const dispararLogro = (titulo, descripcion) => {
         setLogroActivo({ titulo, descripcion });
-        setTimeout(() => setLogroActivo(null), 5000); 
+        setTimeout(() => setLogroActivo(null), 5000);
     };
 
     const iniciarRepaso = () => {
         setIndice(0);
         setCompletado(false);
-        setModoRepaso(true); 
+        setModoRepaso(true);
     };
 
     const manejarFlujoFinal = (data) => {
@@ -111,7 +116,7 @@ const ModuloEstudio = () => {
             const res = await api.post('/api/estudiante/finalizar', { id_modulo, puntaje_final: ejercicios.length });
             if (res.data.insignia) {
                 setInsigniaNueva(res.data.insignia);
-                dispararConfetiVictoria(); 
+                dispararConfetiVictoria();
                 setTimeout(() => { setInsigniaNueva(null); manejarFlujoFinal(res.data); }, 4500);
             } else {
                 manejarFlujoFinal(res.data);
@@ -134,10 +139,10 @@ const ModuloEstudio = () => {
         if (letraUsuario === letraCorrectaDB) {
             const nuevoIndice = indice + 1;
             const esFinDeModulo = nuevoIndice === ejercicios.length;
-            
+
             if (!modoRepaso && !esFinDeModulo) {
                 const nuevoPorcentaje = Math.round((nuevoIndice / ejercicios.length) * 100);
-                try { await api.post('/api/estudiante/actualizar-progreso', { id_modulo, porcentaje: nuevoPorcentaje }); } 
+                try { await api.post('/api/estudiante/actualizar-progreso', { id_modulo, porcentaje: nuevoPorcentaje }); }
                 catch (err) { console.error("Error guardando progreso:", err); }
             }
 
@@ -192,7 +197,7 @@ const ModuloEstudio = () => {
 
     return (
         <div className="min-h-screen bg-slate-100 text-slate-800 relative overflow-hidden pb-20 selection:bg-[#FBE000]/30">
-            
+
             {/* OVERLAY ÉPICO: INSIGNIA OBTENIDA */}
             <AnimatePresence>
                 {insigniaNueva && (
@@ -238,7 +243,18 @@ const ModuloEstudio = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
                         </button>
-                        <h1 className="text-base md:text-xl font-bold text-[#0A3D62] tracking-tight uppercase">Módulo de <span className="text-[#FBE000] drop-shadow-sm">Estudio</span></h1>
+
+                        {/* 🚩 SOLUCIÓN DE CONTRASTE: Fondo amarillo con texto azul oscuro para máxima legibilidad */}
+                        <h1 className="text-xs sm:text-sm md:text-base font-bold text-slate-500 tracking-wider uppercase flex items-center gap-2">
+                            <span className="hidden sm:inline">Módulo:</span>
+                            <span className="text-[#0A3D62] font-black bg-[#FBE000]/20 px-2 sm:px-3 py-1 rounded-lg border border-[#FBE000]/50 shadow-sm truncate max-w-[140px] sm:max-w-none">
+                                {nombreModulo}
+                            </span>
+                        </h1>
+                    </div>
+
+                    <div className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wider uppercase hidden md:block">
+                        Ejercicio {indice + 1} de {ejercicios.length}
                     </div>
                 </div>
             </nav>
@@ -261,11 +277,13 @@ const ModuloEstudio = () => {
                 </div>
 
                 {/* 🚩 Tarjeta de Pregunta con Renderizado KaTeX */}
-                <motion.div key={indice} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 p-6 md:p-10 rounded-3xl shadow-lg border-t-4 border-t-[#FBE000] relative">
-                    <div className="mb-8 md:mb-10 text-center">
-                        <h3 className="text-xl md:text-3xl font-bold text-slate-900 leading-snug">
-                            {/* 🚩 Aquí se aplica la conversión automática de matemáticas */}
-                            {renderizarConMatematicas(ejActual?.pregunta)}
+                <motion.div key={indice} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 p-5 sm:p-6 md:p-10 rounded-3xl shadow-lg border-t-4 border-t-[#FBE000] relative">
+                    {/* 🚩 FIX RESPONSIVE: padding vertical + leading normal + wrapper */}
+                    <div className="mb-6 sm:mb-8 md:mb-10">
+                        <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 leading-normal text-center py-2">
+                            <span className="formula-wrap">
+                                {renderizarConMatematicas(ejActual?.pregunta)}
+                            </span>
                         </h3>
                     </div>
 
@@ -273,17 +291,17 @@ const ModuloEstudio = () => {
                         {['A', 'B', 'C', 'D'].map((letra) => {
                             const campo = `opcion_${letra.toLowerCase()}`;
                             return (
-                                <button 
-                                    key={letra} 
-                                    onClick={() => responder({ letra, campo })} 
-                                    disabled={bloqueado} 
-                                    className="group w-full flex items-center p-4 md:p-5 bg-slate-50 border-2 border-slate-200 rounded-xl hover:border-[#0A3D62] hover:bg-[#0A3D62]/5 transition-all active:scale-[0.98] text-left"
+                                <button
+                                    key={letra}
+                                    onClick={() => responder({ letra, campo })}
+                                    disabled={bloqueado}
+                                    className="group w-full flex items-start sm:items-center p-3.5 sm:p-4 md:p-5 bg-slate-50 border-2 border-slate-200 rounded-xl hover:border-[#0A3D62] hover:bg-[#0A3D62]/5 transition-all active:scale-[0.98] text-left"
                                 >
-                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[#0A3D62] border border-[#0A3D62] flex items-center justify-center mr-4 md:mr-6 group-hover:bg-[#FBE000] group-hover:border-[#FBE000] transition-all flex-shrink-0">
-                                        <span className="text-white font-black text-lg group-hover:text-[#0A3D62] transition-colors">{letra}</span>
+                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[#0A3D62] border border-[#0A3D62] flex items-center justify-center mr-3 sm:mr-4 md:mr-6 group-hover:bg-[#FBE000] group-hover:border-[#FBE000] transition-all flex-shrink-0">
+                                        <span className="text-white font-black text-base sm:text-lg group-hover:text-[#0A3D62] transition-colors">{letra}</span>
                                     </div>
-                                    <span className="text-slate-700 text-sm md:text-base font-medium group-hover:text-slate-900 transition-colors flex-1">
-                                        {/* 🚩 Aquí se aplica la conversión automática a las opciones */}
+                                    {/* 🚩 FIX RESPONSIVE: font-size progresivo + wrapper + min-w-0 */}
+                                    <span className="text-slate-700 text-sm sm:text-base md:text-lg font-medium group-hover:text-slate-900 transition-colors flex-1 min-w-0 formula-wrap">
                                         {renderizarConMatematicas(ejActual?.[campo])}
                                     </span>
                                 </button>
@@ -300,7 +318,10 @@ const ModuloEstudio = () => {
                         <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white border border-slate-200 p-6 md:p-10 rounded-3xl max-w-lg w-full text-center shadow-2xl border-t-4 border-t-red-400">
                             <img src="/idea.png" alt="Sugerencia" className="w-20 h-20 object-contain mx-auto mb-4" />
                             <h4 className="text-sm font-bold text-red-500 uppercase tracking-widest mb-3">Oportunidad de Aprendizaje</h4>
-                            <p className="text-slate-600 italic mb-8 leading-relaxed text-sm md:text-base">"{modalIA.explicacion}"</p>
+                            {/* 🚩 FIX: renderizar la explicación de Gemini con KaTeX */}
+                            <div className="text-slate-600 italic mb-8 leading-relaxed text-sm md:text-base text-left whitespace-pre-line formula-wrap">
+                                {renderizarConMatematicas(modalIA.explicacion)}
+                            </div>
                             <button onClick={() => setModalIA({ visible: false, explicacion: '' })} className="w-full bg-[#0A3D62] hover:bg-[#083252] text-white p-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md">Entendido, continuar</button>
                         </motion.div>
                     </div>

@@ -860,9 +860,9 @@ exports.googleLogin = async (req, res) => {
 
         if (
             error.name ===
-                'JsonWebTokenError' ||
+            'JsonWebTokenError' ||
             error.name ===
-                'TokenExpiredError'
+            'TokenExpiredError'
         ) {
             return res.status(401).json({
                 mensaje:
@@ -875,7 +875,7 @@ exports.googleLogin = async (req, res) => {
                 'No fue posible iniciar sesión con Google.',
             error:
                 process.env.NODE_ENV !==
-                'production'
+                    'production'
                     ? error.message
                     : undefined
         });

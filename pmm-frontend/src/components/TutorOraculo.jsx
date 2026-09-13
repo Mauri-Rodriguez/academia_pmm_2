@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
 
+// 🚩 IMPORTS PARA MATEMÁTICAS PROFESIONALES (KaTeX)
+import 'katex/dist/katex.min.css';
+import { renderizarConMatematicas } from '../utils/mathConverter.jsx';
+
 const TutorOraculo = ({ idPreguntaActual }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [mensaje, setMensaje] = useState('');
@@ -85,9 +89,12 @@ const TutorOraculo = ({ idPreguntaActual }) => {
                                     <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm ${
                                         msg.rol === 'usuario' 
                                             ? 'bg-[#0A3D62] text-white rounded-tr-sm' 
-                                            : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
+                                            : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm formula-wrap'
                                     }`}>
-                                        {msg.texto}
+                                        {msg.rol === 'usuario' 
+                                            ? msg.texto 
+                                            : renderizarConMatematicas(msg.texto)
+                                        }
                                     </div>
                                 </div>
                             ))}

@@ -66,58 +66,58 @@ const Login = () => {
     // GOOGLE LOGIN
     // ---------------------------------------------------------
     const handleGoogleSuccess = async (credentialResponse) => {
-    setError('');
-    setLoading(true);
+        setError('');
+        setLoading(true);
 
-    try {
-        const res = await api.post(
-            '/api/auth/google-login',
-            {
-                token: credentialResponse.credential,
+        try {
+            const res = await api.post(
+                '/api/auth/google-login',
+                {
+                    token: credentialResponse.credential,
 
-                // Se envían, pero NO se obliga al usuario
-                // a marcarlos para poder intentar iniciar sesión.
-                acepta_politica_privacidad: aceptaGoogleLegal,
-                acepta_terminos: aceptaGoogleLegal,
+                    // Se envían, pero NO se obliga al usuario
+                    // a marcarlos para poder intentar iniciar sesión.
+                    acepta_politica_privacidad: aceptaGoogleLegal,
+                    acepta_terminos: aceptaGoogleLegal,
 
-                version_politica_privacidad: '1.0',
-                version_terminos: '1.0'
-            }
-        );
-
-        guardarSesion(
-            res.data.token,
-            res.data.usuario,
-            res.data.requiereDiagnostico
-        );
-
-    } catch (err) {
-        console.error(
-            '❌ ERROR GOOGLE LOGIN:',
-            err.response?.data || err
-        );
-
-        // Usuario nuevo que todavía no ha aceptado
-        if (
-            err.response?.status === 428 &&
-            err.response?.data?.codigo === 'CONSENTIMIENTO_REQUERIDO'
-        ) {
-            setError(
-                'Debes aceptar los Términos y la Política de Privacidad para crear tu cuenta con Google.'
+                    version_politica_privacidad: '1.0',
+                    version_terminos: '1.0'
+                }
             );
-            return;
+
+            guardarSesion(
+                res.data.token,
+                res.data.usuario,
+                res.data.requiereDiagnostico
+            );
+
+        } catch (err) {
+            console.error(
+                '❌ ERROR GOOGLE LOGIN:',
+                err.response?.data || err
+            );
+
+            // Usuario nuevo que todavía no ha aceptado
+            if (
+                err.response?.status === 428 &&
+                err.response?.data?.codigo === 'CONSENTIMIENTO_REQUERIDO'
+            ) {
+                setError(
+                    'Debes aceptar los Términos y la Política de Privacidad para crear tu cuenta con Google.'
+                );
+                return;
+            }
+
+            setError(
+                err.response?.data?.message ||
+                err.response?.data?.mensaje ||
+                'No fue posible iniciar sesión con Google.'
+            );
+
+        } finally {
+            setLoading(false);
         }
-
-        setError(
-            err.response?.data?.message ||
-            err.response?.data?.mensaje ||
-            'No fue posible iniciar sesión con Google.'
-        );
-
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     // ---------------------------------------------------------
     // LOGIN NORMAL

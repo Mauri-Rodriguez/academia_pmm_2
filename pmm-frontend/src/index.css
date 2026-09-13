@@ -23,3 +23,70 @@ h1, h2, .font-scholar {
 .bg-parchment-texture {
   background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
 }
+
+/* ============================================================
+ *  FIX RESPONSIVE KATEX
+ *  - Los exponentes NUNCA se cortan (overflow visible)
+ *  - Las fórmulas se ajustan al ancho disponible
+ *  - Padding vertical para dar aire a exponentes y fracciones
+ * ============================================================ */
+
+/* 1) No romper palabras dentro de exponentes */
+.katex,
+.katex * {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+}
+
+/* 2) Exponentes/subíndices pegados a su base */
+.katex .msupsub,
+.katex .vlist-t,
+.katex .vlist-r,
+.katex .vlist {
+    white-space: nowrap;
+}
+
+/* 3) Contenedor con padding vertical para dar aire a las fórmulas */
+.formula-wrap {
+    display: inline-block;
+    max-width: 100%;
+    overflow: visible;
+    vertical-align: middle;
+    padding: 8px 6px 8px 6px;
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* 4) Asegurar que katex-display tampoco se recorte */
+.formula-wrap .katex-display {
+    margin: 0;
+    overflow: visible;
+}
+
+/* 5) En móvil: padding extra y tamaño ligeramente menor */
+@media (max-width: 640px) {
+    .formula-wrap {
+        padding: 10px 4px 10px 4px;
+        line-height: 1.7;
+    }
+    .formula-wrap .katex {
+        font-size: 1em;
+    }
+    .formula-wrap .katex-display {
+        font-size: 0.95em;
+    }
+    .formula-wrap .katex .msupsub .mord {
+        font-size: 0.75em;
+    }
+}
+
+/* 6) En pantallas muy estrechas (≤ 380px) */
+@media (max-width: 380px) {
+    .formula-wrap {
+        padding: 12px 4px 12px 4px;
+    }
+    .formula-wrap .katex {
+        font-size: 0.95em;
+    }
+}

@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../api/api';
 
+// 🚩 IMPORTS PARA MATEMÁTICAS
+import 'katex/dist/katex.min.css';
+import { renderizarConMatematicas } from '../utils/mathConverter.jsx';
+
 // 🚩 HELPER: Tooltip de Ayuda Contextual (Heurística #10)
 const InfoTooltip = ({ text }) => (
     <div className="group relative inline-flex items-center">
@@ -114,7 +118,8 @@ const HistorialErrores = () => {
                                             <span>📚</span> Tema a reforzar
                                         </span>
                                         <span className="text-sm md:text-base font-bold text-slate-900 uppercase tracking-wide break-words">
-                                            {error.tema_modulo}
+                                            {/* 🚩 RENDER: nombre del tema por si trae fórmulas */}
+                                            {renderizarConMatematicas(error.tema_modulo)}
                                         </span>
                                     </div>
                                     <span className="text-[9px] md:text-[10px] text-slate-500 font-bold bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full uppercase tracking-wider self-start">
@@ -122,8 +127,11 @@ const HistorialErrores = () => {
                                     </span>
                                 </div>
 
+                                {/* 🚩 RENDER: pregunta del ejercicio */}
                                 <h3 className="text-lg md:text-2xl font-bold text-slate-900 leading-relaxed mb-8 break-words">
-                                    {error.pregunta_texto}
+                                    <span className="formula-wrap">
+                                        {renderizarConMatematicas(error.pregunta_texto)}
+                                    </span>
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
@@ -134,7 +142,10 @@ const HistorialErrores = () => {
                                         </div>
                                         <p className="text-[9px] md:text-[10px] text-red-600 uppercase font-black mb-2 tracking-wider">Tu respuesta</p>
                                         <p className="text-sm md:text-base text-red-700 line-through decoration-red-400/50 font-medium break-words leading-relaxed">
-                                            {error.respuesta_incorrecta}
+                                            {/* 🚩 RENDER: opción incorrecta elegida por el alumno */}
+                                            <span className="formula-wrap">
+                                                {renderizarConMatematicas(error.respuesta_incorrecta)}
+                                            </span>
                                         </p>
                                     </div>
                                     
@@ -145,7 +156,10 @@ const HistorialErrores = () => {
                                         </div>
                                         <p className="text-[9px] md:text-[10px] text-green-700 uppercase font-black mb-2 tracking-wider">Respuesta correcta</p>
                                         <p className="text-sm md:text-base text-green-800 font-bold break-words leading-relaxed">
-                                            {error.respuesta_correcta}
+                                            {/* 🚩 RENDER: opción correcta */}
+                                            <span className="formula-wrap">
+                                                {renderizarConMatematicas(error.respuesta_correcta)}
+                                            </span>
                                         </p>
                                     </div>
                                 </div>
@@ -162,7 +176,8 @@ const HistorialErrores = () => {
                                         </div>
                                         <div className="mt-3">
                                             <p className="text-sm md:text-base text-slate-700 leading-relaxed whitespace-pre-line">
-                                                {error.explicacion_ia || "El sistema está generando una explicación detallada para este concepto..."}
+                                                {/* 🚩 RENDER: explicación IA (por si tiene fórmulas) */}
+                                                {renderizarConMatematicas(error.explicacion_ia || "El sistema está generando una explicación detallada para este concepto...")}
                                             </p>
                                         </div>
                                     </div>

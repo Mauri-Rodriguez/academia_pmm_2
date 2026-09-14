@@ -65,7 +65,8 @@ const consumirLlaves = (s, i) => {
     if (s[i] !== '{') return -1;
     let depth = 1, j = i + 1;
     while (j < s.length && depth > 0) {
-        if (s[j] === '\\' && j + 1 < s.length) { j += 2; continue; }
+        // 🚩 FIX producción: charCodeAt(92) es '\', inmune a la minificación agresiva
+        if (s.charCodeAt(j) === 92 && j + 1 < s.length) { j += 2; continue; }
         if (s[j] === '{') depth++;
         else if (s[j] === '}') depth--;
         j++;
@@ -132,8 +133,8 @@ const consumirExpresion = (s, i) => {
             if (end !== -1) { i = end; continue; }
         }
 
-        // Consumir sub-comandos anidados
-        if (c === '\\' && esLetra(s[i + 1])) {
+        // Consumir sub-comandos anidados (blindado con charCodeAt)
+        if (s.charCodeAt(i) === 92 && esLetra(s[i + 1])) {
             i = extraerBloque(s, i);
             continue;
         }
@@ -214,8 +215,8 @@ const parsearTexto = (texto) => {
     let buf = '', i = 0;
 
     while (i < texto.length) {
-        // 1) Inicio de comando LaTeX
-        if (texto[i] === '\\' && esLetra(texto[i + 1])) {
+        // 1) Inicio de comando LaTeX (Blindado con charCodeAt 92)
+        if (texto.charCodeAt(i) === 92 && esLetra(texto[i + 1])) {
             if (buf) { partes.push({ type: 'text', content: buf }); buf = ''; }
             const end = extraerBloque(texto, i);
             partes.push({ type: 'math', content: texto.substring(i, end) });

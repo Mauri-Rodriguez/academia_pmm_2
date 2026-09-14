@@ -117,8 +117,8 @@ const consumirExpresion = (s, i) => {
         // Fin en separadores "duros"
         if (c === ',' || c === ';' || c === ')') break;
 
-        // Fin si el espacio va seguido de texto (español)
-        if (c === ' ' && /^\s*[a-záéíóúñ]/.test(s.substring(i + 1)) && !/^\s*[a-z]\s/.test(s.substring(i))) break;
+        // Fin si el espacio va seguido de texto (español) - con soporte Unicode (flag u)
+        if (c === ' ' && /^\s*[a-záéíóúñ]/u.test(s.substring(i + 1)) && !/^\s*[a-z]\s/i.test(s.substring(i))) break;
 
         // Consumir bloque {} balanceado
         if (c === '{') {
@@ -224,12 +224,7 @@ const parsearTexto = (texto) => {
         }
 
         // 2) Potencia/subíndice suelto pegado a una base alfanumérica
-        //    (ej: `e^{3x}`, `x^{2}`, `(x-1)^{2}`, `[f(x)]^{2}`)
         if ((texto[i] === '^' || texto[i] === '_') && i + 1 < texto.length) {
-            // Buscar la base en `buf`: 
-            // - letra/número: x, e, 3
-            // - cierre de paréntesis: ), ]
-            // - cierre de llave: } (raro pero posible)
             const match = buf.match(/([a-zA-Z0-9\)\]\}]+)$/);
             if (match) {
                 const base = match[1];
@@ -296,7 +291,11 @@ const renderPartes = (partes) =>
  */
 export const renderizarConMatematicas = (texto) => {
     if (!texto || typeof texto !== 'string') return texto;
-    return renderPartes(parsearTexto(texto));
+    
+    // Normalizar saltos de línea y limpiar barras dobles escapadas del servidor
+    const textoLimpio = texto.replace(/\r\n/g, '\n').replace(/\\\\/g, '\\');
+    
+    return renderPartes(parsearTexto(textoLimpio));
 };
 
 // Alias por compatibilidad

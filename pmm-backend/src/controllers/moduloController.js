@@ -62,11 +62,11 @@ exports.actualizarProgreso = async (req, res) => {
             { where: { id_usuario } }
         );
 
-        console.log(`📊 Energía Sincronizada: ${nuevoChakraTotal}% para Usuario ${id_usuario}`);
+        console.log(`📊 Chakra Sincronizado: ${nuevoChakraTotal}% para Usuario ${id_usuario}`);
 
         res.json({ 
             success: true,
-            mensaje: 'Progreso sincronizado y Energía total actualizado.',
+            mensaje: 'Progreso sincronizado y Chakra total actualizado.',
             chakraTotal: nuevoChakraTotal 
         });
 

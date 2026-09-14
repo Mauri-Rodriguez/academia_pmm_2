@@ -96,7 +96,7 @@ exports.evaluarDiagnostico = async (req, res) => {
         };
 
         try {
-            const flaskResponse = await fetch('http://127.0.0.1:5000/api/ia/recomendar-ruta', {
+            const flaskResponse = await fetch(`${process.env.IA_SERVICE_URL}/api/ia/recomendar-ruta`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ puntaje: respuestasCorrectas })

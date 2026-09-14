@@ -26,6 +26,11 @@ const Diagnostico = () => {
         obtenerPreguntas();
     }, []);
 
+    // Scroll automático al cambiar de paso para evitar desajustes visuales en móviles
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [paso, examenIniciado]);
+
     const manejarRespuesta = (valorOpcion) => {
         setRespuestas({ ...respuestas, [preguntas[paso].id_pregunta]: valorOpcion });
         if (paso < preguntas.length - 1) {
@@ -164,7 +169,7 @@ const Diagnostico = () => {
                         const isSelected = respuestas[pActual.id_pregunta] === key;
                         return (
                             <button
-                                key={key}
+                                key={`${paso}-${key}`}
                                 onClick={() => manejarRespuesta(key)}
                                 className={`text-left p-4 rounded-xl border-2 transition-all ${
                                     isSelected 

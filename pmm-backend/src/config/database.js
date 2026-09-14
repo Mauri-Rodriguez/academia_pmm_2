@@ -49,6 +49,11 @@ const testConnection = async () => {
     }
 };
 
-testConnection();
+// 🚩 FIX: Solo probar la conexión cuando NO estamos en Jest
+//    (evita que el proceso quede colgado en el CI)
+if (process.env.NODE_ENV !== 'test') {
+    testConnection();
+}
 
 module.exports = sequelize;
+module.exports.testConnection = testConnection;

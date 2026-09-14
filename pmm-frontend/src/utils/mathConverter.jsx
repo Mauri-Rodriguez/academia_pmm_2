@@ -4,68 +4,28 @@ import 'katex/dist/katex.min.css';
 
 /* ============================================================================
  *  RENDERIZADOR LaTeX — Afinado a la BD real de pmm_interactivo
- *  ---------------------------------------------------------------------------
- *  Basado en análisis exhaustivo de las 220 filas de la tabla `ejercicios`.
- *
- *  Patrones soportados (100% de la data real):
- *    - \frac{...}{...}     → fracciones (con anidación)
- *    - \sqrt{...}          → raíces
- *    - \lim_{...}          → límites
- *    - \int ... dx         → integrales
- *    - \sin(...), \cos(...), \tan(...), \ln(...), \arctan(...)
- *    - \sin^{2}(x)         → funciones con exponente
- *    - x^{2}, e^{3x}, etc. → potencias sueltas
- *    - \cdot, \pi, \infty, \geq, \leq, \neq, \to, \sec, \cot, \csc
- *    - °, ', ''            → Unicode que KaTeX acepta nativo
  * ========================================================================== */
 
-/* ---------------------------------------------------------------------------
- *  TABLA DE COMANDOS — Derivada del dump
- *  Cada entrada: [familia, requiereArgumento]
- *
- *  Familia 'paren': consume (...) si le sigue
- *  Familia 'brace': consume {...} si le sigue
- *  Familia 'sym':   no consume nada
- *  Familia 'big':   consume expresión completa (ej: \int x dx)
- * ------------------------------------------------------------------------- */
-
 const COMANDOS = {
-    // --- 2 argumentos entre llaves ---
     'frac': 'brace2',
-
-    // --- 1 argumento entre llaves ---
     'sqrt': 'brace1',
-
-    // --- Funciones que consumen (...) ---
     'sin': 'paren', 'cos': 'paren', 'tan': 'paren',
     'ln': 'paren', 'arctan': 'paren',
     'sec': 'paren', 'cot': 'paren', 'csc': 'paren',
-
-    // --- Límite: consume expresión hasta un separador natural ---
     'lim': 'big',
-
-    // --- Integral: consume expresión hasta un separador natural ---
     'int': 'big',
-
-    // --- Símbolos puros (0 argumentos) ---
     'cdot': 'sym', 'pi': 'sym', 'infty': 'sym',
     'geq': 'sym', 'leq': 'sym', 'neq': 'sym',
-    'to': 'sym', 'sec': 'sym', 'cot': 'sym', 'csc': 'sym',
-    'pm': 'sym', 'mp': 'sym', 'times': 'sym', 'div': 'sym',
+    'to': 'sym', 'pm': 'sym', 'mp': 'sym', 'times': 'sym', 'div': 'sym',
 };
-
-/* ---------------------------------------------------------------------------
- *  UTILIDADES
- * ------------------------------------------------------------------------- */
 
 const esLetra = (c) => /[a-zA-Z]/.test(c);
 
-/** Consume un bloque `{...}` balanceado desde `i`. Devuelve índice final o -1. */
 const consumirLlaves = (s, i) => {
     if (s[i] !== '{') return -1;
     let depth = 1, j = i + 1;
     while (j < s.length && depth > 0) {
-        if (s[j] === '\\' && j + 1 < s.length) { j += 2; continue; }
+        if (s.charCodeAt(j) === 92 && j + 1 < s.length) { j += 2; continue; }
         if (s[j] === '{') depth++;
         else if (s[j] === '}') depth--;
         j++;
@@ -73,7 +33,6 @@ const consumirLlaves = (s, i) => {
     return depth === 0 ? j : -1;
 };
 
-/** Consume un bloque `(...)` balanceado desde `i`. */
 const consumirParentesis = (s, i) => {
     if (s[i] !== '(') return -1;
     let depth = 1, j = i + 1;
@@ -85,7 +44,6 @@ const consumirParentesis = (s, i) => {
     return depth === 0 ? j : -1;
 };
 
-/** Consume un sub/superíndice `_x`, `_{x}`, `^x`, `^{x}`. */
 const consumirSubSuper = (s, i) => {
     if (s[i] !== '_' && s[i] !== '^') return -1;
     let j = i + 1;
@@ -94,57 +52,39 @@ const consumirSubSuper = (s, i) => {
         const end = consumirLlaves(s, j);
         return end !== -1 ? end : j;
     }
-    // Sub/super de un caracter alfanumérico
     while (j < s.length && /[a-zA-Z0-9+\-]/.test(s[j])) j++;
     return j;
 };
 
-/* ---------------------------------------------------------------------------
- *  PARSER RECURSIVO
- * ------------------------------------------------------------------------- */
+const saltarEspacios = (s, i) => {
+    while (i < s.length && /\s/.test(s[i])) i++;
+    return i;
+};
 
-/**
- * Consume la expresión que sigue a un \int hasta un separador natural.
- * Ej: `x^{5} dx`, `\sin(x) dx`, `\frac{1}{x} dx`
- */
 const consumirExpresion = (s, i) => {
     while (i < s.length) {
         const c = s[i];
 
-        // Fin al encontrar `dx` o `dy` precedido de espacio (patrón típico de integral)
         if (c === ' ' && /^d[a-zA-Z]/.test(s.substring(i + 1))) break;
-
-        // Fin en separadores "duros"
         if (c === ',' || c === ';' || c === ')') break;
+        if (c === ' ' && /^\s*[a-záéíóúñ]/u.test(s.substring(i + 1)) && !/^\s*[a-z]\s/i.test(s.substring(i))) break;
 
-        // Fin si el espacio va seguido de texto (español)
-        if (c === ' ' && /^\s*[a-záéíóúñ]/.test(s.substring(i + 1)) && !/^\s*[a-z]\s/.test(s.substring(i))) break;
-
-        // Consumir bloque {} balanceado
         if (c === '{') {
             const end = consumirLlaves(s, i);
             if (end !== -1) { i = end; continue; }
         }
-
-        // Consumir bloque () balanceado
         if (c === '(') {
             const end = consumirParentesis(s, i);
             if (end !== -1) { i = end; continue; }
         }
-
-        // Consumir sub-comandos anidados
-        if (c === '\\' && esLetra(s[i + 1])) {
+        if (s.charCodeAt(i) === 92 && esLetra(s[i + 1])) {
             i = extraerBloque(s, i);
             continue;
         }
-
-        // Consumir sub/super
         if (c === '_' || c === '^') {
             const end = consumirSubSuper(s, i);
             if (end !== -1 && end !== i) { i = end; continue; }
         }
-
-        // Consumir operandos y operadores
         if (/[a-zA-Z0-9+\-*/=<>.\s]/.test(c)) { i++; continue; }
 
         break;
@@ -152,52 +92,60 @@ const consumirExpresion = (s, i) => {
     return i;
 };
 
-/**
- * Extrae un bloque matemático completo desde `\` en `start`.
- * Devuelve el índice final del bloque.
- */
 const extraerBloque = (s, start) => {
-    // 1) Leer nombre del comando
     let i = start + 1, name = '';
     while (i < s.length && esLetra(s[i])) { name += s[i]; i++; }
     if (!name) return start + 1;
 
     const tipo = COMANDOS[name];
 
-    // 2) Consumir sub/superíndices pegados al comando (ej: \sin^{2}(x))
-    while (i < s.length && (s[i] === '_' || s[i] === '^')) {
-        const end = consumirSubSuper(s, i);
-        if (end === -1 || end === i) break;
-        i = end;
+    // Consumir sub/superíndices pegados al comando (ej: \sin^{2}(x))
+    while (i < s.length) {
+        let nextIdx = saltarEspacios(s, i);
+        if (nextIdx < s.length && (s[nextIdx] === '_' || s[nextIdx] === '^')) {
+            i = nextIdx;
+            const end = consumirSubSuper(s, i);
+            if (end === -1 || end === i) break;
+            i = end;
+        } else {
+            break;
+        }
     }
 
-    // 3) Consumir argumentos según tipo
+    // Saltar espacios antes de los argumentos
+    i = saltarEspacios(s, i);
+
     if (tipo === 'paren') {
-        if (s[i] === '(') {
+        if (i < s.length && s[i] === '(') {
             const end = consumirParentesis(s, i);
             if (end !== -1) i = end;
         }
     } else if (tipo === 'brace1') {
-        if (s[i] === '{') {
+        if (i < s.length && s[i] === '{') {
             const end = consumirLlaves(s, i);
             if (end !== -1) i = end;
         }
     } else if (tipo === 'brace2') {
-        for (let k = 0; k < 2 && s[i] === '{'; k++) {
-            const end = consumirLlaves(s, i);
-            if (end === -1) break;
-            i = end;
+        for (let k = 0; k < 2; k++) {
+            i = saltarEspacios(s, i);
+            if (i < s.length && s[i] === '{') {
+                const end = consumirLlaves(s, i);
+                if (end === -1) break;
+                i = end;
+            } else {
+                break;
+            }
         }
     } else if (tipo === 'big') {
         i = consumirExpresion(s, i);
     } else if (!tipo) {
-        // Comando desconocido: consumir solo {..} y _^
         while (i < s.length) {
-            if (s[i] === '{') {
+            i = saltarEspacios(s, i);
+            if (i < s.length && s[i] === '{') {
                 const end = consumirLlaves(s, i);
                 if (end !== -1) { i = end; continue; }
             }
-            if (s[i] === '_' || s[i] === '^') {
+            if (i < s.length && (s[i] === '_' || s[i] === '^')) {
                 const end = consumirSubSuper(s, i);
                 if (end !== -1 && end !== i) { i = end; continue; }
             }
@@ -208,14 +156,12 @@ const extraerBloque = (s, start) => {
     return i;
 };
 
-/** Separa el texto en partes: { type: 'text' | 'math' } */
 const parsearTexto = (texto) => {
     const partes = [];
     let buf = '', i = 0;
 
     while (i < texto.length) {
-        // 1) Inicio de comando LaTeX
-        if (texto[i] === '\\' && esLetra(texto[i + 1])) {
+        if (texto.charCodeAt(i) === 92 && esLetra(texto[i + 1])) {
             if (buf) { partes.push({ type: 'text', content: buf }); buf = ''; }
             const end = extraerBloque(texto, i);
             partes.push({ type: 'math', content: texto.substring(i, end) });
@@ -223,13 +169,7 @@ const parsearTexto = (texto) => {
             continue;
         }
 
-        // 2) Potencia/subíndice suelto pegado a una base alfanumérica
-        //    (ej: `e^{3x}`, `x^{2}`, `(x-1)^{2}`, `[f(x)]^{2}`)
         if ((texto[i] === '^' || texto[i] === '_') && i + 1 < texto.length) {
-            // Buscar la base en `buf`: 
-            // - letra/número: x, e, 3
-            // - cierre de paréntesis: ), ]
-            // - cierre de llave: } (raro pero posible)
             const match = buf.match(/([a-zA-Z0-9\)\]\}]+)$/);
             if (match) {
                 const base = match[1];
@@ -255,7 +195,6 @@ const parsearTexto = (texto) => {
  *  RENDER
  * ------------------------------------------------------------------------- */
 
-/** Detecta bloques que se ven mejor en modo `\displaystyle` */
 const usaDisplay = (math) =>
     /\\frac|\\lim|\\int/.test(math);
 
@@ -291,13 +230,18 @@ const renderPartes = (partes) =>
 
 /**
  * Renderiza un texto mixto (español + LaTeX) como JSX con KaTeX.
- * @param {string} texto — Texto crudo de la BD.
- * @returns {React.ReactNode}
+ * 
+ * ⚠️ IMPORTANTE: NO agregar .replace(/\\\\/g, '\\') aquí.
+ *    Oxc (Vite 8) lo minifica mal en producción y rompe las llaves {} y \co.
+ *    El backend ya envía los backslashes correctos.
  */
 export const renderizarConMatematicas = (texto) => {
     if (!texto || typeof texto !== 'string') return texto;
-    return renderPartes(parsearTexto(texto));
+    
+    // Solo normalizamos saltos de línea. NO tocar backslashes.
+    const textoLimpio = texto.replace(/\r\n/g, '\n');
+    
+    return renderPartes(parsearTexto(textoLimpio));
 };
 
-// Alias por compatibilidad
 export const RenderMatematicas = ({ texto }) => renderizarConMatematicas(texto);

@@ -12,8 +12,8 @@ export default defineConfig({
     target: 'es2020',
     sourcemap: true,
   },
-  oxc: {
+ // oxc: {
     // Preserva nombres de funciones/clases al minificar
-    keepNames: true,
-  },
+    //keepNames: true,
+  //},
 })

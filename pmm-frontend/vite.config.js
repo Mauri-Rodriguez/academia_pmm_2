@@ -8,7 +8,7 @@ export default defineConfig({
 
   // 🚩 FIX para Vite 8 (usa Oxc, no esbuild)
   build: {
-    minify: 'oxc',         // Vite 8 usa Oxc por defecto
+    minify: 'esbuild',        
     target: 'es2020',
     sourcemap: true,
   },

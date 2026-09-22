@@ -17,7 +17,6 @@ const progresoRoutes = require('./routes/progresoRoutes');
 
 const app = express();
 
-
 // === MIDDLEWARES ===
 
 const origenesPermitidos = [
@@ -27,46 +26,67 @@ const origenesPermitidos = [
     'https://academia-pmm.vercel.app'
 ];
 
-app.use(cors({
-    origin: function (origin, callback) {
+app.use(
+    cors({
+        origin: function (origin, callback) {
 
-        // 🛡️ BARRERA INTELIGENTE:
-        // Permite Postman (!origin), la lista exacta,
-        // O cualquier subdominio dinámico de Vercel
+            // 🛡️ BARRERA INTELIGENTE:
+            // Permite Postman (!origin), la lista exacta,
+            // o cualquier subdominio dinámico de Vercel.
 
-        if (
-            !origin ||
-            origenesPermitidos.includes(origin) ||
-            origin.endsWith('.vercel.app')
-        ) {
-            callback(null, true);
-        } else {
-            console.warn(`Bloqueado por CORS: ${origin}`);
-            callback(
-                new Error('Dominio bloqueado por política CORS del Dojo')
-            );
-        }
-    },
+            if (
+                !origin ||
+                origenesPermitidos.includes(origin) ||
+                origin.endsWith('.vercel.app')
+            ) {
+                callback(null, true);
+            } else {
+                console.warn(`Bloqueado por CORS: ${origin}`);
 
-    credentials: true,
+                callback(
+                    new Error(
+                        'Dominio bloqueado por política CORS del Dojo'
+                    )
+                );
+            }
+        },
 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        credentials: true,
 
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+        methods: [
+            'GET',
+            'POST',
+            'PUT',
+            'DELETE',
+            'OPTIONS'
+        ],
+
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization'
+        ]
+    })
+);
 
 app.use(express.json());
-
 app.use(express.urlencoded({ extended: true }));
 
 
 // === ARCHIVOS SUBIDOS ===
-// Railway Volume:
-// /app/pmm-backend/public/uploads
+
+// Railway:
+// UPLOADS_DIR=/app/pmm-backend/public/uploads
+//
+// Local/Jest:
+// ../public/uploads
+
+const uploadsDir =
+    process.env.UPLOADS_DIR ||
+    path.join(__dirname, '../public/uploads');
 
 app.use(
     '/uploads',
-    express.static('/app/pmm-backend/public/uploads')
+    express.static(uploadsDir)
 );
 
 
@@ -79,15 +99,10 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-
 app.use('/api/diagnostico', diagnosticoRoutes);
-
 app.use('/api/estudiante', estudianteRoutes);
-
 app.use('/api/docente', docenteRoutes);
-
 app.use('/api/ejercicios', ejercicioRoutes);
-
 app.use('/api/progreso', progresoRoutes);
 
 
@@ -101,12 +116,20 @@ if (process.env.NODE_ENV !== 'test') {
 
         try {
 
-            await sequelize.sync({ alter: false });
+            await sequelize.sync({
+                alter: false
+            });
 
             app.listen(PORT, '0.0.0.0', () => {
+
                 console.log(
                     `🚀 Servidor enlazado a 0.0.0.0 y corriendo en el puerto ${PORT}`
                 );
+
+                console.log(
+                    `📁 Carpeta de uploads: ${uploadsDir}`
+                );
+
             });
 
         } catch (error) {

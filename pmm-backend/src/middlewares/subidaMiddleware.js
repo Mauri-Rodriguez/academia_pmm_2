@@ -8,8 +8,8 @@ const fs = require('fs');
  * Limita el tamaño a 5MB y solo permite formatos jpeg, jpg, png y webp.
  */
 
-// Carpeta del Railway Volume
-const uploadDir = '/app/pmm-backend/public/uploads';
+// Carpeta de almacenamiento de imágenes
+const uploadDir = process.env.UPLOADS_DIR || path.join(__dirname, '../../public/uploads');
 
 // Asegurar que la carpeta exista
 if (!fs.existsSync(uploadDir)) {

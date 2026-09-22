@@ -709,11 +709,37 @@ exports.obtenerEjerciciosModulo = async (req, res) => {
 exports.obtenerRanking = async (req, res) => {
     try {
         const ranking = await Usuario.findAll({
-            attributes: ['nombre_completo', [literal(`(SELECT COUNT(*) FROM progreso_estudiante WHERE id_usuario = Usuario.id_usuario AND porcentaje_avance = 100)`), 'misiones_completas'], [literal(`(SELECT nivel_asignado FROM diagnostico WHERE id_usuario = Usuario.id_usuario ORDER BY fecha_realizacion DESC LIMIT 1)`), 'rango']],
-            where: { rol: 'estudiante' }, order: [[literal('misiones_completas'), 'DESC']], limit: 10
+            attributes: [
+                'nombre_completo',
+                [literal('rango_actual'), 'rango'],
+                [
+                    literal(`(
+                        SELECT COUNT(*)
+                        FROM progreso_estudiante
+                        WHERE id_usuario = Usuario.id_usuario
+                        AND porcentaje_avance = 100
+                    )`),
+                    'misiones_completas'
+                ]
+            ],
+            where: {
+                rol: 'estudiante'
+            },
+            order: [
+                [literal('misiones_completas'), 'DESC'],
+                ['nombre_completo', 'ASC']
+            ],
+            limit: 10
         });
+
         res.json(ranking);
-    } catch (e) { res.status(500).json({ mensaje: 'Error ranking' }); }
+
+    } catch (e) {
+        console.error('Error al obtener ranking:', e);
+        res.status(500).json({
+            mensaje: 'Error ranking'
+        });
+    }
 };
 
 // --- 💬 FORO Y PERFIL ---

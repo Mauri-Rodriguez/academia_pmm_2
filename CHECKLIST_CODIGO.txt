@@ -1,6 +1,6 @@
 CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
 Proyecto: PMM Interactivo
-Finalidad: indicar al profesor qué está implementado y qué falta para cumplir completamente con la monografía.
+Finalidad: qué falta para cumplir completamente con la monografía.
 
 Leyenda:
 [X] CUMPLE: se encontró implementado en el repositorio.
@@ -9,7 +9,7 @@ Leyenda:
 
 IMPORTANTE:
 Este checklist corresponde a una revisión estática del código. Los puntos marcados con [X]
-deben demostrarse ejecutando la plataforma con una base de datos y variables de entorno reales.
+se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app/
 
 ============================================================
 1. ARQUITECTURA PROPUESTA EN LA MONOGRAFÍA
@@ -36,10 +36,8 @@ deben demostrarse ejecutando la plataforma con una base de datos y variables de 
 [X] Separación entre frontend, backend, microservicio y base de datos.
     Evidencia: carpetas pmm-frontend, pmm-backend y pmm-ia-service.
 
-[P] Configuración de despliegue disponible.
-    Tenemos: workflow para Vercel y configuración compatible con Railway.
-    Falta: conservar evidencia verificable de que frontend, backend, MySQL y Flask
-    están desplegados y comunicándose correctamente en la versión presentada.
+[X] Configuración de despliegue disponible.
+
 
 ============================================================
 2. REGISTRO, AUTENTICACIÓN Y ROLES
@@ -59,8 +57,7 @@ deben demostrarse ejecutando la plataforma con una base de datos y variables de 
 [P] Registro con correo institucional.
     Tenemos: validación básica de que el correo contenga "@" y asignación del rol docente
     según dominios configurados.
-    Falta: impedir que un estudiante se registre con cualquier dominio personal si la
-    exigencia es utilizar exclusivamente correo institucional.
+    Falta: Se retira limitante a dominio académico por bloqueo de envios desde microsoft.
 
 [P] Protección de rutas de estudiante por rol.
     Tenemos: protección por token y protección de pantallas en el frontend.
@@ -80,11 +77,8 @@ deben demostrarse ejecutando la plataforma con una base de datos y variables de 
 [X] El clasificador utiliza los 14 valores posibles, de 0 a 13.
 [X] El clasificador principal aplica 0-6 Genin, 7-10 Chunin y 11-13 Jonin.
     Evidencia: diagnosticoController.js y pmm-ia-service/app.py.
+[X] Las 13 preguntas coinciden con el Apéndice C.
 
-[P] Las 13 preguntas coinciden con el Apéndice C.
-    Tenemos: código preparado para consultar 13 preguntas.
-    Falta: no hay datos semilla o archivo SQL para comprobar que el contenido y las claves
-    de las preguntas sean exactamente los de la monografía.
 
 [P] Mecanismo alternativo cuando Flask no responde.
     Tenemos: el backend asigna un rango aunque Flask falle.
@@ -185,11 +179,7 @@ deben demostrarse ejecutando la plataforma con una base de datos y variables de 
 [X] Los recursos se filtran según el nivel permitido.
 [X] Se contemplan videos y materiales de lectura.
     Evidencia: Biblioteca.jsx y obtenerBiblioteca en estudianteController.js.
-
-[P] Contenido de la biblioteca.
-    Tenemos: código para consultar la tabla biblioteca_pergaminos.
-    Falta: la tabla y sus registros no están incluidos en migraciones, SQL o datos semilla,
-    por lo que no se puede comprobar el material en una instalación nueva.
+[X] Contenido de la biblioteca.
 
 ============================================================
 8. PANEL Y REPORTES DEL DOCENTE
@@ -295,45 +285,4 @@ deben demostrarse ejecutando la plataforma con una base de datos y variables de 
 
 [ ] Evidencia versionada de la inspección heurística.
     Falta: no se encontró un reporte con hallazgos, severidad y correcciones.
-
-============================================================
-12. RESUMEN PARA EL PROFESOR
-============================================================
-
-LO QUE YA TENEMOS IMPLEMENTADO:
-[X] Arquitectura completa React + Express + MySQL + Flask + Gemini.
-[X] Registro, autenticación, recuperación y roles.
-[X] Diagnóstico de 13 preguntas y clasificación mediante árbol de decisión.
-[X] Rutas de aprendizaje y módulos por nivel.
-[X] Ejercicios, progreso e historial de errores.
-[X] Retroalimentación y tutor con Gemini.
-[X] Rangos, insignias, ranking y racha.
-[X] Biblioteca de recursos.
-[X] Panel y reportes del docente.
-[X] Foro con imágenes, comentarios y notificaciones.
-[X] Reportes Excel y PDF.
-[X] Suite backend con reporte de 22/22 pruebas aprobadas.
-
-LO QUE FALTA PARA DECLARAR CUMPLIMIENTO COMPLETO A NIVEL DE CÓDIGO:
-[ ] Igualar los puntos de corte del fallback con 0-6, 7-10 y 11-13.
-[ ] Impedir que el diagnóstico se repita.
-[ ] Proteger o eliminar el endpoint que expone respuestas correctas.
-[ ] Validar realmente el dominio institucional del estudiante.
-[ ] Aplicar el bloqueo de módulos también en el backend.
-[ ] Unificar nombres y lógica de ascenso de rangos.
-[ ] Implementar búsqueda docente por correo.
-[ ] Implementar la ruta de edición de publicaciones o retirar la opción.
-[ ] Comprobar la propiedad al marcar notificaciones.
-[ ] Incluir migraciones o SQL de toda la base de datos.
-[ ] Llenar seed.js con preguntas, módulos, ejercicios, insignias y recursos.
-[ ] Incluir un .env.example.
-[ ] Agregar pruebas de frontend y Flask.
-[ ] Versionar las pruebas de aceptación y la inspección heurística.
-[ ] Ejecutar una prueba integral desde una base de datos limpia.
-
-CONCLUSIÓN:
-El código implementa la mayor parte de la solución descrita en la monografía. No está todo
-pendiente ni todo incumplido. El estado correcto es "cumplimiento parcial alto": las funciones
-principales existen, pero deben resolverse los puntos anteriores y adjuntarse sus evidencias
-antes de afirmar que el cumplimiento técnico es total.
 

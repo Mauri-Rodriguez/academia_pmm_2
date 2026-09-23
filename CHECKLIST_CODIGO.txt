@@ -1,0 +1,339 @@
+CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
+Proyecto: PMM Interactivo
+Finalidad: indicar al profesor qué está implementado y qué falta para cumplir completamente con la monografía.
+
+Leyenda:
+[X] CUMPLE: se encontró implementado en el repositorio.
+[P] PARCIAL: existe, pero tiene una diferencia o necesita completarse.
+[ ] FALTA: no se encontró implementado o versionado.
+
+IMPORTANTE:
+Este checklist corresponde a una revisión estática del código. Los puntos marcados con [X]
+deben demostrarse ejecutando la plataforma con una base de datos y variables de entorno reales.
+
+============================================================
+1. ARQUITECTURA PROPUESTA EN LA MONOGRAFÍA
+============================================================
+
+[X] Frontend desarrollado con React y Vite.
+    Evidencia: pmm-frontend/package.json y pmm-frontend/src/App.jsx.
+
+[X] Backend desarrollado con Node.js y Express.
+    Evidencia: pmm-backend/package.json y pmm-backend/src/server.js.
+
+[X] Persistencia diseñada para MySQL mediante Sequelize.
+    Evidencia: pmm-backend/src/config/database.js y src/models.
+
+[X] Microservicio independiente desarrollado con Python y Flask.
+    Evidencia: pmm-ia-service/app.py.
+
+[X] Clasificador implementado con DecisionTreeClassifier de scikit-learn.
+    Evidencia: pmm-ia-service/app.py.
+
+[X] Integración con la API de Gemini 2.5 Flash-Lite.
+    Evidencia: pmm-backend/src/controllers/estudianteController.js.
+
+[X] Separación entre frontend, backend, microservicio y base de datos.
+    Evidencia: carpetas pmm-frontend, pmm-backend y pmm-ia-service.
+
+[P] Configuración de despliegue disponible.
+    Tenemos: workflow para Vercel y configuración compatible con Railway.
+    Falta: conservar evidencia verificable de que frontend, backend, MySQL y Flask
+    están desplegados y comunicándose correctamente en la versión presentada.
+
+============================================================
+2. REGISTRO, AUTENTICACIÓN Y ROLES
+============================================================
+
+[X] Registro de usuarios implementado.
+[X] Inicio de sesión implementado.
+[X] Verificación de correo implementada.
+[X] Recuperación y cambio de contraseña implementados.
+[X] Contraseñas almacenadas mediante bcrypt.
+[X] Autenticación mediante JWT.
+[X] Roles de estudiante y docente implementados.
+[X] Rutas principales del docente protegidas por token y rol.
+[X] Aceptación de términos y política de privacidad almacenada con fecha y versión.
+    Evidencia: authController.js, authMiddleware.js, Usuario.js y ProtectedRoute.jsx.
+
+[P] Registro con correo institucional.
+    Tenemos: validación básica de que el correo contenga "@" y asignación del rol docente
+    según dominios configurados.
+    Falta: impedir que un estudiante se registre con cualquier dominio personal si la
+    exigencia es utilizar exclusivamente correo institucional.
+
+[P] Protección de rutas de estudiante por rol.
+    Tenemos: protección por token y protección de pantallas en el frontend.
+    Falta: varias rutas /api/estudiante validan el token, pero no comprueban explícitamente
+    que el rol sea "estudiante".
+
+============================================================
+3. DIAGNÓSTICO Y CLASIFICACIÓN INICIAL
+============================================================
+
+[X] Endpoint protegido para obtener el diagnóstico.
+[X] La ruta principal limita el diagnóstico a 13 preguntas.
+[X] Las respuestas correctas se excluyen de la ruta principal usada por el frontend.
+[X] El backend compara las respuestas y calcula el puntaje total.
+[X] El resultado del diagnóstico se guarda en la base de datos.
+[X] El backend envía el puntaje al microservicio Flask.
+[X] El clasificador utiliza los 14 valores posibles, de 0 a 13.
+[X] El clasificador principal aplica 0-6 Genin, 7-10 Chunin y 11-13 Jonin.
+    Evidencia: diagnosticoController.js y pmm-ia-service/app.py.
+
+[P] Las 13 preguntas coinciden con el Apéndice C.
+    Tenemos: código preparado para consultar 13 preguntas.
+    Falta: no hay datos semilla o archivo SQL para comprobar que el contenido y las claves
+    de las preguntas sean exactamente los de la monografía.
+
+[P] Mecanismo alternativo cuando Flask no responde.
+    Tenemos: el backend asigna un rango aunque Flask falle.
+    Falta: el mecanismo alternativo usa cortes 0-4, 5-9 y 10-13, mientras la monografía y
+    Flask establecen 0-6, 7-10 y 11-13. Deben quedar iguales.
+
+[ ] Impedir que el estudiante repita inmediatamente el diagnóstico.
+    Falta: evaluarDiagnostico no consulta si ya existe un diagnóstico del usuario antes
+    de registrar otro resultado.
+
+[ ] Cerrar el endpoint que expone las respuestas correctas.
+    Falta: GET /api/estudiante/preguntas-diagnostico no requiere token y devuelve todos
+    los campos, incluida respuesta_correcta. Debe protegerse o eliminarse.
+
+============================================================
+4. RUTAS, MÓDULOS Y EJERCICIOS
+============================================================
+
+[X] El dashboard obtiene módulos de acuerdo con el rango del estudiante.
+[X] Existen rutas para consultar los ejercicios de cada módulo.
+[X] Existen ejercicios de selección múltiple.
+[X] El sistema identifica respuestas correctas e incorrectas.
+[X] El progreso se guarda durante el desarrollo del módulo.
+[X] El porcentaje mayor alcanzado no es reemplazado por uno menor.
+[X] Los errores del estudiante quedan almacenados.
+[X] Existe una pantalla de historial de errores.
+    Evidencia: estudianteController.js, ejercicioController.js, progresoController.js,
+    DashboardEstudiante.jsx, ModuloEstudio.jsx e HistorialErrores.jsx.
+
+[P] Bloqueo secuencial de módulos.
+    Tenemos: el frontend bloquea el módulo siguiente hasta completar el anterior.
+    Falta: comprobar y aplicar la misma restricción en el backend para impedir que alguien
+    consulte directamente por URL o API un módulo no autorizado.
+
+[P] Ruta de aprendizaje según la clasificación.
+    Tenemos: selección de módulos por rango y convalidación de niveles previos.
+    Falta: unificar los nombres de los niveles para evitar diferencias entre
+    "Chunin (Guerrero)" y "Chunin (Intermedio)", o entre "Jonin (Maestro)" y
+    "Jonin (Avanzado)".
+
+============================================================
+5. RETROALIMENTACIÓN Y TUTOR CON GEMINI
+============================================================
+
+[X] Se genera orientación cuando el estudiante responde incorrectamente.
+[X] La orientación considera el ejercicio y el nivel del estudiante.
+[X] El prompt indica que no debe entregar directamente la respuesta correcta.
+[X] El prompt busca identificar el error conceptual.
+[X] Existe un tutor para que el estudiante formule preguntas.
+[X] El tutor limita la extensión de la respuesta.
+[X] Existen mensajes alternativos cuando Gemini no está disponible.
+[X] No se envían intencionalmente nombre, correo o identificador del estudiante a Gemini.
+    Evidencia: estudianteController.js y TutorOraculo.jsx.
+
+[P] Formato matemático de la respuesta.
+    Tenemos: el tutor general solicita expresiones en LaTeX.
+    Falta: la retroalimentación automática de errores exige texto plano, mientras la
+    monografía indica LaTeX. Debe unificarse el código o corregirse la descripción.
+
+[ ] Pruebas automatizadas del componente Gemini.
+    Falta: no se encontraron pruebas automatizadas ni un archivo con los 10 casos de
+    evaluación anunciados en la monografía.
+
+============================================================
+6. PROGRESO Y GAMIFICACIÓN
+============================================================
+
+[X] Progreso general del estudiante.
+[X] Progreso individual por módulo.
+[X] Conteo de intentos.
+[X] Rangos Genin, Chunin y Jonin.
+[X] Rango final Kage/Leyenda.
+[X] Insignias por módulos.
+[X] Insignias por ascenso de rango.
+[X] Perfil con insignias obtenidas.
+[X] Ranking por módulos completados.
+[X] Cálculo de racha de actividad.
+[X] Notificaciones de ascenso.
+    Evidencia: estudianteController.js, progresoController.js, PerfilEstudiante.jsx,
+    LibroDeBingo.jsx y SeccionInsignias.jsx.
+
+[P] Ascenso automático de rango.
+    Tenemos: una implementación funcional dentro de estudianteController.js.
+    Falta: existe otra implementación en progresoController.js con nombres de rangos
+    incompatibles y que no actualiza todos los mismos campos. Debe quedar una única lógica.
+
+[P] Coherencia del rango almacenado.
+    Tenemos: uso de rango_actual en el modelo.
+    Falta: varias consultas también utilizan una columna llamada rango que no aparece en
+    el modelo Usuario.js. La estructura oficial de la base debe aclararlo y unificarse.
+
+============================================================
+7. BIBLIOTECA Y MATERIALES DE APOYO
+============================================================
+
+[X] Existe una pantalla de biblioteca.
+[X] Existe búsqueda de recursos.
+[X] Los recursos se filtran según el nivel permitido.
+[X] Se contemplan videos y materiales de lectura.
+    Evidencia: Biblioteca.jsx y obtenerBiblioteca en estudianteController.js.
+
+[P] Contenido de la biblioteca.
+    Tenemos: código para consultar la tabla biblioteca_pergaminos.
+    Falta: la tabla y sus registros no están incluidos en migraciones, SQL o datos semilla,
+    por lo que no se puede comprobar el material en una instalación nueva.
+
+============================================================
+8. PANEL Y REPORTES DEL DOCENTE
+============================================================
+
+[X] Panel exclusivo para docentes.
+[X] Listado de estudiantes.
+[X] Visualización de nombre, correo, rango, diagnóstico y avance.
+[X] Filtro por nivel.
+[X] Búsqueda por nombre.
+[X] Reporte individual de cada estudiante.
+[X] Progreso detallado por módulo.
+[X] Identificación de los temas con más errores.
+[X] Cantidad de fallos por tema.
+[X] Descarga del reporte general en Excel.
+[X] Descarga del reporte individual en PDF.
+    Evidencia: docenteController.js, DashboardDocente.jsx y
+    ReporteDetalladoEstudiante.jsx.
+
+[ ] Búsqueda por correo del estudiante.
+    Falta: la HU-12 exige buscar por nombre o correo, pero el filtro del frontend solamente
+    compara el nombre.
+
+============================================================
+9. FORO Y NOTIFICACIONES
+============================================================
+
+[X] Creación de publicaciones en el foro.
+[X] Carga de imágenes JPEG, JPG, PNG y WebP.
+[X] Límite de archivo de 5 MB.
+[X] Creación de comentarios.
+[X] Edición y eliminación de comentarios propios.
+[X] Eliminación de publicaciones propias.
+[X] Notificación al autor cuando otra persona comenta.
+[X] Enlace desde la notificación hacia la publicación.
+    Evidencia: estudianteRoutes.js, estudianteController.js, subidaMiddleware.js y
+    ForoComunidad.jsx.
+
+[P] Edición de publicaciones.
+    Tenemos: el frontend muestra la opción y envía PUT /foro/post/:id.
+    Falta: esa ruta PUT no existe en estudianteRoutes.js.
+
+[P] Seguridad de notificaciones.
+    Tenemos: endpoint para marcar una notificación como leída.
+    Falta: la actualización se realiza por id de notificación sin comprobar en la consulta
+    que dicha notificación pertenezca al usuario autenticado.
+
+============================================================
+10. BASE DE DATOS Y REPRODUCIBILIDAD
+============================================================
+
+[X] Existen modelos para usuarios, diagnósticos, preguntas, módulos, ejercicios,
+    progreso, resultados, errores e insignias.
+
+[ ] Migraciones o archivo SQL con la estructura completa.
+    Falta: no se encontraron migraciones ni un volcado SQL.
+
+[ ] Datos semilla para ejecutar la plataforma desde cero.
+    Falta: pmm-backend/seed.js está vacío.
+
+[ ] Creación reproducible de todas las tablas utilizadas.
+    Falta: foro_posts, foro_comentarios, notificaciones y biblioteca_pergaminos se usan
+    mediante SQL directo, pero no tienen modelos o migraciones que las creen.
+
+[ ] Archivo .env.example.
+    Falta: documentar sin secretos todas las variables necesarias para los tres servicios.
+
+[P] Instrucciones de instalación.
+    Tenemos: README_LOCAL.md explica dependencias y variables principales.
+    Falta: el README afirma que existe un volcado SQL incluido, pero dicho archivo no está
+    en el repositorio.
+
+[P] Configuración local de puertos.
+    Tenemos: el README propone PORT=3000.
+    Falta: sin variables de entorno, el frontend apunta a 3000 y el backend arranca en
+    3001; la configuración predeterminada debería coincidir.
+
+============================================================
+11. PRUEBAS DEL CÓDIGO
+============================================================
+
+[X] Existen pruebas Jest para la API.
+[X] Existen pruebas de autenticación.
+[X] Existen pruebas de módulos y progreso.
+[X] Existen pruebas del diagnóstico.
+[X] El reporte guardado registra 5 suites aprobadas.
+[X] El reporte guardado registra 22 de 22 pruebas aprobadas.
+    Evidencia: pmm-backend/test y pmm-backend/jest-report.json.
+
+[P] Ejecución actual de las pruebas.
+    Tenemos: reporte exitoso fechado el 12 de septiembre de 2026.
+    Falta: instalar dependencias y volver a ejecutar la suite en el entorno final para
+    confirmar que el resultado continúa siendo 22/22.
+
+[ ] Pruebas automatizadas del frontend.
+    Falta: no se encontró una suite para componentes o flujos React.
+
+[ ] Pruebas automatizadas del microservicio Flask.
+    Falta: no se encontraron pruebas para los 14 puntajes ni entradas inválidas.
+
+[ ] Evidencia versionada de las 15 pruebas de aceptación.
+    Falta: no se encontró una matriz o reporte con el resultado de cada HU y sus criterios.
+
+[ ] Evidencia versionada de la inspección heurística.
+    Falta: no se encontró un reporte con hallazgos, severidad y correcciones.
+
+============================================================
+12. RESUMEN PARA EL PROFESOR
+============================================================
+
+LO QUE YA TENEMOS IMPLEMENTADO:
+[X] Arquitectura completa React + Express + MySQL + Flask + Gemini.
+[X] Registro, autenticación, recuperación y roles.
+[X] Diagnóstico de 13 preguntas y clasificación mediante árbol de decisión.
+[X] Rutas de aprendizaje y módulos por nivel.
+[X] Ejercicios, progreso e historial de errores.
+[X] Retroalimentación y tutor con Gemini.
+[X] Rangos, insignias, ranking y racha.
+[X] Biblioteca de recursos.
+[X] Panel y reportes del docente.
+[X] Foro con imágenes, comentarios y notificaciones.
+[X] Reportes Excel y PDF.
+[X] Suite backend con reporte de 22/22 pruebas aprobadas.
+
+LO QUE FALTA PARA DECLARAR CUMPLIMIENTO COMPLETO A NIVEL DE CÓDIGO:
+[ ] Igualar los puntos de corte del fallback con 0-6, 7-10 y 11-13.
+[ ] Impedir que el diagnóstico se repita.
+[ ] Proteger o eliminar el endpoint que expone respuestas correctas.
+[ ] Validar realmente el dominio institucional del estudiante.
+[ ] Aplicar el bloqueo de módulos también en el backend.
+[ ] Unificar nombres y lógica de ascenso de rangos.
+[ ] Implementar búsqueda docente por correo.
+[ ] Implementar la ruta de edición de publicaciones o retirar la opción.
+[ ] Comprobar la propiedad al marcar notificaciones.
+[ ] Incluir migraciones o SQL de toda la base de datos.
+[ ] Llenar seed.js con preguntas, módulos, ejercicios, insignias y recursos.
+[ ] Incluir un .env.example.
+[ ] Agregar pruebas de frontend y Flask.
+[ ] Versionar las pruebas de aceptación y la inspección heurística.
+[ ] Ejecutar una prueba integral desde una base de datos limpia.
+
+CONCLUSIÓN:
+El código implementa la mayor parte de la solución descrita en la monografía. No está todo
+pendiente ni todo incumplido. El estado correcto es "cumplimiento parcial alto": las funciones
+principales existen, pero deben resolverse los puntos anteriores y adjuntarse sus evidencias
+antes de afirmar que el cumplimiento técnico es total.
+

@@ -1,6 +1,7 @@
 CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
 Proyecto: PMM Interactivo
 Finalidad: qué falta para cumplir completamente con la monografía.
+Última actualización: 24 de septiembre de 2026.
 
 Leyenda:
 [X] CUMPLE: se encontró implementado en el repositorio.
@@ -59,10 +60,10 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     según dominios configurados.
     Falta: Se retira limitante a dominio académico por bloqueo de envios desde microsoft.
 
-[P] Protección de rutas de estudiante por rol.
-    Tenemos: protección por token y protección de pantallas en el frontend.
-    Falta: varias rutas /api/estudiante validan el token, pero no comprueban explícitamente
-    que el rol sea "estudiante".
+[X] Protección de rutas de estudiante por rol.
+    Verificado: estudianteRoutes.js aplica globalmente verificarToken y
+    verificarRol(['estudiante']). Las rutas alternativas de ejercicios y progreso también
+    comprueban token, rol y acceso al módulo.
 
 ============================================================
 3. DIAGNÓSTICO Y CLASIFICACIÓN INICIAL
@@ -80,18 +81,19 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] Las 13 preguntas coinciden con el Apéndice C.
 
 
-[P] Mecanismo alternativo cuando Flask no responde.
-    Tenemos: el backend asigna un rango aunque Flask falle.
-    Falta: el mecanismo alternativo usa cortes 0-4, 5-9 y 10-13, mientras la monografía y
-    Flask establecen 0-6, 7-10 y 11-13. Deben quedar iguales.
+[X] Mecanismo alternativo cuando Flask no responde.
+    Verificado: el backend y Flask aplican los mismos cortes:
+    0-6 Genin, 7-10 Chunin y 11-13 Jonin.
 
-[ ] Impedir que el estudiante repita inmediatamente el diagnóstico.
-    Falta: evaluarDiagnostico no consulta si ya existe un diagnóstico del usuario antes
-    de registrar otro resultado.
+[P] Impedir que el estudiante repita inmediatamente el diagnóstico.
+    Cumple en el flujo normal: obtenerPreguntas y evaluarDiagnostico rechazan un segundo
+    diagnóstico. Decisión aceptada: se conserva temporalmente el endpoint autenticado
+    DELETE /api/diagnostico/reset para desarrollo y debe retirarse o restringirse antes
+    del lanzamiento oficial.
 
-[ ] Cerrar el endpoint que expone las respuestas correctas.
-    Falta: GET /api/estudiante/preguntas-diagnostico no requiere token y devuelve todos
-    los campos, incluida respuesta_correcta. Debe protegerse o eliminarse.
+[X] Cerrar el endpoint que exponía las respuestas correctas del diagnóstico.
+    Verificado: se eliminó GET /api/estudiante/preguntas-diagnostico. La ruta oficial
+    /api/diagnostico/preguntas exige token y rol estudiante y excluye respuesta_correcta.
 
 ============================================================
 4. RUTAS, MÓDULOS Y EJERCICIOS
@@ -108,16 +110,21 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     Evidencia: estudianteController.js, ejercicioController.js, progresoController.js,
     DashboardEstudiante.jsx, ModuloEstudio.jsx e HistorialErrores.jsx.
 
-[P] Bloqueo secuencial de módulos.
-    Tenemos: el frontend bloquea el módulo siguiente hasta completar el anterior.
-    Falta: comprobar y aplicar la misma restricción en el backend para impedir que alguien
-    consulte directamente por URL o API un módulo no autorizado.
+[X] Bloqueo secuencial de módulos.
+    Verificado: el frontend bloquea el módulo siguiente y el backend aplica
+    accesoModuloMiddleware en las rutas de consulta, evaluación, progreso, tutor,
+    registro de fallos y finalización.
 
-[P] Ruta de aprendizaje según la clasificación.
-    Tenemos: selección de módulos por rango y convalidación de niveles previos.
-    Falta: unificar los nombres de los niveles para evitar diferencias entre
-    "Chunin (Guerrero)" y "Chunin (Intermedio)", o entre "Jonin (Maestro)" y
-    "Jonin (Avanzado)".
+[X] Ruta de aprendizaje según la clasificación.
+    Verificado: los módulos utilizan exclusivamente Genin (Iniciado),
+    Chunin (Guerrero) y Jonin (Maestro). Bajo, Intermedio y Alto se conservan
+    solamente como niveles de dificultad de biblioteca, de acuerdo con la base de datos.
+
+[ ] Evitar exponer las respuestas correctas de los ejercicios al navegador.
+    Hallazgo adicional: la ruta activa /api/estudiante/modulo/:id_modulo/ejercicios
+    devuelve actualmente respuesta_correcta y ModuloEstudio.jsx compara la respuesta
+    en el frontend. Debe migrarse la evaluación al backend antes de retirar ese campo,
+    conservando la retroalimentación y el progreso actuales.
 
 ============================================================
 5. RETROALIMENTACIÓN Y TUTOR CON GEMINI
@@ -133,14 +140,15 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] No se envían intencionalmente nombre, correo o identificador del estudiante a Gemini.
     Evidencia: estudianteController.js y TutorOraculo.jsx.
 
-[P] Formato matemático de la respuesta.
-    Tenemos: el tutor general solicita expresiones en LaTeX.
-    Falta: la retroalimentación automática de errores exige texto plano, mientras la
-    monografía indica LaTeX. Debe unificarse el código o corregirse la descripción.
+[X] Formato matemático de la respuesta.
+    Verificado: el tutor general y la retroalimentación automática solicitan LaTeX crudo
+    sin delimitadores. Ambos prompts usan String.raw y el frontend renderiza con KaTeX
+    en el módulo, el tutor y el historial de errores.
 
 [ ] Pruebas automatizadas del componente Gemini.
-    Falta: no se encontraron pruebas automatizadas ni un archivo con los 10 casos de
-    evaluación anunciados en la monografía.
+    Decisión: no aumentar las 22 pruebas Jest documentadas. Los 10 casos anunciados en
+    la monografía se documentarán posteriormente como matriz de evaluación manual de
+    interacciones reales con Gemini.
 
 ============================================================
 6. PROGRESO Y GAMIFICACIÓN
@@ -160,15 +168,14 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     Evidencia: estudianteController.js, progresoController.js, PerfilEstudiante.jsx,
     LibroDeBingo.jsx y SeccionInsignias.jsx.
 
-[P] Ascenso automático de rango.
-    Tenemos: una implementación funcional dentro de estudianteController.js.
-    Falta: existe otra implementación en progresoController.js con nombres de rangos
-    incompatibles y que no actualiza todos los mismos campos. Debe quedar una única lógica.
+[X] Ascenso automático de rango.
+    Verificado: se eliminó la implementación alternativa incompatible y se conserva una
+    sola finalización activa en estudianteController.js.
 
-[P] Coherencia del rango almacenado.
-    Tenemos: uso de rango_actual en el modelo.
-    Falta: varias consultas también utilizan una columna llamada rango que no aparece en
-    el modelo Usuario.js. La estructura oficial de la base debe aclararlo y unificarse.
+[X] Coherencia funcional del rango almacenado.
+    Verificado en MySQL: rango y rango_actual existen y contienen valores idénticos para
+    los 27 usuarios revisados. Decisión: no modificar ni eliminar columnas de producción;
+    su unificación queda registrada como mejora técnica futura.
 
 ============================================================
 7. BIBLIOTECA Y MATERIALES DE APOYO
@@ -199,9 +206,10 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     Evidencia: docenteController.js, DashboardDocente.jsx y
     ReporteDetalladoEstudiante.jsx.
 
-[ ] Búsqueda por correo del estudiante.
-    Falta: la HU-12 exige buscar por nombre o correo, pero el filtro del frontend solamente
-    compara el nombre.
+[X] Búsqueda por correo del estudiante.
+    Verificado: DashboardDocente.jsx normaliza el término ingresado y filtra por nombre
+    o correo sin afectar el filtro simultáneo por rango. El texto del buscador comunica
+    ambas opciones y el build de producción finalizó correctamente.
 
 ============================================================
 9. FORO Y NOTIFICACIONES
@@ -212,20 +220,25 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] Límite de archivo de 5 MB.
 [X] Creación de comentarios.
 [X] Edición y eliminación de comentarios propios.
+    Verificado: frontend y backend usan el campo "comentario"; el controlador valida el
+    contenido y comprueba que el comentario pertenezca al usuario antes de editar o borrar.
 [X] Eliminación de publicaciones propias.
+    Verificado: el controlador comprueba la propiedad antes de borrar y elimina comentarios
+    y publicación dentro de una transacción.
 [X] Notificación al autor cuando otra persona comenta.
 [X] Enlace desde la notificación hacia la publicación.
     Evidencia: estudianteRoutes.js, estudianteController.js, subidaMiddleware.js y
     ForoComunidad.jsx.
 
-[P] Edición de publicaciones.
-    Tenemos: el frontend muestra la opción y envía PUT /foro/post/:id.
-    Falta: esa ruta PUT no existe en estudianteRoutes.js.
+[X] Edición de publicaciones.
+    Verificado: existe PUT /foro/post/:id_post con soporte de imagen, validación de
+    título y contenido, comprobación de propiedad y conservación de la imagen anterior
+    cuando no se adjunta un reemplazo.
 
-[P] Seguridad de notificaciones.
-    Tenemos: endpoint para marcar una notificación como leída.
-    Falta: la actualización se realiza por id de notificación sin comprobar en la consulta
-    que dicha notificación pertenezca al usuario autenticado.
+[X] Seguridad de notificaciones.
+    Verificado: se conserva una sola ruta para marcar como leída; el controlador valida
+    el identificador y exige que id_notificacion e id_usuario coincidan tanto en la
+    consulta de propiedad como en la actualización.
 
 ============================================================
 10. BASE DE DATOS Y REPRODUCIBILIDAD
@@ -269,10 +282,13 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] El reporte guardado registra 22 de 22 pruebas aprobadas.
     Evidencia: pmm-backend/test y pmm-backend/jest-report.json.
 
-[P] Ejecución actual de las pruebas.
-    Tenemos: reporte exitoso fechado el 12 de septiembre de 2026.
-    Falta: instalar dependencias y volver a ejecutar la suite en el entorno final para
-    confirmar que el resultado continúa siendo 22/22.
+[X] Ejecución actual de las pruebas.
+    Verificado el 23 de septiembre de 2026 después de instalar las dependencias:
+    5 suites aprobadas y 22 de 22 pruebas aprobadas.
+
+[X] Compilación actual del frontend.
+    Verificado: las dependencias se instalaron con npm ci y el build de producción de
+    Vite finalizó correctamente. NPM reportó 0 vulnerabilidades en el frontend.
 
 [ ] Pruebas automatizadas del frontend.
     Falta: no se encontró una suite para componentes o flujos React.
@@ -285,4 +301,3 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 
 [ ] Evidencia versionada de la inspección heurística.
     Falta: no se encontró un reporte con hallazgos, severidad y correcciones.
-

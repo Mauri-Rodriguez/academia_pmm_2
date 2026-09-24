@@ -1,59 +1,109 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const estudianteController = require('../controllers/estudianteController');
-const upload = require('../middlewares/subidaMiddleware');
-const { verificarToken } = require('../middlewares/authMiddleware');
+const estudianteController = require("../controllers/estudianteController");
+const upload = require("../middlewares/subidaMiddleware");
+const {
+  verificarToken,
+  verificarRol,
+} = require("../middlewares/authMiddleware");
+const {
+  verificarAccesoModulo,
+} = require("../middlewares/accesoModuloMiddleware");
 
-// 🔍 DEBUG: Verificación de carga
-console.log('--- 🏯 Sistema de Aldea Digital: Rutas Sincronizadas ---');
+//  DEBUG: Verificación de carga
+console.log("--- Rutas Sincronizadas ---");
+// Todas las rutas de este archivo son exclusivas para estudiantes.
+router.use(verificarToken, verificarRol(["estudiante"]));
+const accesoPorParametro = verificarAccesoModulo({
+  fuente: "params",
+  campo: "id_modulo",
+});
 
-// --- 📖 RUTAS DE CONSULTA (GET) ---
-router.get('/preguntas-diagnostico', estudianteController.obtenerPreguntasDiagnostico);
-router.get('/dashboard', verificarToken, estudianteController.obtenerDashboard);
-router.get('/ranking', verificarToken, estudianteController.obtenerRanking);
-router.get('/biblioteca', verificarToken, estudianteController.obtenerBiblioteca);
-router.get('/modulo/:id_modulo/ejercicios', verificarToken, estudianteController.obtenerEjerciciosModulo);
-router.get('/errores-recientes', verificarToken, estudianteController.obtenerErroresRecientes);
-router.get('/sugerencia-ia', verificarToken, estudianteController.obtenerSugerenciaIA);
+const accesoPorBody = verificarAccesoModulo({
+  fuente: "body",
+  campo: "id_modulo",
+});
 
-// 👤 Perfil y Notificaciones
-router.get('/perfil/datos', verificarToken, estudianteController.obtenerPerfil);
-router.get('/notificaciones', verificarToken, estudianteController.obtenerNotificaciones);
-router.put('/notificaciones/:id/leer', verificarToken, estudianteController.marcarNotificacionLeida);
+const accesoPorEjercicio = verificarAccesoModulo({
+  fuente: "ejercicio",
+  campo: "id_pregunta",
+});
 
-// 💬 Foro
-router.get('/foro/temas', verificarToken, estudianteController.obtenerTemasForo);
-router.get('/foro/comentarios/:id_post', verificarToken, estudianteController.obtenerComentarios);
+// ---  RUTAS DE CONSULTA (GET) ---
+router.get("/dashboard", estudianteController.obtenerDashboard);
+router.get("/ranking", estudianteController.obtenerRanking);
+router.get("/biblioteca", estudianteController.obtenerBiblioteca);
+router.get(
+  "/modulo/:id_modulo/ejercicios",
+  accesoPorParametro,
+  estudianteController.obtenerEjerciciosModulo,
+);
+router.get("/errores-recientes", estudianteController.obtenerErroresRecientes);
+router.get("/sugerencia-ia", estudianteController.obtenerSugerenciaIA);
 
+//  Perfil y Notificaciones
+router.get("/perfil/datos", estudianteController.obtenerPerfil);
+router.get("/notificaciones", estudianteController.obtenerNotificaciones);
+router.put("/notificaciones/:id/leer", estudianteController.marcarNotificacionLeida,);
+
+//  Foro
+router.get("/foro/temas", estudianteController.obtenerTemasForo);
+router.get("/foro/comentarios/:id_post", estudianteController.obtenerComentarios,);
 // La ruta blindada definitiva:
-router.post('/tutor-ia', verificarToken, estudianteController.consultarOraculo);
-// 🚩 CORREGIDO: Apuntando a la función real del controlador
-router.post('/diagnostico', verificarToken, estudianteController.guardarDiagnostico);
-router.post('/actualizar-progreso', verificarToken, estudianteController.actualizarProgreso);
-router.post('/registrar-fallo', verificarToken, estudianteController.registrarFallo);
-router.post('/finalizar', verificarToken, estudianteController.finalizarModulo);
-// 🚩 GESTIÓN DE AVATAR
-router.post('/perfil/avatar', verificarToken, (req, res, next) => {
-    upload.single('avatar')(req, res, function (err) {
-        if (err) return res.status(400).json({ error: "Error de Multer: " + err.message });
-        next();
+router.post("/tutor-ia", accesoPorEjercicio, estudianteController.consultarOraculo,);
+
+router.post("/actualizar-progreso", accesoPorBody, estudianteController.actualizarProgreso,
+);
+
+router.post("/registrar-fallo", accesoPorEjercicio, estudianteController.registrarFallo,);
+
+router.post("/finalizar", accesoPorBody, estudianteController.finalizarModulo);
+//  GESTIÓN DE AVATAR
+router.post(
+  "/perfil/avatar",
+  (req, res, next) => {
+    upload.single("avatar")(req, res, function (err) {
+      if (err)
+        return res
+          .status(400)
+          .json({ error: "Error de Multer: " + err.message });
+      next();
     });
-}, estudianteController.actualizarAvatar);
+  },
+  estudianteController.actualizarAvatar,
+);
 
-// 🚩 GESTIÓN DE FORO
-router.post('/foro/crear', verificarToken, (req, res, next) => {
-    upload.single('imagen')(req, res, function (err) {
-        if (err) return res.status(400).json({ error: "Error al procesar imagen: " + err.message });
-        next();
+//  GESTIÓN DE FORO
+router.post(
+  "/foro/crear",
+  (req, res, next) => {
+    upload.single("imagen")(req, res, function (err) {
+      if (err)
+        return res
+          .status(400)
+          .json({ error: "Error al procesar imagen: " + err.message });
+      next();
     });
-}, estudianteController.crearMisionForo);
+  },
+  estudianteController.crearMisionForo,
+);
 
-router.post('/foro/comentar', verificarToken, estudianteController.comentarMision);
-router.put('/foro/comentario/:id_comentario', verificarToken, estudianteController.editarComentario);
-router.delete('/foro/comentario/:id_comentario', verificarToken, estudianteController.eliminarComentario);
-router.delete('/foro/post/:id_post', verificarToken, estudianteController.eliminarMision);
-
-// Marcar notificaciones como leídas
-router.put('/notificaciones/:id/leida', verificarToken, estudianteController.marcarNotificacionLeida);
+router.post("/foro/comentar", estudianteController.comentarMision);
+router.put("/foro/comentario/:id_comentario", estudianteController.editarComentario,);
+router.delete("/foro/comentario/:id_comentario", estudianteController.eliminarComentario,);
+router.put(
+  "/foro/post/:id_post",
+  (req, res, next) => {
+    upload.single("imagen")(req, res, function (err) {
+      if (err)
+        return res
+          .status(400)
+          .json({ error: "Error al procesar imagen: " + err.message });
+      next();
+    });
+  },
+  estudianteController.editarMision,
+);
+router.delete("/foro/post/:id_post", estudianteController.eliminarMision);
 
 module.exports = router;

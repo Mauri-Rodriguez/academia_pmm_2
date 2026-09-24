@@ -1,19 +1,15 @@
 // 1. IMPORTACIONES
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const axios = require('axios');
 const { literal, Op } = require('sequelize');
 const db = require('../config/database');
 
 // 2. MODELOS
-const Diagnostico = require('../models/Diagnostico');
 const Modulo = require('../models/Modulo');
-const PreguntaDiagnostico = require('../models/PreguntaDiagnostico');
 const Ejercicio = require('../models/Ejercicio');
 const ProgresoEstudiante = require('../models/ProgresoEstudiante');
 const Usuario = require('../models/Usuario');
 const HistorialError = require('../models/HistorialError');
 
-const TOTAL_PREGUNTAS = 13;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // 3. HELPERS
@@ -118,7 +114,7 @@ exports.registrarFallo = async (req, res) => {
         const usuario = await Usuario.findByPk(id_usuario);
         const nivelEstudiante = usuario?.rango_actual || usuario?.rango || 'Estudiante';
 
-        const prompt = `
+        const prompt = String.raw`
 Eres un Tutor Virtual Académico de Matemáticas. Tu misión es guiar al estudiante dentro de su Zona de Desarrollo Próximo, ayudándole a identificar su error conceptual sin entregarle la solución.
 
 CONTEXTO:
@@ -132,7 +128,7 @@ REGLAS ESTRICTAS:
 2. ENFOQUE EN EL ERROR: Explica brevemente por qué la opción que eligió es incorrecta (ej. error de signo, concepto erróneo, propiedad mal aplicada).
 3. ANDAMIAJE: Recuerda la regla, propiedad o teorema matemático que debe aplicar y termina con una pregunta orientadora que lo impulse a deducir el siguiente paso por sí mismo.
 4. CARGA COGNITIVA: Sé directo. Máximo 3 oraciones cortas en total para no saturar su memoria de trabajo.
-5. FORMATO PLANO: NO uses LaTeX ni signos de dólar ($). Escribe las fórmulas en texto plano (ej. x^2, a/b, sqrt(x)).
+5. FORMATO MATEMÁTICO: Escribe todas las expresiones matemáticas en LaTeX crudo, sin delimitadores como $, $$, \( \) o \[ \]. Usa, por ejemplo, x^{2}, \frac{a}{b} y \sqrt{x}.
 6. CIERRE GAMIFICADO: Termina tu mensaje exactamente con este formato: "🥷🏾 Pista: [Tu pregunta o pista orientadora]".
 
 Estructura de tu respuesta:
@@ -226,15 +222,7 @@ exports.obtenerErroresRecientes = async (req, res) => {
     }
 };
 
-// --- 🎯 DIAGNÓSTICO Y RANGO ---
-
-exports.obtenerPreguntasDiagnostico = async (req, res) => {
-    try {
-        const preguntas = await PreguntaDiagnostico.findAll();
-        res.json(preguntas);
-    } catch (e) { res.status(500).json({ mensaje: 'Error' }); }
-};
-
+// ---  DIAGNÓSTICO Y RANGO ---
 
 /**
  * Finaliza un módulo otorgando el 100% de progreso, la insignia correspondiente
@@ -315,11 +303,27 @@ exports.finalizarModulo = async (req, res) => {
         const rangoActual = usuario?.rango_actual || usuario?.rango || 'Genin (Iniciado)';
 
         // 4. CONTEO DE MÓDULOS AGRUPADOS POR TIER
-        let nivelesAEvaluar = [];
-        if (rangoActual.includes('Genin')) nivelesAEvaluar = ['Genin (Iniciado)', 'Bajo'];
-        else if (rangoActual.includes('Chunin')) nivelesAEvaluar = ['Genin (Iniciado)', 'Bajo', 'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio'];
-        else if (rangoActual.includes('Jonin')) nivelesAEvaluar = ['Genin (Iniciado)', 'Bajo', 'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio', 'Jonin (Maestro)', 'Jonin (Avanzado)', 'Alto'];
+        const nivelesPorRango = {
+            'Genin (Iniciado)': [
+                'Genin (Iniciado)'
+            ],
+            'Chunin (Guerrero)': [
+                'Genin (Iniciado)',
+                'Chunin (Guerrero)'
+            ],
+            'Jonin (Maestro)': [
+                'Genin (Iniciado)',
+                'Chunin (Guerrero)',
+                'Jonin (Maestro)'
+            ],
+            'Kage (Leyenda)': [
+                'Genin (Iniciado)',
+                'Chunin (Guerrero)',
+                'Jonin (Maestro)'
+            ]
+        };
 
+        const nivelesAEvaluar = nivelesPorRango[rangoActual] || [];
         const modulosDelNivel = await Modulo.findAll({
             where: { nivel: { [Op.in]: nivelesAEvaluar } },
             attributes: ['id_modulo'],
@@ -392,105 +396,6 @@ exports.finalizarModulo = async (req, res) => {
         if (t) await t.rollback();
         console.error("❌ Error en finalización:", e);
         res.status(500).json({ error: "Falla en el proceso de sellado" });
-    }
-};
-
-/**
- * Guarda el puntaje del diagnóstico, lo envía a la IA de Flask para asignar un rango
- * y sincroniza las insignias retroactivamente (Piso de cristal).
- * @param {import('express').Request} req - Petición Express (body: puntaje).
- * @param {import('express').Response} res - Respuesta Express.
- */
-exports.guardarDiagnostico = async (req, res) => {
-    const t = await db.transaction();
-    try {
-        const { puntaje } = req.body;
-        const id_usuario = extraerIdUsuario(req);
-
-        if (!id_usuario) return res.status(401).json({ error: "Sesión expirada" });
-
-        // 1. Clasificación por IA (Sincronizado con Railway)
-        const iaBaseUrl = process.env.IA_SERVICE_URL || 'http://127.0.0.1:5000';
-
-        const resIA = await axios.post(`${iaBaseUrl}/api/ia/recomendar-ruta`, { puntaje });
-        const mapa = { 0: 'Genin (Iniciado)', 1: 'Chunin (Guerrero)', 2: 'Jonin (Maestro)' };
-        const rango = mapa[resIA.data.nivel_id] || 'Genin (Iniciado)';
-
-        // 2. Actualizar rango oficial
-        await db.query('UPDATE usuarios SET rango = ?, rango_actual = ? WHERE id_usuario = ?',
-            { replacements: [rango, rango, id_usuario], transaction: t });
-
-        // 🚩 3. LÓGICA DE MEDALLAS DE RANGO Y CONVALIDACIÓN
-        let nivelesAConvalidar = [];
-        let medallasDeRango = [];
-
-        if (rango.includes('Chunin')) {
-            nivelesAConvalidar = ['Genin (Iniciado)', 'Bajo'];
-            medallasDeRango = [101]; // Medalla Chunin
-        }
-        else if (rango.includes('Jonin')) {
-            nivelesAConvalidar = ['Genin (Iniciado)', 'Bajo', 'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio'];
-            medallasDeRango = [101, 102]; // Medalla Chunin y Medalla Jonin
-        } else if (rango.includes('Kage')) {
-            nivelesAConvalidar = [
-                'Genin (Iniciado)', 'Bajo',
-                'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio',
-                'Jonin (Maestro)', 'Jonin (Avanzado)', 'Alto'
-            ];
-            medallasDeRango = [101, 102, 103]; // Todas las medallas de rango
-        }
-        // A. Convalidar Módulos y sus insignias
-        if (nivelesAConvalidar.length > 0) {
-            const modulosConvalidados = await db.query(
-                'SELECT id_modulo FROM modulos WHERE nivel IN (?)',
-                { replacements: [nivelesAConvalidar], type: db.QueryTypes.SELECT, transaction: t }
-            );
-
-            if (modulosConvalidados.length > 0) {
-                const ids = modulosConvalidados.map(m => m.id_modulo);
-
-                // Marcar progreso 100%
-                const valoresProgreso = ids.map(id => `(${id_usuario}, ${id}, 100, 1, NOW())`).join(', ');
-                await db.query(`
-                    INSERT INTO progreso_estudiante (id_usuario, id_modulo, porcentaje_avance, intentos_realizados, ultima_actualizacion)
-                    VALUES ${valoresProgreso} ON DUPLICATE KEY UPDATE porcentaje_avance = 100
-                `, { transaction: t });
-
-                // Entregar insignias de los módulos saltados
-                const valoresInsigniasMod = ids.map(id => `(${id_usuario}, ${id}, NOW())`).join(', ');
-                await db.query(`
-                    INSERT IGNORE INTO usuarios_insignias (id_usuario, id_insignia, fecha_otorgada)
-                    VALUES ${valoresInsigniasMod}
-                `, { transaction: t });
-            }
-        }
-
-        // B. ENTREGAR MEDALLAS DE RANGO (Chunin/Jonin)
-        if (medallasDeRango.length > 0) {
-            const valoresMedallas = medallasDeRango.map(idMedalla => `(${id_usuario}, ${idMedalla}, NOW())`).join(', ');
-            await db.query(`
-                INSERT IGNORE INTO usuarios_insignias    (id_usuario, id_insignia, fecha_otorgada)
-                VALUES ${valoresMedallas}
-            `, { transaction: t });
-        }
-
-        // 4. Registro histórico del diagnóstico
-        const nuevo = await Diagnostico.create({
-            id_usuario, puntaje_obtenido: puntaje, nivel_asignado: rango, fecha_realizacion: new Date()
-        }, { transaction: t });
-
-        await t.commit();
-        await crearNotificacion(
-            id_usuario,
-            `🤖 El Tutor ha hablado. Tu entrenamiento comienza con el rango de: ${rango}. ¡Revisa tu Malla Curricular!`
-        );
-
-        res.status(201).json(nuevo);
-
-    } catch (e) {
-        if (t) await t.rollback();
-        console.error("❌ Error en Convalidación de Rango:", e.message);
-        res.status(500).json({ error: "Error en el sello de diagnóstico" });
     }
 };
 
@@ -572,23 +477,49 @@ exports.obtenerDashboard = async (req, res) => {
             );
         }
 
+        const nivelesDisponiblesPorRango = {
+            'Genin (Iniciado)': [
+                'Genin (Iniciado)'
+            ],
+            'Chunin (Guerrero)': [
+                'Genin (Iniciado)',
+                'Chunin (Guerrero)'
+            ],
+            'Jonin (Maestro)': [
+                'Genin (Iniciado)',
+                'Chunin (Guerrero)',
+                'Jonin (Maestro)'
+            ],
+            'Kage (Leyenda)': [
+                'Genin (Iniciado)',
+                'Chunin (Guerrero)',
+                'Jonin (Maestro)'
+            ]
+        };
+
+        const nivelesPermitidos =
+            nivelesDisponiblesPorRango[nivelIA] ||
+            ['Genin (Iniciado)'];
+
         // 🚩 4. CARGA PARALELA DE DATOS
         const [diag, modulos, todasInsignias, insigniasGanadas] = await Promise.all([
             db.query('SELECT puntaje_obtenido FROM diagnostico WHERE id_usuario = ? ORDER BY fecha_realizacion DESC LIMIT 1', { replacements: [id_usuario], type: db.QueryTypes.SELECT }),
             Modulo.findAll({
                 where: {
                     nivel: {
-                        [Op.in]: (nivelIA.includes('Kage') || nivelIA.includes('Leyenda'))
-                            ? ['Genin (Iniciado)', 'Bajo', 'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio', 'Jonin (Maestro)', 'Jonin (Avanzado)', 'Alto', 'Kage (Leyenda)']
-                            : nivelIA.includes('Jonin')
-                                ? ['Genin (Iniciado)', 'Bajo', 'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio', 'Jonin (Maestro)', 'Jonin (Avanzado)', 'Alto']
-                                : nivelIA.includes('Chunin')
-                                    ? ['Genin (Iniciado)', 'Bajo', 'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio']
-                                    : ['Genin (Iniciado)', 'Bajo']
+                        [Op.in]: nivelesPermitidos
                     }
                 },
                 raw: true,
-                order: [[db.literal("FIELD(nivel, 'Genin (Iniciado)', 'Bajo', 'Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio', 'Jonin (Maestro)', 'Jonin (Avanzado)', 'Alto', 'Kage (Leyenda)')")], ['id_modulo', 'ASC']]
+                order: [
+                    [
+                        db.literal(
+                            "FIELD(nivel, 'Genin (Iniciado)', 'Chunin (Guerrero)', 'Jonin (Maestro)')"
+                        ),
+                        'ASC'
+                    ],
+                    ['id_modulo', 'ASC']
+                ]
             }),
             db.query(`SELECT * FROM insignias`, { type: db.QueryTypes.SELECT }),
             db.query(`SELECT id_insignia FROM usuarios_insignias WHERE id_usuario = ?`, { replacements: [id_usuario], type: db.QueryTypes.SELECT })
@@ -669,23 +600,21 @@ exports.obtenerBiblioteca = async (req, res) => {
 
         const nivel = usuario?.rango_actual || usuario?.rango || 'Genin (Iniciado)';
 
-        // 🚩 Base de conocimiento (Todos ven esto)
-        let permitidos = ['Genin (Iniciado)', 'Bajo'];
+        // La biblioteca usa niveles de dificultad propios:
+        // Bajo, Intermedio y Alto.
+        let permitidos = ['Bajo'];
 
-        // 🚩 Desbloqueos por rango (Usamos if independientes para acumular)
         if (nivel.includes('Chunin')) {
-            permitidos.push('Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio');
-        }
-        if (nivel.includes('Jonin')) {
-            permitidos.push('Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio', 'Jonin (Maestro)', 'Jonin (Avanzado)', 'Alto');
-        }
-        if (nivel.includes('Kage') || nivel.includes('Leyenda')) {
-            // El Kage hereda todos los conocimientos de la academia
-            permitidos.push('Chunin (Guerrero)', 'Chunin (Intermedio)', 'Intermedio', 'Jonin (Maestro)', 'Jonin (Avanzado)', 'Alto', 'Kage (Leyenda)', 'Supremo');
+            permitidos.push('Intermedio');
         }
 
-        // Limpiamos duplicados en caso de que las palabras se crucen
-        permitidos = [...new Set(permitidos)];
+        if (
+            nivel.includes('Jonin') ||
+            nivel.includes('Kage') ||
+            nivel.includes('Leyenda')
+        ) {
+            permitidos.push('Intermedio', 'Alto');
+        }
 
         const pergaminos = await db.query(
             "SELECT * FROM biblioteca_pergaminos WHERE nivel_requerido IN (?) ORDER BY id_pergamino DESC",
@@ -764,6 +693,55 @@ exports.obtenerTemasForo = async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error temas" }); }
 };
 
+exports.editarMision = async (req, res) => {
+    try {
+        const id_usuario = extraerIdUsuario(req);
+        const id_post = Number(req.params.id_post);
+        const titulo = String(req.body?.titulo || '').trim();
+        const contenido = String(req.body?.contenido || '').trim();
+
+        if (!Number.isInteger(id_post) || id_post <= 0) {
+            return res.status(400).json({ error: "Publicación inválida" });
+        }
+
+        if (titulo.length < 5 || contenido.length < 10) {
+            return res.status(400).json({
+                error: "El título y el contenido no cumplen la longitud mínima"
+            });
+        }
+
+        const [post] = await db.query(
+            "SELECT id_post, imagen_url FROM foro_posts WHERE id_post = ? AND id_usuario = ? LIMIT 1",
+            {
+                replacements: [id_post, id_usuario],
+                type: db.QueryTypes.SELECT
+            }
+        );
+
+        if (!post) {
+            return res.status(404).json({
+                error: "Publicación no encontrada o sin permisos para editarla"
+            });
+        }
+
+        const imagen_url = req.file
+            ? `/uploads/${req.file.filename}`
+            : post.imagen_url;
+
+        await db.query(
+            "UPDATE foro_posts SET titulo = ?, contenido = ?, imagen_url = ? WHERE id_post = ? AND id_usuario = ?",
+            {
+                replacements: [titulo, contenido, imagen_url, id_post, id_usuario]
+            }
+        );
+
+        res.json({ mensaje: "Publicación editada" });
+    } catch (error) {
+        console.error("Error al editar publicación:", error);
+        res.status(500).json({ error: "No fue posible editar la publicación" });
+    }
+};
+
 exports.comentarMision = async (req, res) => {
     try {
         const { id_post, comentario } = req.body;
@@ -818,25 +796,119 @@ exports.obtenerComentarios = async (req, res) => {
 
 exports.editarComentario = async (req, res) => {
     try {
-        await db.query("UPDATE foro_comentarios SET comentario = ? WHERE id_comentario = ? AND id_usuario = ?", { replacements: [req.body.nuevoContenido, req.params.id_comentario, extraerIdUsuario(req)] });
+        const id_usuario = extraerIdUsuario(req);
+        const id_comentario = Number(req.params.id_comentario);
+        const comentario = String(req.body?.comentario || '').trim();
+
+        if (!Number.isInteger(id_comentario) || id_comentario <= 0) {
+            return res.status(400).json({ error: "Comentario inválido" });
+        }
+
+        if (!comentario) {
+            return res.status(400).json({ error: "El comentario no puede estar vacío" });
+        }
+
+        const [comentarioExistente] = await db.query(
+            "SELECT id_comentario FROM foro_comentarios WHERE id_comentario = ? AND id_usuario = ? LIMIT 1",
+            {
+                replacements: [id_comentario, id_usuario],
+                type: db.QueryTypes.SELECT
+            }
+        );
+
+        if (!comentarioExistente) {
+            return res.status(404).json({
+                error: "Comentario no encontrado o sin permisos para editarlo"
+            });
+        }
+
+        await db.query(
+            "UPDATE foro_comentarios SET comentario = ? WHERE id_comentario = ? AND id_usuario = ?",
+            { replacements: [comentario, id_comentario, id_usuario] }
+        );
+
         res.json({ mensaje: "Editado" });
     } catch (error) { res.status(500).json({ error: "Falla edit" }); }
 };
 
 exports.eliminarComentario = async (req, res) => {
     try {
-        await db.query("DELETE FROM foro_comentarios WHERE id_comentario = ? AND id_usuario = ?", { replacements: [req.params.id_comentario, extraerIdUsuario(req)] });
+        const id_usuario = extraerIdUsuario(req);
+        const id_comentario = Number(req.params.id_comentario);
+
+        if (!Number.isInteger(id_comentario) || id_comentario <= 0) {
+            return res.status(400).json({ error: "Comentario inválido" });
+        }
+
+        const [comentarioExistente] = await db.query(
+            "SELECT id_comentario FROM foro_comentarios WHERE id_comentario = ? AND id_usuario = ? LIMIT 1",
+            {
+                replacements: [id_comentario, id_usuario],
+                type: db.QueryTypes.SELECT
+            }
+        );
+
+        if (!comentarioExistente) {
+            return res.status(404).json({
+                error: "Comentario no encontrado o sin permisos para eliminarlo"
+            });
+        }
+
+        await db.query(
+            "DELETE FROM foro_comentarios WHERE id_comentario = ? AND id_usuario = ?",
+            { replacements: [id_comentario, id_usuario] }
+        );
+
         res.json({ mensaje: "Borrado" });
     } catch (error) { res.status(500).json({ error: "Falla delete" }); }
 };
 
 exports.eliminarMision = async (req, res) => {
+    let t;
+
     try {
         const id_usuario = extraerIdUsuario(req);
-        await db.query("DELETE FROM foro_comentarios WHERE id_post = ?", { replacements: [req.params.id_post] });
-        await db.query("DELETE FROM foro_posts WHERE id_post = ? AND id_usuario = ?", { replacements: [req.params.id_post, id_usuario] });
+        const id_post = Number(req.params.id_post);
+
+        if (!Number.isInteger(id_post) || id_post <= 0) {
+            return res.status(400).json({ error: "Publicación inválida" });
+        }
+
+        t = await db.transaction();
+
+        const [post] = await db.query(
+            "SELECT id_post FROM foro_posts WHERE id_post = ? AND id_usuario = ? LIMIT 1",
+            {
+                replacements: [id_post, id_usuario],
+                type: db.QueryTypes.SELECT,
+                transaction: t
+            }
+        );
+
+        if (!post) {
+            await t.rollback();
+            return res.status(404).json({
+                error: "Publicación no encontrada o sin permisos para eliminarla"
+            });
+        }
+
+        await db.query(
+            "DELETE FROM foro_comentarios WHERE id_post = ?",
+            { replacements: [id_post], transaction: t }
+        );
+
+        await db.query(
+            "DELETE FROM foro_posts WHERE id_post = ? AND id_usuario = ?",
+            { replacements: [id_post, id_usuario], transaction: t }
+        );
+
+        await t.commit();
+        t = null;
         res.json({ mensaje: "Misión eliminada" });
-    } catch (error) { res.status(500).json({ error: "No eliminada" }); }
+    } catch (error) {
+        if (t) await t.rollback();
+        res.status(500).json({ error: "No eliminada" });
+    }
 };
 
 exports.obtenerPerfil = async (req, res) => {
@@ -860,9 +932,39 @@ exports.obtenerNotificaciones = async (req, res) => {
 };
 exports.marcarNotificacionLeida = async (req, res) => {
     try {
-        await db.query('UPDATE notificaciones SET leida = 1 WHERE id_notificacion = ?', { replacements: [req.params.id] });
+        const id_usuario = extraerIdUsuario(req);
+        const id_notificacion = Number(req.params.id);
+
+        if (!Number.isInteger(id_notificacion) || id_notificacion <= 0) {
+            return res.status(400).json({
+                error: "Notificación inválida"
+            });
+        }
+
+        const [notificacion] = await db.query(
+            'SELECT id_notificacion FROM notificaciones WHERE id_notificacion = ? AND id_usuario = ? LIMIT 1',
+            {
+                replacements: [id_notificacion, id_usuario],
+                type: db.QueryTypes.SELECT
+            }
+        );
+
+        if (!notificacion) {
+            return res.status(404).json({
+                error: "Notificación no encontrada"
+            });
+        }
+
+        await db.query(
+            'UPDATE notificaciones SET leida = 1 WHERE id_notificacion = ? AND id_usuario = ?',
+            { replacements: [id_notificacion, id_usuario] }
+        );
+
         res.json({ mensaje: "OK" });
-    } catch (error) { res.status(500).send("Error update"); }
+    } catch (error) {
+        console.error("Error al marcar notificación:", error);
+        res.status(500).send("Error update");
+    }
 };
 
 exports.actualizarAvatar = async (req, res) => {
@@ -955,11 +1057,11 @@ exports.consultarOraculo = async (req, res) => {
         const nivelEstudiante = usuario?.rango_actual || usuario?.rango || 'Genin (Iniciado)';
 
         // 🚩 3. Construimos el Prompt con el nivel inyectado
-        const prompt = `
+        const prompt = String.raw`
 Eres un Tutor Virtual Académico de Matemáticas, diseñado para apoyar el aprendizaje autónomo de estudiantes universitarios de ingeniería. Tu metodología se basa en guiar al estudiante dentro de su Zona de Desarrollo Próximo (ZDP), facilitando el descubrimiento del conocimiento sin saturar su carga cognitiva.
 
 CONTEXTO DE LA SESIÓN:
-- Nivel actual del estudiante: ${nivelEstudiante} (Ej: Básico, Intermedio o Avanzado)
+- Rango actual del estudiante: ${nivelEstudiante}
 - Ejercicio que está resolviendo: "${preguntaDB.pregunta}"
 - Duda o mensaje del estudiante: "${mensaje_estudiante}"
 

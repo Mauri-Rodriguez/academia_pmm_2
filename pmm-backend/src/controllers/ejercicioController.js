@@ -6,9 +6,6 @@
 
 const Ejercicio = require('../models/Ejercicio');
 const ProgresoEstudiante = require('../models/ProgresoEstudiante');
-const ResultadoModulo = require('../models/ResultadoModulo');
-const Insignia = require('../models/Insignia');
-const UsuarioInsignia = require('../models/UsuarioInsignia');
 
 /**
  * Obtiene la lista de ejercicios de un módulo específico, excluyendo la respuesta correcta.
@@ -113,73 +110,5 @@ exports.evaluarEjercicio = async (req, res) => {
     } catch (error) {
         console.error('Error al evaluar el ejercicio:', error);
         res.status(500).json({ mensaje: 'Error interno del servidor al procesar la respuesta.' });
-    }
-};
-
-/**
- * Finaliza un módulo para un estudiante, registrando el puntaje final y otorgando una insignia si corresponde.
- * @param {import('express').Request} req - Petición Express (body: id_modulo).
- * @param {import('express').Response} res - Respuesta Express.
- * @returns {Promise<void>} JSON con el resultado de la finalización y la insignia desbloqueada.
- */
-exports.finalizarModulo = async (req, res) => {
-    try {
-        const id_usuario = req.usuario?.id_usuario || req.user?.id_usuario; 
-        const { id_modulo } = req.body;
-
-        if (!id_modulo) {
-            return res.status(400).json({ mensaje: 'Falta el id_modulo.' });
-        }
-
-        // Consultamos el progreso actual
-        const progreso = await ProgresoEstudiante.findOne({
-            where: { id_usuario: id_usuario, id_modulo: id_modulo }
-        });
-
-        if (!progreso) {
-            return res.status(404).json({ mensaje: 'No hay progreso registrado para esta misión.' });
-        }
-
-        // Guardamos el resultado final
-        await ResultadoModulo.create({
-            id_usuario: id_usuario,
-            id_modulo: id_modulo,
-            puntaje_final: progreso.porcentaje_avance,
-            fecha_finalizacion: new Date()
-        });
-
-        let insigniaOtorgada = null;
-
-        // Gamificación: Si pasa del 60%, le damos la medalla
-        if (progreso.porcentaje_avance >= 60) {
-            
-            const insigniaExistente = await UsuarioInsignia.findOne({
-                where: { id_usuario: id_usuario, id_insignia: id_modulo }
-            });
-
-            if (!insigniaExistente) {
-                await UsuarioInsignia.create({
-                    id_usuario: id_usuario,
-                    id_insignia: id_modulo, 
-                    fecha_otorgada: new Date()
-                });
-
-                insigniaOtorgada = await Insignia.findByPk(id_modulo);
-            }
-        }
-
-        res.status(200).json({
-            mensaje: '¡Misión finalizada con éxito!',
-            puntaje_final: Math.round(progreso.porcentaje_avance) + '%',
-            insignia_desbloqueada: insigniaOtorgada ? {
-                nombre: insigniaOtorgada.nombre_insignia,
-                descripcion: insigniaOtorgada.descripcion,
-                imagen: insigniaOtorgada.imagen
-            } : 'No se alcanzó el puntaje mínimo (60%) o ya posees esta insignia.'
-        });
-
-    } catch (error) {
-        console.error('Error al finalizar el módulo:', error);
-        res.status(500).json({ mensaje: 'Error interno del servidor al finalizar el módulo.' });
     }
 };

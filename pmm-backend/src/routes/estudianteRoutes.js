@@ -14,16 +14,6 @@ const {
 console.log("--- Rutas Sincronizadas ---");
 // Todas las rutas de este archivo son exclusivas para estudiantes.
 router.use(verificarToken, verificarRol(["estudiante"]));
-const accesoPorParametro = verificarAccesoModulo({
-  fuente: "params",
-  campo: "id_modulo",
-});
-
-const accesoPorBody = verificarAccesoModulo({
-  fuente: "body",
-  campo: "id_modulo",
-});
-
 const accesoPorEjercicio = verificarAccesoModulo({
   fuente: "ejercicio",
   campo: "id_pregunta",
@@ -33,11 +23,6 @@ const accesoPorEjercicio = verificarAccesoModulo({
 router.get("/dashboard", estudianteController.obtenerDashboard);
 router.get("/ranking", estudianteController.obtenerRanking);
 router.get("/biblioteca", estudianteController.obtenerBiblioteca);
-router.get(
-  "/modulo/:id_modulo/ejercicios",
-  accesoPorParametro,
-  estudianteController.obtenerEjerciciosModulo,
-);
 router.get("/errores-recientes", estudianteController.obtenerErroresRecientes);
 router.get("/sugerencia-ia", estudianteController.obtenerSugerenciaIA);
 
@@ -52,12 +37,7 @@ router.get("/foro/comentarios/:id_post", estudianteController.obtenerComentarios
 // La ruta blindada definitiva:
 router.post("/tutor-ia", accesoPorEjercicio, estudianteController.consultarOraculo,);
 
-router.post("/actualizar-progreso", accesoPorBody, estudianteController.actualizarProgreso,
-);
-
 router.post("/registrar-fallo", accesoPorEjercicio, estudianteController.registrarFallo,);
-
-router.post("/finalizar", accesoPorBody, estudianteController.finalizarModulo);
 //  GESTIÓN DE AVATAR
 router.post(
   "/perfil/avatar",

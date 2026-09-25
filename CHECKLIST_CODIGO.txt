@@ -1,7 +1,7 @@
 CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
 Proyecto: PMM Interactivo
 Finalidad: qué falta para cumplir completamente con la monografía.
-Última actualización: 24 de septiembre de 2026.
+Última actualización: 25 de septiembre de 2026.
 
 Leyenda:
 [X] CUMPLE: se encontró implementado en el repositorio.
@@ -112,19 +112,25 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 
 [X] Bloqueo secuencial de módulos.
     Verificado: el frontend bloquea el módulo siguiente y el backend aplica
-    accesoModuloMiddleware en las rutas de consulta, evaluación, progreso, tutor,
-    registro de fallos y finalización.
+    accesoModuloMiddleware en las rutas de consulta, evaluación, estado del progreso,
+    tutor y registro de fallos. El avance y la finalización se ejecutan exclusivamente
+    como parte de la evaluación protegida del ejercicio.
 
 [X] Ruta de aprendizaje según la clasificación.
     Verificado: los módulos utilizan exclusivamente Genin (Iniciado),
     Chunin (Guerrero) y Jonin (Maestro). Bajo, Intermedio y Alto se conservan
     solamente como niveles de dificultad de biblioteca, de acuerdo con la base de datos.
 
-[ ] Evitar exponer las respuestas correctas de los ejercicios al navegador.
-    Hallazgo adicional: la ruta activa /api/estudiante/modulo/:id_modulo/ejercicios
-    devuelve actualmente respuesta_correcta y ModuloEstudio.jsx compara la respuesta
-    en el frontend. Debe migrarse la evaluación al backend antes de retirar ese campo,
-    conservando la retroalimentación y el progreso actuales.
+[X] Evitar exponer las respuestas correctas de los ejercicios al navegador.
+    Verificado: ModuloEstudio.jsx obtiene los ejercicios desde la ruta protegida
+    /api/ejercicios/modulo/:id_modulo, que excluye respuesta_correcta, y envía la
+    opción elegida a /api/ejercicios/evaluar. El backend compara la respuesta, exige
+    el ejercicio siguiente, registra intentos y avance y finaliza el módulo dentro de
+    una transacción. La respuesta HTTP no revela la solución correcta.
+
+    También se retiraron las rutas que permitían al navegador enviar porcentajes o
+    solicitar directamente la finalización. El modo repaso no vuelve a sumar progreso,
+    insignias ni ascensos. No se modificó la estructura ni la información de MySQL.
 
 ============================================================
 5. RETROALIMENTACIÓN Y TUTOR CON GEMINI
@@ -283,12 +289,13 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     Evidencia: pmm-backend/test y pmm-backend/jest-report.json.
 
 [X] Ejecución actual de las pruebas.
-    Verificado el 23 de septiembre de 2026 después de instalar las dependencias:
+    Verificado el 25 de septiembre de 2026 después de asegurar la evaluación de ejercicios:
     5 suites aprobadas y 22 de 22 pruebas aprobadas.
 
 [X] Compilación actual del frontend.
     Verificado: las dependencias se instalaron con npm ci y el build de producción de
-    Vite finalizó correctamente. NPM reportó 0 vulnerabilidades en el frontend.
+    Vite finalizó correctamente el 25 de septiembre de 2026. NPM reportó 0
+    vulnerabilidades en el frontend durante la instalación.
 
 [ ] Pruebas automatizadas del frontend.
     Falta: no se encontró una suite para componentes o flujos React.

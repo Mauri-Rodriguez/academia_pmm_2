@@ -1,114 +1,192 @@
-// ============================================================================
-// Archivo: src/controllers/ejercicioController.js
-// Propósito: Gestionar la entrega de ejercicios y la evaluación de respuestas.
-// Requerimientos: RF-04, RF-08 y RF-07 (Gamificación)
-// ============================================================================
+// Gestiona la entrega segura de ejercicios y su evaluación en el servidor.
 
+const db = require('../config/database');
 const Ejercicio = require('../models/Ejercicio');
 const ProgresoEstudiante = require('../models/ProgresoEstudiante');
+const { finalizarModulo } = require('../services/finalizacionModuloService');
 
-/**
- * Obtiene la lista de ejercicios de un módulo específico, excluyendo la respuesta correcta.
- * @param {import('express').Request} req - Petición Express (params: id_modulo).
- * @param {import('express').Response} res - Respuesta Express.
- * @returns {Promise<void>} JSON con la lista de ejercicios.
- */
+const normalizarOpcion = (valor) => {
+    const opcion = String(valor || '').trim().toLowerCase();
+    return /^[a-d]$/.test(opcion) ? `opcion_${opcion}` : opcion;
+};
+
+/** Entrega los ejercicios sin incluir la respuesta correcta. */
 exports.obtenerEjerciciosPorModulo = async (req, res) => {
     try {
         const { id_modulo } = req.params;
-
         const ejercicios = await Ejercicio.findAll({
-            where: { id_modulo: id_modulo },
-            attributes: { exclude: ['respuesta_correcta'] }, // 🛡️ Evita trampas en el Frontend
-            order: [['id_ejercicio', 'ASC']] // 🛡️ MEJORA: Garantiza la secuencia de aprendizaje
+            where: { id_modulo },
+            attributes: { exclude: ['respuesta_correcta'] },
+            order: [['id_ejercicio', 'ASC']]
         });
 
         if (!ejercicios || ejercicios.length === 0) {
-            return res.status(404).json({ mensaje: 'Aún no hay pergaminos de entrenamiento para este módulo.' });
+            return res.status(404).json({
+                mensaje: 'Aún no hay pergaminos de entrenamiento para este módulo.'
+            });
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             mensaje: 'Ejercicios cargados con éxito.',
             total: ejercicios.length,
             data: ejercicios
         });
-
     } catch (error) {
         console.error('Error al obtener los ejercicios:', error);
-        res.status(500).json({ mensaje: 'Error interno del servidor al consultar la biblioteca.' });
+        return res.status(500).json({
+            mensaje: 'Error interno del servidor al consultar la biblioteca.'
+        });
     }
 };
 
 /**
- * Evalúa la respuesta de un estudiante a un ejercicio, actualiza su progreso y devuelve feedback.
- * @param {import('express').Request} req - Petición Express (body: id_ejercicio, respuesta_estudiante).
- * @param {import('express').Response} res - Respuesta Express.
- * @returns {Promise<void>} JSON con el resultado de la evaluación y estadísticas.
+ * Evalúa una respuesta, exige el orden pedagógico y actualiza el progreso.
+ * La respuesta correcta nunca forma parte de la respuesta HTTP.
  */
 exports.evaluarEjercicio = async (req, res) => {
+    let transaction;
+
     try {
-        // 🛡️ MEJORA DEFENSIVA: Soporta req.usuario o req.user dependiendo de tu middleware
-        const id_usuario = req.usuario?.id_usuario || req.user?.id_usuario; 
-        const { id_ejercicio, respuesta_estudiante } = req.body;
+        const idUsuario = req.user?.id_usuario || req.user?.id;
+        const idEjercicio = Number(req.body?.id_ejercicio);
+        const respuestaNormalizada = normalizarOpcion(req.body?.respuesta_estudiante);
 
-        if (!id_usuario) return res.status(401).json({ mensaje: 'Sello de identidad no encontrado.' });
-        if (!id_ejercicio || !respuesta_estudiante) {
-            return res.status(400).json({ mensaje: 'Faltan datos obligatorios para la evaluación.' });
+        if (!idUsuario) {
+            return res.status(401).json({ mensaje: 'Sello de identidad no encontrado.' });
         }
 
-        const ejercicioDb = await Ejercicio.findByPk(id_ejercicio);
-        if (!ejercicioDb) {
-            return res.status(404).json({ mensaje: 'El jutsu especificado no existe.' });
+        if (!Number.isInteger(idEjercicio) || idEjercicio <= 0 ||
+            !/^opcion_[a-d]$/.test(respuestaNormalizada)) {
+            return res.status(400).json({
+                mensaje: 'El ejercicio y la opción seleccionada deben ser válidos.'
+            });
         }
 
-        const id_modulo = ejercicioDb.id_modulo;
-        // Limpiamos espacios extra y pasamos a minúsculas por si el estudiante escribe " 5 " en vez de "5"
-        const esCorrecta = (ejercicioDb.respuesta_correcta.toString().trim().toLowerCase() === respuesta_estudiante.toString().trim().toLowerCase());
+        const ejercicio = await Ejercicio.findByPk(idEjercicio);
+        if (!ejercicio) {
+            return res.status(404).json({ mensaje: 'El ejercicio indicado no existe.' });
+        }
 
-        // Registro automático de progreso
-        let [progreso, creado] = await ProgresoEstudiante.findOrCreate({
-            where: { id_usuario: id_usuario, id_modulo: id_modulo },
-            defaults: {
+        const idModulo = ejercicio.id_modulo;
+        const ejerciciosModulo = await Ejercicio.findAll({
+            where: { id_modulo: idModulo },
+            attributes: ['id_ejercicio'],
+            order: [['id_ejercicio', 'ASC']],
+            raw: true
+        });
+
+        if (ejerciciosModulo.length === 0) {
+            return res.status(404).json({ mensaje: 'El módulo no tiene ejercicios.' });
+        }
+
+        transaction = await db.transaction();
+
+        let progreso = await ProgresoEstudiante.findOne({
+            where: { id_usuario: idUsuario, id_modulo: idModulo },
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
+
+        if (!progreso) {
+            progreso = await ProgresoEstudiante.create({
+                id_usuario: idUsuario,
+                id_modulo: idModulo,
                 porcentaje_avance: 0,
                 intentos_realizados: 0,
                 ultima_actualizacion: new Date()
-            }
-        });
+            }, { transaction });
+        }
 
-        progreso.intentos_realizados += 1;
-        progreso.ultima_actualizacion = new Date();
+        const totalEjercicios = ejerciciosModulo.length;
+        const porcentajeActual = Math.max(
+            0,
+            Math.min(100, Number(progreso.porcentaje_avance) || 0)
+        );
+        const modoRepaso = porcentajeActual >= 100;
+        let ejerciciosCompletados = modoRepaso
+            ? totalEjercicios
+            : Math.max(
+                0,
+                Math.min(
+                    totalEjercicios - 1,
+                    Math.round((porcentajeActual / 100) * totalEjercicios)
+                )
+            );
 
-        // Calculamos el avance solo si acierta y no ha llegado al 100%
-        if (esCorrecta && progreso.porcentaje_avance < 100) {
-            const totalEjercicios = await Ejercicio.count({ where: { id_modulo: id_modulo } });
-            const valorPorEjercicio = 100 / totalEjercicios;
-            
-            progreso.porcentaje_avance += valorPorEjercicio;
+        if (!modoRepaso) {
+            const ejercicioEsperado = ejerciciosModulo[ejerciciosCompletados];
 
-            // Redondeo de seguridad para evitar flotantes extraños (ej. 99.9999%)
-            if (progreso.porcentaje_avance >= 99) {
-                progreso.porcentaje_avance = 100;
+            if (Number(ejercicioEsperado.id_ejercicio) !== idEjercicio) {
+                await transaction.rollback();
+                transaction = null;
+
+                return res.status(409).json({
+                    mensaje: 'Debes resolver los ejercicios del módulo en orden.',
+                    siguiente_indice: ejerciciosCompletados,
+                    progreso_actual: Math.round(porcentajeActual)
+                });
             }
         }
 
-        await progreso.save();
+        const esCorrecta = normalizarOpcion(ejercicio.respuesta_correcta) ===
+            respuestaNormalizada;
 
-        const mensajeFeedback = esCorrecta 
-            ? '¡Excelente! Respuesta correcta. Dominas este concepto.' 
-            : 'Respuesta incorrecta. Revisa tus sellos e inténtalo de nuevo.';
+        progreso.intentos_realizados = Number(progreso.intentos_realizados || 0) + 1;
+        progreso.ultima_actualizacion = new Date();
 
-        res.status(200).json({
+        if (esCorrecta && !modoRepaso) {
+            ejerciciosCompletados += 1;
+            progreso.porcentaje_avance = ejerciciosCompletados === totalEjercicios
+                ? 100
+                : (ejerciciosCompletados / totalEjercicios) * 100;
+        }
+
+        await progreso.save({ transaction });
+
+        const indiceEjercicioActual = ejerciciosModulo.findIndex(
+            (item) => Number(item.id_ejercicio) === idEjercicio
+        );
+        const moduloCompletado = esCorrecta && (
+            (!modoRepaso && ejerciciosCompletados === totalEjercicios) ||
+            (modoRepaso && indiceEjercicioActual === totalEjercicios - 1)
+        );
+        let finalizacion = null;
+
+        if (moduloCompletado && !modoRepaso) {
+            finalizacion = await finalizarModulo({
+                idUsuario,
+                idModulo,
+                transaction
+            });
+        }
+
+        await transaction.commit();
+        transaction = null;
+
+        return res.status(200).json({
             es_correcta: esCorrecta,
-            mensaje: mensajeFeedback,
-            respuesta_correcta: esCorrecta ? ejercicioDb.respuesta_correcta : null, 
+            mensaje: esCorrecta
+                ? '¡Excelente! Respuesta correcta. Dominas este concepto.'
+                : 'Respuesta incorrecta. Revisa tus sellos e inténtalo de nuevo.',
+            modulo_completado: moduloCompletado,
+            modo_repaso: modoRepaso,
+            siguiente_indice: modoRepaso
+                ? null
+                : Math.min(ejerciciosCompletados, totalEjercicios - 1),
+            finalizacion,
             estadisticas_modulo: {
                 intentos_totales: progreso.intentos_realizados,
-                progreso_actual: Math.round(progreso.porcentaje_avance) + '%'
+                progreso_actual: `${Math.round(progreso.porcentaje_avance)}%`
             }
         });
-
     } catch (error) {
+        if (transaction && !transaction.finished) {
+            await transaction.rollback();
+        }
+
         console.error('Error al evaluar el ejercicio:', error);
-        res.status(500).json({ mensaje: 'Error interno del servidor al procesar la respuesta.' });
+        return res.status(500).json({
+            mensaje: 'Error interno del servidor al procesar la respuesta.'
+        });
     }
 };

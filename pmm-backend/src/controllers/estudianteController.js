@@ -558,34 +558,6 @@ exports.obtenerDashboard = async (req, res) => {
         res.status(500).json({ mensaje: 'Error motor dashboard' });
     }
 };
-/**
- * Actualiza el progreso en un módulo con protección de "Piso de Cristal"
- * (no permite que un porcentaje menor pise uno mayor ya alcanzado).
- * @param {import('express').Request} req - Petición Express (body: id_modulo, porcentaje).
- * @param {import('express').Response} res - Respuesta Express.
- */
-exports.actualizarProgreso = async (req, res) => {
-    try {
-        const { id_modulo, porcentaje } = req.body;
-        const id_usuario = extraerIdUsuario(req);
-
-        // Usamos SQL nativo para asegurar que el porcentaje solo suba, nunca baje
-        await db.query(`
-            INSERT INTO progreso_estudiante (id_usuario, id_modulo, porcentaje_avance, intentos_realizados, ultima_actualizacion)
-            VALUES (?, ?, ?, 1, NOW())
-            ON DUPLICATE KEY UPDATE 
-                porcentaje_avance = IF(? > porcentaje_avance, ?, porcentaje_avance),
-                intentos_realizados = intentos_realizados + 1,
-                ultima_actualizacion = NOW()
-        `, { replacements: [id_usuario, id_modulo, porcentaje, porcentaje, porcentaje] });
-
-        res.json({ mensaje: 'Chakra sincronizado' });
-    } catch (e) {
-        console.error("Error progreso:", e);
-        res.status(500).json({ mensaje: 'Error progreso' });
-    }
-};
-
 // --- 📜 CONTENIDO Y SOCIAL ---
 
 exports.obtenerBiblioteca = async (req, res) => {
@@ -626,13 +598,6 @@ exports.obtenerBiblioteca = async (req, res) => {
         console.error("Error en biblioteca:", e);
         res.status(500).json({ mensaje: 'Error biblioteca' });
     }
-};
-
-exports.obtenerEjerciciosModulo = async (req, res) => {
-    try {
-        const ejercicios = await Ejercicio.findAll({ where: { id_modulo: req.params.id_modulo } });
-        res.json(ejercicios);
-    } catch (e) { res.status(500).json({ mensaje: 'Error ejercicios' }); }
 };
 
 exports.obtenerRanking = async (req, res) => {

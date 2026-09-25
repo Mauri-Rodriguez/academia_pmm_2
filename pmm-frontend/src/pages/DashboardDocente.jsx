@@ -234,7 +234,7 @@ const DashboardDocente = () => {
             <aside 
                 onMouseEnter={() => setIsExpanded(true)}
                 onMouseLeave={() => setIsExpanded(false)}
-                className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] bg-white border-r border-slate-200 flex flex-col p-6 hidden lg:flex z-50 
+                className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] bg-white border-r border-slate-200 flex flex-col p-6 lg:flex z-50 
                 ${isExpanded ? 'w-72 shadow-2xl' : 'w-24'}`}
             >
                 <div className="mb-12 flex flex-col items-center relative">

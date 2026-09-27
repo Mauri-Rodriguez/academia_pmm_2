@@ -22,7 +22,11 @@ const Diagnostico = sequelize.define('Diagnostico', {
         allowNull: false
     },
     nivel_asignado: {
-        type: DataTypes.STRING, // Almacenará 'Bajo', 'Intermedio' o 'Alto'
+        /**
+         *  Almacenará 'Genin', 'Chunin', 'Jonin' o 'Kage'
+         *  El cambio visual solo se va a trabajar visualmente desde el Front
+         */
+        type: DataTypes.STRING,
         allowNull: false
     },
     fecha_realizacion: {

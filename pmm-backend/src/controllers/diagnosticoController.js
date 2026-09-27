@@ -7,7 +7,28 @@
 
 const PreguntaDiagnostico = require('../models/PreguntaDiagnostico');
 const Diagnostico = require('../models/Diagnostico');
+/**
+ * No se va a considerar cualquier texto como una respuesta valida
+ */
+const OPCIONES_DIAGNOSTICO_VALIDAS = new Set([
+    'opcion_a',
+    'opcion_b',
+    'opcion_c',
+    'opcion_d'
+]);
 
+const normalizarOpcionDiagnostico = (valor) => {
+    const opcion = String(valor ?? '').trim().toLowerCase();
+
+    const equivalencias = {
+        a: 'opcion_a',
+        b: 'opcion_b',
+        c: 'opcion_c',
+        d: 'opcion_d'
+    };
+
+    return equivalencias[opcion] || opcion;
+};
 /**
  * Obtiene las preguntas del diagnóstico excluyendo la respuesta correcta por seguridad.
  * @param {import('express').Request} req - Objeto de petición Express.
@@ -15,13 +36,37 @@ const Diagnostico = require('../models/Diagnostico');
  */
 exports.obtenerPreguntas = async (req, res) => {
     try {
-        const preguntas = await PreguntaDiagnostico.findAll({
-            limit: 13,
-            attributes: { exclude: ['respuesta_correcta'] } 
+        const id_usuario =
+            req.usuario?.id_usuario ||
+            req.user?.id_usuario ||
+            req.user?.id;
+
+        const diagnosticoExistente = await Diagnostico.findOne({
+            where: { id_usuario },
+            attributes: ['id_diagnostico']
         });
 
-        if (!preguntas || preguntas.length === 0) {
-            return res.status(404).json({ mensaje: 'No hay preguntas disponibles para el diagnóstico.' });
+        if (diagnosticoExistente) {
+            return res.status(409).json({
+                codigo: 'DIAGNOSTICO_YA_REALIZADO',
+                mensaje: 'El diagnóstico inicial ya fue realizado.'
+            });
+        }
+        //garantizamos que hayan 13 preguntas al cargar
+        const preguntas = await PreguntaDiagnostico.findAll({
+            limit: 13,
+            order: [['id_pregunta', 'ASC']],
+            attributes: {
+                exclude: ['respuesta_correcta']
+            }
+        });
+
+        if (!preguntas || preguntas.length !== 13) {
+            return res.status(503).json({
+                codigo: 'DIAGNOSTICO_NO_CONFIGURADO',
+                mensaje:
+                    'El diagnóstico debe contener exactamente 13 preguntas disponibles.'
+            });
         }
 
         res.status(200).json({
@@ -50,12 +95,112 @@ exports.evaluarDiagnostico = async (req, res) => {
         const id_usuario = req.usuario?.id_usuario || req.user?.id_usuario; 
         const { respuestas } = req.body;
 
-        if (!respuestas || !Array.isArray(respuestas)) {
-            return res.status(400).json({ mensaje: 'Formato de respuestas inválido.' });
+        if (!Array.isArray(respuestas)) {
+            await t.rollback();
+
+            return res.status(400).json({
+                mensaje: 'Formato de respuestas inválido.'
+            });
+        }
+
+        if (respuestas.length !== 13) {
+            await t.rollback();
+
+            return res.status(400).json({
+                codigo: 'RESPUESTAS_INCOMPLETAS',
+                mensaje:
+                    'El diagnóstico debe contener exactamente 13 respuestas.'
+            });
+        }
+
+        const diagnosticoExistente = await Diagnostico.findOne({
+            where: { id_usuario },
+            attributes: ['id_diagnostico'],
+            transaction: t
+        });
+
+        if (diagnosticoExistente) {
+            await t.rollback();
+
+            return res.status(409).json({
+                codigo: 'DIAGNOSTICO_YA_REALIZADO',
+                mensaje: 'El diagnóstico inicial ya fue realizado.'
+            });
         }
 
         // 1. Calificación de Respuestas y Generación de Detalles
-        const preguntasDB = await PreguntaDiagnostico.findAll({ raw: true });
+        const preguntasDB = await PreguntaDiagnostico.findAll({
+            limit: 13,
+            order: [['id_pregunta', 'ASC']],
+            raw: true
+        });
+        /**
+         * Validamos formatos, duplicidad y preguntas inexistentes
+         */
+        if (!preguntasDB || preguntasDB.length !== 13) {
+            await t.rollback();
+
+            return res.status(503).json({
+                codigo: 'DIAGNOSTICO_NO_CONFIGURADO',
+                mensaje:
+                    'El diagnóstico debe contener exactamente 13 preguntas disponibles.'
+            });
+        }
+
+        const respuestasConFormatoValido = respuestas.every(
+            (respuesta) =>
+                respuesta &&
+                Number.isInteger(respuesta.id_pregunta) &&
+                typeof respuesta.respuesta === 'string' &&
+                OPCIONES_DIAGNOSTICO_VALIDAS.has(
+                    normalizarOpcionDiagnostico(respuesta.respuesta)
+                )
+        );
+
+        if (!respuestasConFormatoValido) {
+            await t.rollback();
+
+            return res.status(400).json({
+                codigo: 'FORMATO_RESPUESTAS_INVALIDO',
+                mensaje:
+                    'Cada respuesta debe incluir un identificador y una opción válida.'
+            });
+        }
+
+        const idsRespondidos = respuestas.map(
+            (respuesta) => respuesta.id_pregunta
+        );
+
+        const idsUnicos = new Set(idsRespondidos);
+
+        if (idsUnicos.size !== 13) {
+            await t.rollback();
+
+            return res.status(400).json({
+                codigo: 'PREGUNTAS_REPETIDAS',
+                mensaje:
+                    'No se permiten preguntas repetidas en el diagnóstico.'
+            });
+        }
+
+        const idsPreguntasValidas = new Set(
+            preguntasDB.map((pregunta) => pregunta.id_pregunta)
+        );
+
+        const todasLasPreguntasExisten = idsRespondidos.every(
+            (idPregunta) => idsPreguntasValidas.has(idPregunta)
+        );
+
+        if (!todasLasPreguntasExisten) {
+            await t.rollback();
+
+            return res.status(400).json({
+                codigo: 'PREGUNTA_INVALIDA',
+                mensaje:
+                    'Una o más preguntas no pertenecen al diagnóstico.'
+            });
+        }
+
         let respuestasCorrectas = 0;
         const totalPreguntas = preguntasDB.length;
         const detalleRespuestas = []; // Arreglo para la revisión en el frontend
@@ -64,7 +209,9 @@ exports.evaluarDiagnostico = async (req, res) => {
             const preguntaReal = preguntasDB.find(p => p.id_pregunta === resEstudiante.id_pregunta);
             
             if (preguntaReal) {
-                const esCorrecta = preguntaReal.respuesta_correcta.trim().toLowerCase() === resEstudiante.respuesta.trim().toLowerCase();
+                const esCorrecta =
+                    normalizarOpcionDiagnostico(preguntaReal.respuesta_correcta) ===
+                    normalizarOpcionDiagnostico(resEstudiante.respuesta);
                 
                 if (esCorrecta) {
                     respuestasCorrectas++;
@@ -108,10 +255,19 @@ exports.evaluarDiagnostico = async (req, res) => {
             nivelAsignado = mapaNiveles[dataIA.nivel_id];
 
         } catch (errorIA) {
-            console.warn("⚠️ IA Flask no responde. Activando algoritmo de respaldo (Fallback)...");
-            if (respuestasCorrectas <= 4) nivelAsignado = 'Genin (Iniciado)';
-            else if (respuestasCorrectas <= 9) nivelAsignado = 'Chunin (Guerrero)';
-            else nivelAsignado = 'Jonin (Maestro)';
+            console.warn(
+                "⚠️ IA Flask no responde. Activando algoritmo de respaldo (Fallback)..."
+            );
+
+            // Los límites deben coincidir con la monografía y con app.py:
+            // 0-6 Genin | 7-10 Chunin | 11-13 Jonin
+            if (respuestasCorrectas <= 6) {
+                nivelAsignado = 'Genin (Iniciado)';
+            } else if (respuestasCorrectas <= 10) {
+                nivelAsignado = 'Chunin (Guerrero)';
+            } else {
+                nivelAsignado = 'Jonin (Maestro)';
+            }
         }
 
         // 3. Guardamos el resultado del Diagnóstico
@@ -127,9 +283,9 @@ exports.evaluarDiagnostico = async (req, res) => {
             { replacements: [nivelAsignado, nivelAsignado, id_usuario], transaction: t }
         );
 
-        // 🚩 4. LÓGICA DE HERENCIA: Insignias y Progreso Dinámico (RF-07)
+        // 4. LÓGICA DE HERENCIA: Insignias y Progreso Dinámico (RF-07)
         let idsModulosLegacy = [];
-        let idsMedallasRango = []; // 🚩 Arreglo para guardar el Sello del Rango oficial
+        let idsMedallasRango = []; //  Arreglo para guardar el Sello del Rango oficial
 
         // Definición de jerarquía según los IDs de tu base de datos
         const modulosGenin = [1, 2, 10, 11];
@@ -190,7 +346,7 @@ exports.evaluarDiagnostico = async (req, res) => {
 };
 
 // ============================================================================
-// 🛠️ RUTA DE DESARROLLO: Resetear progreso para pruebas
+// RUTA DE DESARROLLO: Resetear progreso para pruebas
 // ============================================================================
 /**
  * Elimina todo el progreso, insignias y diagnósticos del usuario (Útil para pruebas).

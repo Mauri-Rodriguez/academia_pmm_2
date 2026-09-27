@@ -2,7 +2,7 @@
 // Archivo: src/models/PreguntaDiagnostico.js
 // Propósito: Representación en Sequelize de la tabla 'preguntas_diagnostico'.
 //            Permite interactuar con el banco de preguntas del examen inicial.
-// Requerimiento asociado: RF-02 (Diagnóstico inicial de 12 preguntas)
+// Requerimiento asociado: RF-02 (Diagnóstico inicial de 13 preguntas)
 // Autor(es): Equipo de Desarrollo PMM Interactivo
 // ============================================================================
 

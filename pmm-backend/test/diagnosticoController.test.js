@@ -6,6 +6,7 @@ jest.mock('../src/models/PreguntaDiagnostico', () => ({
 }));
 
 jest.mock('../src/models/Diagnostico', () => ({
+  findOne: jest.fn(),
   create: jest.fn(),
   sequelize: {
     transaction: jest.fn(),
@@ -51,6 +52,11 @@ describe('diagnosticoController - evaluarDiagnostico', () => {
     };
 
     jest.clearAllMocks();
+
+    /**
+     * se agrega para que los usuarios simulados en las pruebas aun no han realizado el diagnostico
+     */
+    Diagnostico.findOne.mockResolvedValue(null);
 
     Diagnostico.sequelize.transaction.mockResolvedValue(transaction);
     Diagnostico.sequelize.query.mockResolvedValue([]);
@@ -226,4 +232,5 @@ describe('diagnosticoController - evaluarDiagnostico', () => {
       })
     );
   });
+  
 });

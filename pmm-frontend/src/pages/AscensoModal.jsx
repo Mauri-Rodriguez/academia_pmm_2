@@ -62,7 +62,7 @@ const AscensoModal = ({ datos, onClose }) => {
                     {/* Efecto de brillo sutil detrás de la mascota */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#FBE000]/10 blur-[80px] rounded-full pointer-events-none"></div>
 
-                    {/* 🚩 4. MASCOTA CONTEXTUAL (Sugerencia: usa /festejando.png o /subir nivel robot.png si la tienes) */}
+                    {/* Imagen contextual del ascenso */}
                     <motion.div 
                         initial={{ scale: 0.5, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
@@ -70,7 +70,7 @@ const AscensoModal = ({ datos, onClose }) => {
                         className="relative z-10 mb-6"
                     >
                         <img 
-                            src="/festejando.png" 
+                            src="/logro.png"
                             alt="Celebrando ascenso de rango" 
                             className="w-32 h-32 md:w-40 md:h-40 object-contain mx-auto drop-shadow-xl" 
                         />

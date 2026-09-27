@@ -17,14 +17,24 @@ const Diagnostico = () => {
                 const res = await api.get('/api/diagnostico/preguntas');
                 setPreguntas(res.data.data || res.data);
             } catch (err) {
-                console.error("Error al invocar el banco de preguntas:", err);
-                alert("No se pudieron cargar las preguntas.");
+                    console.error("Error al invocar el banco de preguntas:", err);
+
+                    if (
+                        err.response?.status === 409 &&
+                        err.response?.data?.codigo === 'DIAGNOSTICO_YA_REALIZADO'
+                    ) {
+                        alert('Ya realizaste el diagnóstico inicial.');
+                        navigate('/estudiante/dashboard');
+                        return;
+                    }
+
+                    alert('No se pudieron cargar las preguntas.');
             } finally {
                 setLoading(false);
             }
         };
         obtenerPreguntas();
-    }, []);
+    }, [navigate]); //Evitamos advertencia de dependencias de React Hooks.
 
     // Scroll automático al cambiar de paso para evitar desajustes visuales en móviles
     useEffect(() => {
@@ -59,8 +69,20 @@ const Diagnostico = () => {
             });
 
         } catch (err) {
-            console.error("❌ Error al guardar:", err);
-            alert("Error al sellar tus resultados. Revisa la conexión con la Aldea.");
+            console.error("Error al guardar:", err);
+
+            if (
+                err.response?.status === 409 &&
+                err.response?.data?.codigo === 'DIAGNOSTICO_YA_REALIZADO'
+            ) {
+                alert('El diagnóstico inicial ya fue realizado.');
+                navigate('/estudiante/dashboard');
+                return;
+            }
+
+            alert(
+                'Error al guardar el diagnóstico. Revisa la conexión e intenta nuevamente.'
+            );
         } finally {
             setEnviando(false);
         }

@@ -79,7 +79,11 @@ Crea una base de datos en MySQL llamada `pmm_interactivo`:
 ```sql
 CREATE DATABASE pmm_interactivo;
 ```
-*Nota: Las tablas se crearán automáticamente gracias a la sincronización de Sequelize o mediante el archivo de volcado SQL incluido.*
+*Nota: como parte de los entregables se agregará un volcado SQL sanitizado para reproducir
+la estructura de la base de datos en otro computador o servidor. Este archivo no incluirá
+usuarios, contraseñas, correos, tokens ni información sensible de producción. Mientras el
+volcado no esté incorporado, la ejecución local requiere una base previamente configurada
+que sea compatible con el modelo lógico documentado en la monografía.*
 
 ### 4. Variables de Entorno (`.env`)
 Crea un archivo `.env` en la carpeta `pmm-backend` utilizando el siguiente esquema:

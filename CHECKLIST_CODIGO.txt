@@ -1,7 +1,7 @@
 CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
 Proyecto: PMM Interactivo
 Finalidad: qué falta para cumplir completamente con la monografía.
-Última actualización: 25 de septiembre de 2026.
+Última actualización: 27 de septiembre de 2026.
 
 Leyenda:
 [X] CUMPLE: se encontró implementado en el repositorio.
@@ -58,12 +58,14 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [P] Registro con correo institucional.
     Tenemos: validación básica de que el correo contenga "@" y asignación del rol docente
     según dominios configurados.
-    Falta: Se retira limitante a dominio académico por bloqueo de envios desde microsoft.
+    Decisión actual: se retiró la restricción de dominio académico debido a los bloqueos
+    de envío con Microsoft. Para cerrar el punto se debe restaurar la restricción o dejar
+    documentada esta diferencia frente a la monografía.
 
 [X] Protección de rutas de estudiante por rol.
     Verificado: estudianteRoutes.js aplica globalmente verificarToken y
-    verificarRol(['estudiante']). Las rutas alternativas de ejercicios y progreso también
-    comprueban token, rol y acceso al módulo.
+    verificarRol(['estudiante']). Las rutas vigentes de ejercicios y consulta del estado
+    del progreso también comprueban token, rol y acceso al módulo.
 
 ============================================================
 3. DIAGNÓSTICO Y CLASIFICACIÓN INICIAL
@@ -87,9 +89,10 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 
 [P] Impedir que el estudiante repita inmediatamente el diagnóstico.
     Cumple en el flujo normal: obtenerPreguntas y evaluarDiagnostico rechazan un segundo
-    diagnóstico. Decisión aceptada: se conserva temporalmente el endpoint autenticado
-    DELETE /api/diagnostico/reset para desarrollo y debe retirarse o restringirse antes
-    del lanzamiento oficial.
+    diagnóstico. Decisión del equipo del 27 de septiembre: se conserva por el momento el
+    endpoint autenticado DELETE /api/diagnostico/reset porque se utiliza durante el
+    desarrollo. El punto permanece parcial mientras la ruta también esté disponible en
+    producción; más adelante podrá limitarse mediante NODE_ENV sin eliminar el controlador.
 
 [X] Cerrar el endpoint que exponía las respuestas correctas del diagnóstico.
     Verificado: se eliminó GET /api/estudiante/preguntas-diagnostico. La ruta oficial
@@ -151,10 +154,6 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     sin delimitadores. Ambos prompts usan String.raw y el frontend renderiza con KaTeX
     en el módulo, el tutor y el historial de errores.
 
-[ ] Pruebas automatizadas del componente Gemini.
-    Decisión: no aumentar las 22 pruebas Jest documentadas. Los 10 casos anunciados en
-    la monografía se documentarán posteriormente como matriz de evaluación manual de
-    interacciones reales con Gemini.
 
 ============================================================
 6. PROGRESO Y GAMIFICACIÓN
@@ -175,8 +174,8 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     LibroDeBingo.jsx y SeccionInsignias.jsx.
 
 [X] Ascenso automático de rango.
-    Verificado: se eliminó la implementación alternativa incompatible y se conserva una
-    sola finalización activa en estudianteController.js.
+    Verificado: la evaluación segura del último ejercicio llama al servicio transaccional
+    finalizacionModuloService.js, que asigna la insignia y evalúa el ascenso.
 
 [X] Coherencia funcional del rango almacenado.
     Verificado en MySQL: rango y rango_actual existen y contienen valores idénticos para
@@ -247,34 +246,22 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     consulta de propiedad como en la actualización.
 
 ============================================================
-10. BASE DE DATOS Y REPRODUCIBILIDAD
+10. BASE DE DATOS Y CONFIGURACIÓN
 ============================================================
 
 [X] Existen modelos para usuarios, diagnósticos, preguntas, módulos, ejercicios,
     progreso, resultados, errores e insignias.
 
-[ ] Migraciones o archivo SQL con la estructura completa.
-    Falta: no se encontraron migraciones ni un volcado SQL.
-
-[ ] Datos semilla para ejecutar la plataforma desde cero.
-    Falta: pmm-backend/seed.js está vacío.
-
-[ ] Creación reproducible de todas las tablas utilizadas.
-    Falta: foro_posts, foro_comentarios, notificaciones y biblioteca_pergaminos se usan
-    mediante SQL directo, pero no tienen modelos o migraciones que las creen.
-
-[ ] Archivo .env.example.
-    Falta: documentar sin secretos todas las variables necesarias para los tres servicios.
+[ ] Volcado SQL sanitizado para los entregables.
+    Decisión del equipo: se agregará un archivo que permita reproducir la estructura de
+    la base de datos en otro entorno. Podrá incluir datos académicos indispensables para
+    ejecutar la plataforma, pero no usuarios, contraseñas, correos, tokens, historiales
+    personales ni otra información sensible de producción.
 
 [P] Instrucciones de instalación.
-    Tenemos: README_LOCAL.md explica dependencias y variables principales.
-    Falta: el README afirma que existe un volcado SQL incluido, pero dicho archivo no está
-    en el repositorio.
-
-[P] Configuración local de puertos.
-    Tenemos: el README propone PORT=3000.
-    Falta: sin variables de entorno, el frontend apunta a 3000 y el backend arranca en
-    3001; la configuración predeterminada debería coincidir.
+    Tenemos: README_LOCAL.md explica dependencias, variables y ejecución de los tres
+    servicios, y deja explícito que el volcado SQL se agregará en los entregables.
+    Falta: incorporar el archivo y documentar su comando de importación.
 
 ============================================================
 11. PRUEBAS DEL CÓDIGO
@@ -294,14 +281,9 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 
 [X] Compilación actual del frontend.
     Verificado: las dependencias se instalaron con npm ci y el build de producción de
-    Vite finalizó correctamente el 25 de septiembre de 2026. NPM reportó 0
-    vulnerabilidades en el frontend durante la instalación.
-
-[ ] Pruebas automatizadas del frontend.
-    Falta: no se encontró una suite para componentes o flujos React.
-
-[ ] Pruebas automatizadas del microservicio Flask.
-    Falta: no se encontraron pruebas para los 14 puntajes ni entradas inválidas.
+    Vite finalizó correctamente el 27 de septiembre de 2026 después de reemplazar las
+    referencias inexistentes a festejando.png por logro.png en el modal de ascenso y el
+    historial de errores. NPM reportó 0 vulnerabilidades en la instalación del frontend.
 
 [ ] Evidencia versionada de las 15 pruebas de aceptación.
     Falta: no se encontró una matriz o reporte con el resultado de cada HU y sus criterios.

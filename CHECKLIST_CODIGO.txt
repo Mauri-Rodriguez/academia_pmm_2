@@ -1,0 +1,292 @@
+CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
+Proyecto: PMM Interactivo
+Finalidad: qué falta para cumplir completamente con la monografía.
+Última actualización: 27 de septiembre de 2026.
+
+Leyenda:
+[X] CUMPLE: se encontró implementado en el repositorio.
+[P] PARCIAL: existe, pero tiene una diferencia o necesita completarse.
+[ ] FALTA: no se encontró implementado o versionado.
+
+IMPORTANTE:
+Este checklist corresponde a una revisión estática del código. Los puntos marcados con [X]
+se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app/
+
+============================================================
+1. ARQUITECTURA PROPUESTA EN LA MONOGRAFÍA
+============================================================
+
+[X] Frontend desarrollado con React y Vite.
+    Evidencia: pmm-frontend/package.json y pmm-frontend/src/App.jsx.
+
+[X] Backend desarrollado con Node.js y Express.
+    Evidencia: pmm-backend/package.json y pmm-backend/src/server.js.
+
+[X] Persistencia diseñada para MySQL mediante Sequelize.
+    Evidencia: pmm-backend/src/config/database.js y src/models.
+
+[X] Microservicio independiente desarrollado con Python y Flask.
+    Evidencia: pmm-ia-service/app.py.
+
+[X] Clasificador implementado con DecisionTreeClassifier de scikit-learn.
+    Evidencia: pmm-ia-service/app.py.
+
+[X] Integración con la API de Gemini 2.5 Flash-Lite.
+    Evidencia: pmm-backend/src/controllers/estudianteController.js.
+
+[X] Separación entre frontend, backend, microservicio y base de datos.
+    Evidencia: carpetas pmm-frontend, pmm-backend y pmm-ia-service.
+
+[X] Configuración de despliegue disponible.
+
+
+============================================================
+2. REGISTRO, AUTENTICACIÓN Y ROLES
+============================================================
+
+[X] Registro de usuarios implementado.
+[X] Inicio de sesión implementado.
+[X] Verificación de correo implementada.
+[X] Recuperación y cambio de contraseña implementados.
+[X] Contraseñas almacenadas mediante bcrypt.
+[X] Autenticación mediante JWT.
+[X] Roles de estudiante y docente implementados.
+[X] Rutas principales del docente protegidas por token y rol.
+[X] Aceptación de términos y política de privacidad almacenada con fecha y versión.
+    Evidencia: authController.js, authMiddleware.js, Usuario.js y ProtectedRoute.jsx.
+
+[P] Registro con correo institucional.
+    Tenemos: validación básica de que el correo contenga "@" y asignación del rol docente
+    según dominios configurados.
+    Decisión actual: se retiró la restricción de dominio académico debido a los bloqueos
+    de envío con Microsoft. Para cerrar el punto se debe restaurar la restricción o dejar
+    documentada esta diferencia frente a la monografía.
+
+[X] Protección de rutas de estudiante por rol.
+    Verificado: estudianteRoutes.js aplica globalmente verificarToken y
+    verificarRol(['estudiante']). Las rutas vigentes de ejercicios y consulta del estado
+    del progreso también comprueban token, rol y acceso al módulo.
+
+============================================================
+3. DIAGNÓSTICO Y CLASIFICACIÓN INICIAL
+============================================================
+
+[X] Endpoint protegido para obtener el diagnóstico.
+[X] La ruta principal limita el diagnóstico a 13 preguntas.
+[X] Las respuestas correctas se excluyen de la ruta principal usada por el frontend.
+[X] El backend compara las respuestas y calcula el puntaje total.
+[X] El resultado del diagnóstico se guarda en la base de datos.
+[X] El backend envía el puntaje al microservicio Flask.
+[X] El clasificador utiliza los 14 valores posibles, de 0 a 13.
+[X] El clasificador principal aplica 0-6 Genin, 7-10 Chunin y 11-13 Jonin.
+    Evidencia: diagnosticoController.js y pmm-ia-service/app.py.
+[X] Las 13 preguntas coinciden con el Apéndice C.
+
+
+[X] Mecanismo alternativo cuando Flask no responde.
+    Verificado: el backend y Flask aplican los mismos cortes:
+    0-6 Genin, 7-10 Chunin y 11-13 Jonin.
+
+[P] Impedir que el estudiante repita inmediatamente el diagnóstico.
+    Cumple en el flujo normal: obtenerPreguntas y evaluarDiagnostico rechazan un segundo
+    diagnóstico. Decisión del equipo del 27 de septiembre: se conserva por el momento el
+    endpoint autenticado DELETE /api/diagnostico/reset porque se utiliza durante el
+    desarrollo. El punto permanece parcial mientras la ruta también esté disponible en
+    producción; más adelante podrá limitarse mediante NODE_ENV sin eliminar el controlador.
+
+[X] Cerrar el endpoint que exponía las respuestas correctas del diagnóstico.
+    Verificado: se eliminó GET /api/estudiante/preguntas-diagnostico. La ruta oficial
+    /api/diagnostico/preguntas exige token y rol estudiante y excluye respuesta_correcta.
+
+============================================================
+4. RUTAS, MÓDULOS Y EJERCICIOS
+============================================================
+
+[X] El dashboard obtiene módulos de acuerdo con el rango del estudiante.
+[X] Existen rutas para consultar los ejercicios de cada módulo.
+[X] Existen ejercicios de selección múltiple.
+[X] El sistema identifica respuestas correctas e incorrectas.
+[X] El progreso se guarda durante el desarrollo del módulo.
+[X] El porcentaje mayor alcanzado no es reemplazado por uno menor.
+[X] Los errores del estudiante quedan almacenados.
+[X] Existe una pantalla de historial de errores.
+    Evidencia: estudianteController.js, ejercicioController.js, progresoController.js,
+    DashboardEstudiante.jsx, ModuloEstudio.jsx e HistorialErrores.jsx.
+
+[X] Bloqueo secuencial de módulos.
+    Verificado: el frontend bloquea el módulo siguiente y el backend aplica
+    accesoModuloMiddleware en las rutas de consulta, evaluación, estado del progreso,
+    tutor y registro de fallos. El avance y la finalización se ejecutan exclusivamente
+    como parte de la evaluación protegida del ejercicio.
+
+[X] Ruta de aprendizaje según la clasificación.
+    Verificado: los módulos utilizan exclusivamente Genin (Iniciado),
+    Chunin (Guerrero) y Jonin (Maestro). Bajo, Intermedio y Alto se conservan
+    solamente como niveles de dificultad de biblioteca, de acuerdo con la base de datos.
+
+[X] Evitar exponer las respuestas correctas de los ejercicios al navegador.
+    Verificado: ModuloEstudio.jsx obtiene los ejercicios desde la ruta protegida
+    /api/ejercicios/modulo/:id_modulo, que excluye respuesta_correcta, y envía la
+    opción elegida a /api/ejercicios/evaluar. El backend compara la respuesta, exige
+    el ejercicio siguiente, registra intentos y avance y finaliza el módulo dentro de
+    una transacción. La respuesta HTTP no revela la solución correcta.
+
+    También se retiraron las rutas que permitían al navegador enviar porcentajes o
+    solicitar directamente la finalización. El modo repaso no vuelve a sumar progreso,
+    insignias ni ascensos. No se modificó la estructura ni la información de MySQL.
+
+============================================================
+5. RETROALIMENTACIÓN Y TUTOR CON GEMINI
+============================================================
+
+[X] Se genera orientación cuando el estudiante responde incorrectamente.
+[X] La orientación considera el ejercicio y el nivel del estudiante.
+[X] El prompt indica que no debe entregar directamente la respuesta correcta.
+[X] El prompt busca identificar el error conceptual.
+[X] Existe un tutor para que el estudiante formule preguntas.
+[X] El tutor limita la extensión de la respuesta.
+[X] Existen mensajes alternativos cuando Gemini no está disponible.
+[X] No se envían intencionalmente nombre, correo o identificador del estudiante a Gemini.
+    Evidencia: estudianteController.js y TutorOraculo.jsx.
+
+[X] Formato matemático de la respuesta.
+    Verificado: el tutor general y la retroalimentación automática solicitan LaTeX crudo
+    sin delimitadores. Ambos prompts usan String.raw y el frontend renderiza con KaTeX
+    en el módulo, el tutor y el historial de errores.
+
+
+============================================================
+6. PROGRESO Y GAMIFICACIÓN
+============================================================
+
+[X] Progreso general del estudiante.
+[X] Progreso individual por módulo.
+[X] Conteo de intentos.
+[X] Rangos Genin, Chunin y Jonin.
+[X] Rango final Kage/Leyenda.
+[X] Insignias por módulos.
+[X] Insignias por ascenso de rango.
+[X] Perfil con insignias obtenidas.
+[X] Ranking por módulos completados.
+[X] Cálculo de racha de actividad.
+[X] Notificaciones de ascenso.
+    Evidencia: estudianteController.js, progresoController.js, PerfilEstudiante.jsx,
+    LibroDeBingo.jsx y SeccionInsignias.jsx.
+
+[X] Ascenso automático de rango.
+    Verificado: la evaluación segura del último ejercicio llama al servicio transaccional
+    finalizacionModuloService.js, que asigna la insignia y evalúa el ascenso.
+
+[X] Coherencia funcional del rango almacenado.
+    Verificado en MySQL: rango y rango_actual existen y contienen valores idénticos para
+    los 27 usuarios revisados. Decisión: no modificar ni eliminar columnas de producción;
+    su unificación queda registrada como mejora técnica futura.
+
+============================================================
+7. BIBLIOTECA Y MATERIALES DE APOYO
+============================================================
+
+[X] Existe una pantalla de biblioteca.
+[X] Existe búsqueda de recursos.
+[X] Los recursos se filtran según el nivel permitido.
+[X] Se contemplan videos y materiales de lectura.
+    Evidencia: Biblioteca.jsx y obtenerBiblioteca en estudianteController.js.
+[X] Contenido de la biblioteca.
+
+============================================================
+8. PANEL Y REPORTES DEL DOCENTE
+============================================================
+
+[X] Panel exclusivo para docentes.
+[X] Listado de estudiantes.
+[X] Visualización de nombre, correo, rango, diagnóstico y avance.
+[X] Filtro por nivel.
+[X] Búsqueda por nombre.
+[X] Reporte individual de cada estudiante.
+[X] Progreso detallado por módulo.
+[X] Identificación de los temas con más errores.
+[X] Cantidad de fallos por tema.
+[X] Descarga del reporte general en Excel.
+[X] Descarga del reporte individual en PDF.
+    Evidencia: docenteController.js, DashboardDocente.jsx y
+    ReporteDetalladoEstudiante.jsx.
+
+[X] Búsqueda por correo del estudiante.
+    Verificado: DashboardDocente.jsx normaliza el término ingresado y filtra por nombre
+    o correo sin afectar el filtro simultáneo por rango. El texto del buscador comunica
+    ambas opciones y el build de producción finalizó correctamente.
+
+============================================================
+9. FORO Y NOTIFICACIONES
+============================================================
+
+[X] Creación de publicaciones en el foro.
+[X] Carga de imágenes JPEG, JPG, PNG y WebP.
+[X] Límite de archivo de 5 MB.
+[X] Creación de comentarios.
+[X] Edición y eliminación de comentarios propios.
+    Verificado: frontend y backend usan el campo "comentario"; el controlador valida el
+    contenido y comprueba que el comentario pertenezca al usuario antes de editar o borrar.
+[X] Eliminación de publicaciones propias.
+    Verificado: el controlador comprueba la propiedad antes de borrar y elimina comentarios
+    y publicación dentro de una transacción.
+[X] Notificación al autor cuando otra persona comenta.
+[X] Enlace desde la notificación hacia la publicación.
+    Evidencia: estudianteRoutes.js, estudianteController.js, subidaMiddleware.js y
+    ForoComunidad.jsx.
+
+[X] Edición de publicaciones.
+    Verificado: existe PUT /foro/post/:id_post con soporte de imagen, validación de
+    título y contenido, comprobación de propiedad y conservación de la imagen anterior
+    cuando no se adjunta un reemplazo.
+
+[X] Seguridad de notificaciones.
+    Verificado: se conserva una sola ruta para marcar como leída; el controlador valida
+    el identificador y exige que id_notificacion e id_usuario coincidan tanto en la
+    consulta de propiedad como en la actualización.
+
+============================================================
+10. BASE DE DATOS Y CONFIGURACIÓN
+============================================================
+
+[X] Existen modelos para usuarios, diagnósticos, preguntas, módulos, ejercicios,
+    progreso, resultados, errores e insignias.
+
+[ ] Volcado SQL sanitizado para los entregables.
+    Decisión del equipo: se agregará un archivo que permita reproducir la estructura de
+    la base de datos en otro entorno. Podrá incluir datos académicos indispensables para
+    ejecutar la plataforma, pero no usuarios, contraseñas, correos, tokens, historiales
+    personales ni otra información sensible de producción.
+
+[P] Instrucciones de instalación.
+    Tenemos: README_LOCAL.md explica dependencias, variables y ejecución de los tres
+    servicios, y deja explícito que el volcado SQL se agregará en los entregables.
+    Falta: incorporar el archivo y documentar su comando de importación.
+
+============================================================
+11. PRUEBAS DEL CÓDIGO
+============================================================
+
+[X] Existen pruebas Jest para la API.
+[X] Existen pruebas de autenticación.
+[X] Existen pruebas de módulos y progreso.
+[X] Existen pruebas del diagnóstico.
+[X] El reporte guardado registra 5 suites aprobadas.
+[X] El reporte guardado registra 22 de 22 pruebas aprobadas.
+    Evidencia: pmm-backend/test y pmm-backend/jest-report.json.
+
+[X] Ejecución actual de las pruebas.
+    Verificado el 25 de septiembre de 2026 después de asegurar la evaluación de ejercicios:
+    5 suites aprobadas y 22 de 22 pruebas aprobadas.
+
+[X] Compilación actual del frontend.
+    Verificado: las dependencias se instalaron con npm ci y el build de producción de
+    Vite finalizó correctamente el 27 de septiembre de 2026 después de reemplazar las
+    referencias inexistentes a festejando.png por logro.png en el modal de ascenso y el
+    historial de errores. NPM reportó 0 vulnerabilidades en la instalación del frontend.
+
+[ ] Evidencia versionada de las 15 pruebas de aceptación.
+    Falta: no se encontró una matriz o reporte con el resultado de cada HU y sus criterios.
+
+[ ] Evidencia versionada de la inspección heurística.
+    Falta: no se encontró un reporte con hallazgos, severidad y correcciones.

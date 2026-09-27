@@ -15,6 +15,6 @@ router.get('/preguntas', verificarToken, verificarRol(['estudiante']), diagnosti
 
 // Ruta: POST /api/diagnostico/evaluar
 router.post('/evaluar', verificarToken, verificarRol(['estudiante']), diagnosticoController.evaluarDiagnostico);
-// Ruta secreta Mauri (Solo para desarrollo)
+// Ruta secreta Mauri (Solo para desarrollo) DEBE ELIMINARSE CON EL LANZAMIENTO OFICIAL
 router.delete('/reset', verificarToken, diagnosticoController.resetearProgresoPruebas);
 module.exports = router;

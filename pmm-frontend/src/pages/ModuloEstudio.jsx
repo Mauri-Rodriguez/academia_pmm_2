@@ -63,8 +63,9 @@ const ModuloEstudio = () => {
     useEffect(() => {
         const cargarDatos = async () => {
             try {
-                const resEjercicios = await api.get(`api/estudiante/modulo/${id_modulo}/ejercicios`);
-                setEjercicios(resEjercicios.data);
+                const resEjercicios = await api.get(`/api/ejercicios/modulo/${id_modulo}`);
+                const ejerciciosCargados = resEjercicios.data.data;
+                setEjercicios(ejerciciosCargados);
 
                 const resProgreso = await api.get(`/api/estudiante/dashboard`);
                 const moduloActual = resProgreso.data.ruta_ia_asignada?.find(m => m.id_modulo === parseInt(id_modulo));
@@ -77,8 +78,10 @@ const ModuloEstudio = () => {
                 if (moduloActual && moduloActual.porcentaje_avance === 100) {
                     setCompletado(true);
                 } else if (moduloActual && moduloActual.porcentaje_avance > 0) {
-                    const indiceGuardado = Math.floor((moduloActual.porcentaje_avance / 100) * resEjercicios.data.length);
-                    setIndice(indiceGuardado);
+                    const indiceGuardado = Math.round(
+                        (moduloActual.porcentaje_avance / 100) * ejerciciosCargados.length
+                    );
+                    setIndice(Math.min(indiceGuardado, ejerciciosCargados.length - 1));
                 }
             } catch (err) {
                 console.error("Error al recuperar persistencia:", err);
@@ -111,58 +114,71 @@ const ModuloEstudio = () => {
         }
     };
 
-    const procesarFinalizacionOficial = async () => {
-        try {
-            const res = await api.post('/api/estudiante/finalizar', { id_modulo, puntaje_final: ejercicios.length });
-            if (res.data.insignia) {
-                setInsigniaNueva(res.data.insignia);
-                dispararConfetiVictoria();
-                setTimeout(() => { setInsigniaNueva(null); manejarFlujoFinal(res.data); }, 4500);
-            } else {
-                manejarFlujoFinal(res.data);
-            }
-        } catch (err) {
-            console.error("Error al procesar méritos finales:", err);
-            setCompletado(true);
-        }
-    };
-
     // --- 3. LÓGICA DE RESPUESTA ---
     const responder = async (itemSeleccionado) => {
         if (bloqueado) return;
         const ejActual = ejercicios[indice];
-        const letraUsuario = itemSeleccionado.letra.toLowerCase().trim();
-        const letraCorrectaDB = String(ejActual.respuesta_correcta).toLowerCase().replace('opcion_', '').trim();
-
         setBloqueado(true);
 
-        if (letraUsuario === letraCorrectaDB) {
-            const nuevoIndice = indice + 1;
-            const esFinDeModulo = nuevoIndice === ejercicios.length;
+        try {
+            const evaluacion = await api.post('/api/ejercicios/evaluar', {
+                id_ejercicio: ejActual.id_ejercicio,
+                respuesta_estudiante: itemSeleccionado.campo
+            });
 
-            if (!modoRepaso && !esFinDeModulo) {
-                const nuevoPorcentaje = Math.round((nuevoIndice / ejercicios.length) * 100);
-                try { await api.post('/api/estudiante/actualizar-progreso', { id_modulo, porcentaje: nuevoPorcentaje }); }
-                catch (err) { console.error("Error guardando progreso:", err); }
-            }
+            if (evaluacion.data.es_correcta) {
+                const nuevoIndice = indice + 1;
 
-            if (esFinDeModulo) {
-                dispararLogro(modoRepaso ? "CONOCIMIENTO REAFIRMADO" : "MÓDULO DOMINADO", "Actividad completada con éxito");
-                setTimeout(() => procesarFinalizacionOficial(), 1500);
+                if (evaluacion.data.modulo_completado) {
+                    const finalizacion = evaluacion.data.finalizacion;
+                    dispararLogro(
+                        modoRepaso ? "CONOCIMIENTO REAFIRMADO" : "MÓDULO DOMINADO",
+                        "Actividad completada con éxito"
+                    );
+
+                    setTimeout(() => {
+                        if (finalizacion?.insignia) {
+                            setInsigniaNueva(finalizacion.insignia);
+                            dispararConfetiVictoria();
+                            setTimeout(() => {
+                                setInsigniaNueva(null);
+                                manejarFlujoFinal(finalizacion);
+                            }, 4500);
+                        } else {
+                            manejarFlujoFinal(finalizacion || { ascendio: false });
+                        }
+                    }, 1500);
+                } else {
+                    if (nuevoIndice === 5 && !modoRepaso) {
+                        dispararLogro("RACHA DE ESTUDIO", "¡5 respuestas correctas seguidas!");
+                    }
+                    setIndice(nuevoIndice);
+                }
             } else {
-                if (nuevoIndice === 5 && !modoRepaso) dispararLogro("RACHA DE ESTUDIO", "¡5 respuestas correctas seguidas!");
-                setIndice(nuevoIndice);
+                const fallo = await api.post('/api/estudiante/registrar-fallo', {
+                    id_pregunta: ejActual.id_ejercicio,
+                    respuesta_dada: itemSeleccionado.campo
+                });
+                setModalIA({
+                    visible: true,
+                    explicacion: fallo.data.explicacion_ia || "Revisa el planteamiento e intenta de nuevo."
+                });
             }
+        } catch (err) {
+            if (err.response?.status === 409 && Number.isInteger(err.response.data?.siguiente_indice)) {
+                setIndice(err.response.data.siguiente_indice);
+                setModalIA({
+                    visible: true,
+                    explicacion: err.response.data.mensaje
+                });
+            } else {
+                setModalIA({
+                    visible: true,
+                    explicacion: err.response?.data?.mensaje || "No fue posible evaluar la respuesta. Intenta nuevamente."
+                });
+            }
+        } finally {
             setBloqueado(false);
-        } else {
-            try {
-                const res = await api.post('/api/estudiante/registrar-fallo', { id_pregunta: ejActual.id_ejercicio, respuesta_dada: itemSeleccionado.campo });
-                setModalIA({ visible: true, explicacion: res.data.explicacion_ia || "Revisa el planteamiento e intenta de nuevo." });
-            } catch (err) {
-                setModalIA({ visible: true, explicacion: "El sistema está procesando tu respuesta. Revisa tu lógica." });
-            } finally {
-                setBloqueado(false);
-            }
         }
     };
 

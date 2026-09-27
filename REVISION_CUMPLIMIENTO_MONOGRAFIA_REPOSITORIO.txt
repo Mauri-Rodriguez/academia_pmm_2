@@ -1,0 +1,284 @@
+REVISIÓN DE CUMPLIMIENTO ENTRE LA MONOGRAFÍA Y EL REPOSITORIO
+Proyecto: PMM Interactivo / Academia PMM
+Fecha de revisión: 23 de septiembre de 2026
+
+Documento contrastado:
+TRABAJO-DE-GRADO - Duran, Rodriguez, Valencia. docx (2).docx
+
+Alcance de esta revisión:
+- Se hizo una revisión estática del código, configuración, pruebas guardadas y contenido de la monografía.
+- No se modificó el código fuente ni la monografía.
+- No se hizo una prueba funcional completa porque el repositorio no incluye dependencias instaladas, variables de entorno, una base de datos reproducible ni datos semilla.
+- Este archivo es el único archivo agregado al repositorio.
+
+============================================================
+1. CONCLUSIÓN GENERAL
+============================================================
+
+El repositorio SÍ corresponde en términos generales a la plataforma descrita en la monografía: contiene frontend en React/Vite, backend en Node.js/Express, persistencia prevista en MySQL/Sequelize, microservicio Flask con DecisionTreeClassifier, integración con Gemini, diagnóstico, rutas por nivel, ejercicios, progreso, gamificación, biblioteca, foro y panel docente.
+
+Sin embargo, NO es recomendable afirmar todavía que el proyecto cumple completamente. La correspondencia es alta en arquitectura y presencia de funcionalidades, pero hay inconsistencias funcionales y faltan evidencias académicas esenciales. El estado más preciso es: "cumplimiento parcial alto, pendiente de correcciones y validación integral".
+
+Prioridad inmediata antes de presentar:
+[ ] Completar el capítulo 4, Resultados, de la monografía. En el documento revisado solo aparece el título.
+[ ] Completar el capítulo 5, Conclusiones. Actualmente solo aparece una frase introductoria incompleta.
+[ ] Agregar en Resultados las evidencias prometidas: 22 pruebas unitarias, 15 pruebas de aceptación, 14 entradas del clasificador, 10 interacciones con Gemini y hallazgos de la inspección heurística.
+[ ] Corregir o documentar las inconsistencias de rangos y puntos de corte descritas más adelante.
+[ ] Incorporar una forma reproducible de crear la base de datos y cargar sus datos iniciales.
+
+============================================================
+2. REVISIÓN DE LOS OBJETIVOS DE LA MONOGRAFÍA
+============================================================
+
+Objetivo general: desarrollar una plataforma web educativa con IA como apoyo al aprendizaje de matemáticas.
+Estado: CUMPLE EN IMPLEMENTACIÓN, PENDIENTE DE EVIDENCIA FINAL.
+Evidencia: existen los tres componentes principales y los flujos educativos. Falta demostrar formalmente los resultados en el capítulo correspondiente.
+
+Objetivo específico 1: elementos pedagógicos, gamificación y ejercicios prácticos.
+Estado: CUMPLE PARCIALMENTE.
+Se encontraron ejercicios, niveles, insignias, progreso, ranking y racha. Debe comprobarse con una base de datos real que todos los módulos, contenidos, insignias y recursos señalados en la monografía estén cargados y sean correctos.
+
+Objetivo específico 2: arquitectura, interfaz, flujos y usabilidad.
+Estado: CUMPLE PARCIALMENTE.
+La arquitectura implementada coincide con React + Express + Flask + MySQL + Gemini. La interfaz contiene ayudas, estados y navegación. La monografía aclara correctamente que se hizo inspección heurística, pero en otras partes afirma que hubo pruebas de usabilidad con usuarios reales; esa contradicción debe corregirse.
+
+Objetivo específico 3: diagnóstico, rutas de aprendizaje y retroalimentación automatizada.
+Estado: CUMPLE PARCIALMENTE, CON INCONSISTENCIAS IMPORTANTES.
+El flujo existe, pero el algoritmo de respaldo del backend usa cortes distintos a la monografía y la API no impide repetir el diagnóstico.
+
+Objetivo específico 4: pruebas unitarias, de aceptación y de usabilidad para los roles.
+Estado: CUMPLE PARCIALMENTE.
+Existe un reporte Jest con 5 suites y 22/22 pruebas aprobadas, fechado el 12 de septiembre de 2026. No se encontraron artefactos completos de las 15 pruebas de aceptación, de la evaluación heurística ni de pruebas con usuarios reales. Tampoco hay pruebas automatizadas del frontend o del microservicio Python.
+
+============================================================
+3. MATRIZ DE LAS 15 HISTORIAS DE USUARIO
+============================================================
+
+HU-01 Registro e inicio de sesión con correo institucional
+Estado: PARCIAL.
+- Sí valida campos, duplicados, contraseña, consentimiento, verificación y autenticación.
+- Solo comprueba que el correo contenga "@"; cualquier dominio queda registrado como estudiante. No exige un dominio institucional.
+
+HU-02 Recuperación de contraseña
+Estado: CUMPLE EN CÓDIGO.
+- Existen solicitud, envío de enlace y restablecimiento mediante token.
+- Debe probarse en producción con Resend y FRONTEND_URL configurados.
+
+HU-03 Diagnóstico inicial de 13 preguntas y asignación de nivel
+Estado: PARCIAL.
+- La ruta principal limita la consulta a 13 preguntas y calcula el puntaje.
+- El microservicio usa los cortes descritos: 0-6 Genin, 7-10 Chunin y 11-13 Jonin.
+- El backend no comprueba si el estudiante ya presentó el diagnóstico, por lo que el endpoint permite repetirlo.
+- No puede verificarse que las 13 preguntas de la base de datos sean las mismas del Apéndice C porque no hay datos semilla ni volcado SQL.
+
+HU-04 Asignación y bloqueo de módulos según nivel
+Estado: PARCIAL.
+- El dashboard selecciona módulos por rango y bloquea visualmente el siguiente hasta completar el anterior.
+- Debe comprobarse que el backend impida acceder directamente a un módulo no autorizado; varios endpoints consultan ejercicios únicamente por id.
+
+HU-05 Ejercicios con retroalimentación inmediata
+Estado: CUMPLE EN CÓDIGO.
+- Se evalúa la respuesta, se informa acierto/error, se guarda progreso y se registra el fallo.
+
+HU-06 Retroalimentación mediante IA
+Estado: CUMPLE PARCIALMENTE.
+- Está integrada la API Gemini 2.5 Flash-Lite y existen prompts de orientación socrática.
+- La retroalimentación automática de errores pide texto plano, mientras la monografía afirma que la salida usa LaTeX. El tutor general sí solicita LaTeX crudo. Debe unificarse la afirmación o la implementación.
+- La exactitud matemática no está garantizada; deben anexarse los 10 casos evaluados y sus resultados.
+
+HU-07 Visualización de progreso
+Estado: CUMPLE EN CÓDIGO.
+- Se muestran progreso global y por módulo, y se actualiza el avance.
+
+HU-08 Guías y materiales de apoyo
+Estado: PARCIAL.
+- Existe una biblioteca con búsqueda y filtrado por nivel.
+- Los recursos dependen de la tabla biblioteca_pergaminos, cuyo esquema y datos no están versionados.
+
+HU-09 Panel docente de seguimiento
+Estado: CUMPLE EN CÓDIGO.
+- Se listan estudiantes, rango, diagnóstico, avance y última conexión.
+
+HU-10 Reporte individual
+Estado: CUMPLE EN CÓDIGO.
+- Existe vista individual con diagnóstico, avance por módulo y fallos frecuentes.
+
+HU-11 Identificación de errores frecuentes
+Estado: CUMPLE EN CÓDIGO.
+- El backend agrupa fallos por módulo, cuenta ocurrencias y muestra los cinco temas principales.
+
+HU-12 Búsqueda por nombre o correo
+Estado: NO CUMPLE COMPLETAMENTE.
+- El frontend filtra únicamente por nombre.
+- El criterio de aceptación de la monografía exige buscar por nombre o correo.
+
+HU-13 Descarga de reportes generales e individuales
+Estado: CUMPLE EN CÓDIGO.
+- El reporte general se descarga en Excel.
+- El individual se exporta a PDF desde el frontend.
+- Debe validarse que ambos archivos se generen bien con datos reales y en los navegadores objetivo.
+
+HU-14 Rangos e insignias
+Estado: PARCIAL.
+- Existen insignias, rangos y actualización por progreso.
+- Hay dos implementaciones distintas para finalizar módulos y ascender de rango. Una usa nombres de nivel incompatibles con el resto del proyecto, por lo que debe identificarse cuál es la ruta oficial y eliminarse la ambigüedad.
+
+HU-15 Foro con imágenes y notificación de respuestas
+Estado: CUMPLE PARCIALMENTE.
+- Se pueden crear publicaciones, adjuntar imágenes, comentar y notificar al autor.
+- El frontend intenta editar publicaciones mediante PUT /foro/post/:id, pero esa ruta no existe en el backend.
+- Las tablas del foro y notificaciones no tienen migraciones o esquema versionado en el repositorio.
+
+Resumen de historias:
+- Cumplen en código: HU-02, HU-05, HU-07, HU-09, HU-10, HU-11 y HU-13.
+- Cumplen parcialmente: HU-01, HU-03, HU-04, HU-06, HU-08, HU-14 y HU-15.
+- No cumple completamente: HU-12.
+- Este resumen no reemplaza una prueba de aceptación ejecutada de extremo a extremo.
+
+============================================================
+4. INCONSISTENCIAS TÉCNICAS QUE SE DEBEN REVISAR
+============================================================
+
+CRÍTICAS / ALTAS
+
+[ ] Unificar puntos de corte del diagnóstico.
+La monografía y app.py usan 0-6, 7-10 y 11-13. Cuando Flask falla, diagnosticoController.js usa 0-4, 5-9 y 10-13. Un mismo estudiante puede recibir un nivel diferente según la disponibilidad del microservicio.
+
+[ ] Impedir la repetición del diagnóstico en el backend.
+El criterio HU-03 dice que no debe permitirse repetirlo inmediatamente, pero evaluarDiagnostico no consulta si ya existe un diagnóstico para el usuario.
+
+[ ] Unificar nombres y lógica de rangos.
+Se mezclan "Chunin (Guerrero)" con "Chunin (Intermedio)", y "Jonin (Maestro)" con "Jonin (Avanzado)". progresoController.js usa nombres diferentes a diagnosticoController.js y a los valores aceptados por Modulo.js. Además, una implementación actualiza Diagnostico pero no rango_actual del usuario, mientras otra sí lo hace.
+
+[ ] Versionar la estructura y los datos mínimos de MySQL.
+seed.js está vacío y no hay migraciones ni archivo .sql. El sistema usa tablas y columnas que Sequelize no puede crear por sí solo: foro_posts, foro_comentarios, notificaciones, biblioteca_pergaminos y la columna usuarios.rango, entre otras. En un entorno limpio el proyecto no es reproducible.
+
+[ ] Corregir el endpoint público que expone respuestas del diagnóstico.
+GET /api/estudiante/preguntas-diagnostico no exige token y devuelve PreguntaDiagnostico.findAll() sin excluir respuesta_correcta. Aunque el frontend principal usa otra ruta protegida, este endpoint permite consultar las claves.
+
+[ ] Completar Resultados y Conclusiones en la monografía.
+Sin estos capítulos no se demuestra el cumplimiento de los objetivos ni se presentan las pruebas que el propio Método promete.
+
+MEDIAS
+
+[ ] Hacer que la búsqueda docente filtre también por correo, como exige HU-12.
+[ ] Validar realmente el correo institucional o cambiar el texto de HU-01 si se aceptarán correos personales.
+[ ] Definir una sola ruta oficial para diagnóstico, progreso y finalización. Actualmente hay funciones duplicadas en diagnosticoController, estudianteController y progresoController.
+[ ] Agregar la ruta backend para editar publicaciones o retirar esa opción del frontend.
+[ ] Alinear la salida matemática: la monografía habla de LaTeX, pero una de las respuestas de Gemini exige texto plano.
+[ ] Verificar la configuración local: el frontend usa http://localhost:3000 por defecto y el backend usa puerto 3001 por defecto. Solo coinciden si PORT está configurado como indica README_LOCAL.md.
+[ ] Corregir README_LOCAL.md: afirma que se incluye un volcado SQL, pero no existe en el repositorio.
+[ ] Añadir un .env.example sin secretos para backend, frontend y microservicio.
+[ ] Registrar restricciones, claves foráneas e índices de la base de datos.
+[ ] Proteger todas las rutas de estudiante también por rol, no solo por token.
+[ ] Hacer que marcar una notificación como leída compruebe que pertenece al usuario autenticado.
+
+BAJAS / DOCUMENTALES
+
+[ ] Corregir textos con codificación dañada visibles como "Ã", "ðŸ" o similares.
+[ ] Actualizar comentarios obsoletos, por ejemplo PreguntaDiagnostico.js menciona 12 preguntas cuando la monografía exige 13.
+[ ] Aclarar que el árbol actual reproduce reglas fijas y no demuestra capacidad predictiva sobre estudiantes reales. La monografía ya lo explica bien; mantener esa precisión en presentación y README.
+[ ] Aclarar que la personalización es inicial y por rutas predefinidas, no adaptación continua. La monografía también hace correctamente esta distinción.
+
+============================================================
+5. EVIDENCIAS DE PRUEBA QUE FALTAN O DEBEN ORGANIZARSE
+============================================================
+
+[ ] Adjuntar una tabla con los 22 casos Jest, módulo, entrada, resultado esperado y resultado obtenido.
+[ ] Guardar una ejecución reciente de Jest, no solo jest-report.json, e indicar versión de Node y fecha.
+[ ] Ejecutar y documentar las 15 historias de usuario con sus criterios de aceptación.
+[ ] Probar los dos roles completos: estudiante y docente.
+[ ] Probar registro, verificación de correo, inicio de sesión y recuperación de contraseña con servicios reales.
+[ ] Probar los 14 puntajes posibles del clasificador y presentar una tabla 0-13 con nivel esperado/obtenido.
+[ ] Probar explícitamente el fallback cuando Flask no está disponible.
+[ ] Documentar las 10 interacciones de Gemini con exactitud, claridad, pertinencia, no invención y utilidad.
+[ ] Incluir casos donde Gemini intente dar la respuesta directa, reciba una pregunta fuera de tema o falle por cuota/red.
+[ ] Ejecutar pruebas del frontend; actualmente no hay suite automatizada.
+[ ] Ejecutar pruebas del microservicio Flask; actualmente no hay suite automatizada.
+[ ] Ejecutar pruebas de integración contra una base de datos limpia creada desde archivos del repositorio.
+[ ] Ejecutar pruebas de seguridad básicas: control de roles, acceso directo a módulos, exposición de respuestas, propiedad de notificaciones y validación de archivos.
+[ ] Ejecutar la inspección heurística anunciada y registrar hallazgo, heurística, severidad 0-4, evidencia y decisión tomada.
+[ ] Si no hubo usuarios reales en usabilidad, evitar afirmar que sí los hubo. Si sí hubo, agregar participantes, instrumento, resultados y consentimiento.
+
+============================================================
+6. LISTA DE COMPROBACIÓN PARA LA DEMOSTRACIÓN
+============================================================
+
+Preparación:
+[ ] Crear la base desde cero usando instrucciones versionadas.
+[ ] Cargar exactamente las 13 preguntas del Apéndice C y verificar sus claves.
+[ ] Cargar módulos, ejercicios, insignias y recursos de biblioteca.
+[ ] Configurar DB, JWT, Gemini, Google, Resend, IA_SERVICE_URL, FRONTEND_URL y VITE_API_URL.
+[ ] Verificar que frontend, backend, MySQL y microservicio estén activos.
+
+Flujo estudiante:
+[ ] Registrar un estudiante con correo permitido.
+[ ] Verificar correo e iniciar sesión.
+[ ] Presentar una sola vez las 13 preguntas.
+[ ] Comprobar los límites 6/7 y 10/11, además de 0 y 13.
+[ ] Confirmar que la ruta y módulos corresponden al nivel asignado.
+[ ] Confirmar bloqueo secuencial de módulos, incluso intentando entrar por URL/API.
+[ ] Resolver un ejercicio correcto y uno incorrecto.
+[ ] Verificar registro del error y orientación de Gemini sin respuesta final.
+[ ] Verificar guardado y reanudación del progreso.
+[ ] Completar un módulo y revisar insignia, rango y notificación.
+[ ] Revisar ranking, racha, perfil, biblioteca e historial de errores.
+[ ] Publicar en el foro con imagen y recibir una respuesta/notificación.
+
+Flujo docente:
+[ ] Iniciar sesión con rol docente.
+[ ] Confirmar que un estudiante no pueda abrir rutas ni APIs docentes.
+[ ] Buscar por nombre y por correo.
+[ ] Revisar progreso y errores frecuentes de un estudiante.
+[ ] Descargar reporte general Excel.
+[ ] Descargar reporte individual PDF.
+[ ] Comparar los datos exportados con la base y la pantalla.
+
+Resiliencia:
+[ ] Apagar Flask y verificar que el fallback conserve exactamente los mismos cortes.
+[ ] Simular indisponibilidad/cuota de Gemini y comprobar el mensaje alternativo.
+[ ] Probar sesión vencida, token inválido y acceso con rol equivocado.
+[ ] Probar archivo no permitido y archivo mayor de 5 MB.
+[ ] Probar pantallas móvil y escritorio.
+
+============================================================
+7. ASPECTOS QUE SÍ ESTÁN BIEN ALINEADOS
+============================================================
+
+- Separación arquitectónica entre SPA, API, microservicio de clasificación, base de datos y API generativa.
+- Diagnóstico previsto con 13 preguntas y clasificación en tres niveles.
+- DecisionTreeClassifier entrenado con los 14 puntajes sintéticos descritos.
+- Uso explícito de Gemini 2.5 Flash-Lite como tutor y retroalimentador.
+- Enfoque socrático que intenta orientar sin entregar la respuesta final.
+- Seguimiento de progreso, errores, módulos e insignias.
+- Ranking por módulos completados y cálculo de racha.
+- Panel docente con resumen, reporte individual y análisis de fallos.
+- Reporte general Excel y reporte individual PDF.
+- Registro de aceptación de términos y política de privacidad.
+- Contraseñas con hash, JWT y protección por roles en las rutas principales.
+- Historial Git con trabajo incremental y configuración de CI.
+- Reporte guardado de 22/22 pruebas Jest exitosas, consistente con la cifra de la monografía.
+
+============================================================
+8. VEREDICTO SUGERIDO PARA COMUNICAR AL PROFESOR
+============================================================
+
+"El repositorio implementa la arquitectura y la mayoría de las funcionalidades definidas en la monografía. La revisión de trazabilidad muestra cumplimiento completo en varias historias y cumplimiento parcial en otras. Antes de declarar cumplimiento total se deben resolver las diferencias en los puntos de corte y rangos, completar la búsqueda por correo, impedir la repetición del diagnóstico, versionar la base de datos y consolidar en la monografía los resultados de las pruebas y las conclusiones."
+
+Archivos principales usados como evidencia:
+- pmm-ia-service/app.py
+- pmm-backend/src/controllers/diagnosticoController.js
+- pmm-backend/src/controllers/estudianteController.js
+- pmm-backend/src/controllers/progresoController.js
+- pmm-backend/src/controllers/docenteController.js
+- pmm-backend/src/controllers/authController.js
+- pmm-backend/src/routes/*.js
+- pmm-backend/src/models/*.js
+- pmm-backend/test/*.test.js
+- pmm-backend/jest-report.json
+- pmm-frontend/src/App.jsx
+- pmm-frontend/src/pages/*.jsx
+- pmm-frontend/src/components/TutorOraculo.jsx
+- README_LOCAL.md
+- .github/workflows/test.yml
+

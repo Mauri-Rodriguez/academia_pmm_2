@@ -190,7 +190,7 @@ const HistorialErrores = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             className="text-center py-16 md:py-24 bg-white border-2 border-dashed border-slate-300 rounded-3xl shadow-sm"
                         >
-                            <img src="/festejando.png" alt="Sin errores" className="w-24 h-24 md:w-32 md:h-32 object-contain mx-auto mb-6" />
+                            <img src="/logro.png" alt="Sin errores" className="w-24 h-24 md:w-32 md:h-32 object-contain mx-auto mb-6" />
                             <p className="font-bold text-[#0A3D62] uppercase tracking-wider text-lg md:text-xl mb-2">¡Excelente trabajo!</p>
                             <p className="text-slate-500 text-sm md:text-base max-w-md mx-auto leading-relaxed">
                                 No hay errores registrados recientemente en tu historial. ¡Sigue practicando para mantener este ritmo!

@@ -21,22 +21,17 @@ const Modulo = sequelize.define('Modulo', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-nivel: {
-        type: DataTypes.STRING, 
+    nivel: {
+        type: DataTypes.STRING,
         allowNull: false,
         validate: {
             isIn: {
-                // 🚩 ACTUALIZACIÓN: Agregamos 'Maestro Kage' a la lista permitida
                 args: [[
-                    'Genin (Iniciado)', 
-                    'Chunin (Guerrero)', 
-                    'Jonin (Maestro)', 
-                    'Bajo', 
-                    'Intermedio', 
-                    'Alto',
-                    'Maestro Kage' // 👈 ¡Imprescindible!
+                    'Genin (Iniciado)',
+                    'Chunin (Guerrero)',
+                    'Jonin (Maestro)'
                 ]],
-                msg: "El nivel debe ser un rango válido de la Aldea Digital."
+                msg: 'El nivel debe ser un rango válido de la plataforma.'
             }
         }
     }

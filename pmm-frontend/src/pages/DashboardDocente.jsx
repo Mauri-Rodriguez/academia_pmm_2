@@ -101,10 +101,19 @@ const DashboardDocente = () => {
     };
 
     const estudiantesFiltrados = estudiantes.filter(est => {
+        const termino = busqueda.trim().toLowerCase();
         const nombre = est.nombre?.toLowerCase() || '';
+        const correo = est.correo?.toLowerCase() || '';
         const rango = est.rango_ia_asignado?.toLowerCase() || '';
-        const coincideBusqueda = nombre.includes(busqueda.toLowerCase());
-        const coincideNivel = filtroNivel === '' || rango.includes(filtroNivel.toLowerCase());
+
+        const coincideBusqueda =
+            nombre.includes(termino) ||
+            correo.includes(termino);
+
+        const coincideNivel =
+            filtroNivel === '' ||
+            rango.includes(filtroNivel.toLowerCase());
+
         return coincideBusqueda && coincideNivel;
     });
 
@@ -225,7 +234,7 @@ const DashboardDocente = () => {
             <aside 
                 onMouseEnter={() => setIsExpanded(true)}
                 onMouseLeave={() => setIsExpanded(false)}
-                className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] bg-white border-r border-slate-200 flex flex-col p-6 hidden lg:flex z-50 
+                className={`transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] bg-white border-r border-slate-200 flex flex-col p-6 lg:flex z-50 
                 ${isExpanded ? 'w-72 shadow-2xl' : 'w-24'}`}
             >
                 <div className="mb-12 flex flex-col items-center relative">
@@ -327,7 +336,7 @@ const DashboardDocente = () => {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0A3D62] transition-colors" size={18} />
                         <input 
                             type="text" 
-                            placeholder="Buscar estudiante por nombre..."
+                            placeholder="Buscar estudiante por nombre o correo..."
                             className="w-full bg-white border border-slate-200 rounded-xl py-3.5 pl-12 pr-6 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#0A3D62] focus:ring-2 focus:ring-[#0A3D62]/10 transition-all shadow-sm"
                             value={busqueda}
                             onChange={(e) => setBusqueda(e.target.value)}

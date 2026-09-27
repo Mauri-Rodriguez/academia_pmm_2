@@ -1,17 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const progresoController = require('../controllers/progresoController');
+const { verificarToken, verificarRol } = require('../middlewares/authMiddleware');
+const { verificarAccesoModulo } = require('../middlewares/accesoModuloMiddleware');
 
-// 🚩 EL PARCHE MAESTRO: Extraemos la función específica con llaves { }
-const { verificarToken } = require('../middlewares/authMiddleware');
+const accesoPorParametro = verificarAccesoModulo({
+    fuente: 'params',
+    campo: 'id_modulo'
+});
 
-// 1. Actualizar progreso parcial (mientras hace el módulo)
-router.post('/actualizar', verificarToken, progresoController.actualizarProgreso);
-
-// 2. Obtener estado de un módulo
-router.get('/estado/:id_modulo', verificarToken, progresoController.obtenerEstadoModulo);
-
-// 3. Finalizar el módulo y revisar si sube de nivel
-router.post('/finalizar', verificarToken, progresoController.finalizarModuloYEvaluarAscenso);
+// El avance es de solo lectura aquí: solo cambia al evaluar un ejercicio.
+router.get(
+    '/estado/:id_modulo',
+    verificarToken,
+    verificarRol(['estudiante']),
+    accesoPorParametro,
+    progresoController.obtenerEstadoModulo
+);
 
 module.exports = router;

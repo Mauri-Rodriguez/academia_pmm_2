@@ -47,7 +47,7 @@ const VisualizadorModulo = () => {
     if (loading || lecciones.length === 0) {
         return (
             <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 text-center">
-                <img src="/estudiando.png" alt="Cargando módulo" className="w-32 h-32 object-contain animate-bounce mb-4" />
+                <img src="/leyendo un libro robot.png" alt="Cargando módulo" className="w-32 h-32 object-contain animate-bounce mb-4" />
                 <div className="text-[#0A3D62] font-bold animate-pulse tracking-[0.3em] text-xs uppercase">Preparando material de estudio...</div>
             </div>
         );

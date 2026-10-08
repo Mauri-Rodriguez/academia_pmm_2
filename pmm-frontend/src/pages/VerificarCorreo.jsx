@@ -47,7 +47,7 @@ const VerificarCorreo = () => {
                 {/* ESTADO: ÉXITO */}
                 {estado === 'exito' && (
                     <div className="flex flex-col items-center">
-                        <img src="/correcto.png" alt="Verificado" className="w-32 h-32 object-contain mb-6" />
+                        <img src="/motivacion.png" alt="Verificado" className="w-32 h-32 object-contain mb-6" />
                         <h2 className="text-2xl font-extrabold text-[#0A3D62] mb-2">¡Cuenta Verificada!</h2>
                         <p className="text-sm text-slate-600 mb-6">
                             Tu registro ha sido completado exitosamente. Serás redirigido al inicio de sesión en unos segundos.

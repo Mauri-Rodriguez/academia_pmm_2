@@ -177,7 +177,7 @@ const LibroDeBingo = () => {
                 {/* ESTADO VACÍO (Por si la API devuelve array vacío) */}
                 {ranking.length === 0 && (
                     <div className="bg-white border-2 border-dashed border-slate-300 p-12 md:p-20 text-center rounded-3xl shadow-sm mt-8">
-                        <img src="/estudiando.png" alt="Sin registros" className="w-24 h-24 object-contain mx-auto mb-4 opacity-70" />
+                        <img src="/leyendo un libro robot.png" alt="Sin registros" className="w-24 h-24 object-contain mx-auto mb-4 opacity-70" />
                         <p className="text-slate-700 font-bold uppercase text-sm tracking-widest mb-2">El ranking está en construcción</p>
                         <p className="text-slate-500 text-xs md:text-sm max-w-md mx-auto leading-relaxed">
                             Completa tus primeros módulos para aparecer en la tabla de honor y competir con tus compañeros.

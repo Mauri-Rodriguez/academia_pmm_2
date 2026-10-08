@@ -62,7 +62,7 @@ const Privacidad = () => {
                             <li><strong>Cancelación:</strong> Solicitar la eliminación de su cuenta y datos del sistema.</li>
                             <li><strong>Oposición:</strong> Oponerse al tratamiento de sus datos para fines específicos.</li>
                         </ul>
-                        <p className="mt-2">Para ejercer estos derechos, puede contactar a los administradores del proyecto a través de los canales institucionales.</p>
+                        <p className="mt-2">Para ejercer estos derechos, puede contactar a los administradores del proyecto a través de los canales institucionales /pmminteractivo@gmail.com.</p>
                     </section>
                 </div>
 

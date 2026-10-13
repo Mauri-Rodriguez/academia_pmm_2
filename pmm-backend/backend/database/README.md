@@ -16,8 +16,8 @@ CREATE DATABASE pmm_interactivo CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
  
 2. Cargar primero la estructura y después el contenido:
 ```bash
-mysql -u <usuario> -p pmm_interactivo < pmm-backend/database/schema.sql
-mysql -u <usuario> -p pmm_interactivo < pmm-backend/database/seed_data.sql
+mysql -u <usuario> -p pmm_interactivo < pmm-backend/backend/database/schema.sql
+mysql -u <usuario> -p pmm_interactivo < pmm-backend/backend/database/seed_data.sql
 ```
  
 3. Configurar las variables de entorno del backend (ver `README_LOCAL.md`) apuntando a esa base de datos.

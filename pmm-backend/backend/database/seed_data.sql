@@ -26,6 +26,17 @@ INSERT INTO `biblioteca_pergaminos` (`id_pergamino`, `titulo`, `categoria`, `niv
 UNLOCK TABLES;
 
 --
+-- Dumping data for table `modulos`
+--
+
+LOCK TABLES `modulos` WRITE;
+/*!40000 ALTER TABLE `modulos` DISABLE KEYS */;
+INSERT INTO `modulos` (`id_modulo`, `nombre_modulo`, `descripcion`, `nivel`) VALUES (1,'Álgebra Básica','Fundamentos de álgebra, factorización y simplificación.','Genin (Iniciado)'),(2,'Ecuaciones de Primer Grado','Resolución de ecuaciones lineales simples y aplicadas.','Genin (Iniciado)'),(3,'Funciones Lineales','Análisis de rectas, pendiente e intersecciones.','Chunin (Guerrero)'),(4,'Trigonometría Fundamental','Razones trigonométricas: seno, coseno y tangente.','Chunin (Guerrero)'),(5,'Límites y Continuidad','Concepto de límite y evaluación algebraica.','Jonin (Maestro)'),(6,'Derivadas Básicas','Reglas de derivación y aplicaciones de la tasa de cambio.','Jonin (Maestro)'),(10,'Sistemas de Ecuaciones','Dominio de los métodos de sustitución, igualación y reducción.','Genin (Iniciado)'),(11,'Geometría Analítica','Distancia entre puntos, pendientes y el comportamiento de la recta.','Genin (Iniciado)'),(12,'Funciones Lineales y Cuadráticas','Análisis de parábolas, vértices e intersecciones en el plano.','Chunin (Guerrero)'),(14,'Identidades Trigonométricas','Demostraciones y simplificación de expresiones angulares complejas.','Chunin (Guerrero)'),(15,'Funciones Exponenciales','El crecimiento acelerado, decaimiento y el número de Euler.','Chunin (Guerrero)'),(16,'Concepto de Límite','Evaluación algebraica, aproximación infinita y asíntotas.','Chunin (Guerrero)'),(17,'Límites Trigonométricos','Resolución de indeterminaciones usando teoremas de compresión y funciones seno/coseno.','Chunin (Guerrero)'),(18,'Límites al Infinito','Análisis del comportamiento de funciones cuando la variable crece sin límite.','Chunin (Guerrero)'),(19,'La Tasa de Variación','Introducción geométrica a la derivada como pendiente de la recta tangente.','Chunin (Guerrero)'),(20,'Reglas de Derivación','Dominio de la regla del producto, cociente y la Regla de la Cadena.','Jonin (Maestro)'),(21,'Optimización Máxima','Uso de la primera y segunda derivada para hallar máximos y mínimos críticos.','Jonin (Maestro)'),(22,'Integración Básica','Antiderivadas y la aplicación del Teorema Fundamental del Cálculo.','Jonin (Maestro)'),(23,'Integración por Partes','La técnica milenaria para dividir y resolver integrales de funciones multiplicadas.','Jonin (Maestro)'),(24,'Volúmenes de Revolución','Cálculo de sólidos giratorios mediante el método de discos y arandelas.','Jonin (Maestro)'),(25,'Cilindros y Métodos Avanzados','Técnica avanzada para calcular volúmenes en ejes de rotación complejos.','Jonin (Maestro)');
+/*!40000 ALTER TABLE `modulos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
+--
 -- Dumping data for table `ejercicios`
 --
 
@@ -45,15 +56,6 @@ INSERT INTO `insignias` (`id_insignia`, `nombre_insignia`, `descripcion`, `image
 /*!40000 ALTER TABLE `insignias` ENABLE KEYS */;
 UNLOCK TABLES;
 
---
--- Dumping data for table `modulos`
---
-
-LOCK TABLES `modulos` WRITE;
-/*!40000 ALTER TABLE `modulos` DISABLE KEYS */;
-INSERT INTO `modulos` (`id_modulo`, `nombre_modulo`, `descripcion`, `nivel`) VALUES (1,'Álgebra Básica','Fundamentos de álgebra, factorización y simplificación.','Genin (Iniciado)'),(2,'Ecuaciones de Primer Grado','Resolución de ecuaciones lineales simples y aplicadas.','Genin (Iniciado)'),(3,'Funciones Lineales','Análisis de rectas, pendiente e intersecciones.','Chunin (Guerrero)'),(4,'Trigonometría Fundamental','Razones trigonométricas: seno, coseno y tangente.','Chunin (Guerrero)'),(5,'Límites y Continuidad','Concepto de límite y evaluación algebraica.','Jonin (Maestro)'),(6,'Derivadas Básicas','Reglas de derivación y aplicaciones de la tasa de cambio.','Jonin (Maestro)'),(10,'Sistemas de Ecuaciones','Dominio de los métodos de sustitución, igualación y reducción.','Genin (Iniciado)'),(11,'Geometría Analítica','Distancia entre puntos, pendientes y el comportamiento de la recta.','Genin (Iniciado)'),(12,'Funciones Lineales y Cuadráticas','Análisis de parábolas, vértices e intersecciones en el plano.','Chunin (Guerrero)'),(14,'Identidades Trigonométricas','Demostraciones y simplificación de expresiones angulares complejas.','Chunin (Guerrero)'),(15,'Funciones Exponenciales','El crecimiento acelerado, decaimiento y el número de Euler.','Chunin (Guerrero)'),(16,'Concepto de Límite','Evaluación algebraica, aproximación infinita y asíntotas.','Chunin (Guerrero)'),(17,'Límites Trigonométricos','Resolución de indeterminaciones usando teoremas de compresión y funciones seno/coseno.','Chunin (Guerrero)'),(18,'Límites al Infinito','Análisis del comportamiento de funciones cuando la variable crece sin límite.','Chunin (Guerrero)'),(19,'La Tasa de Variación','Introducción geométrica a la derivada como pendiente de la recta tangente.','Chunin (Guerrero)'),(20,'Reglas de Derivación','Dominio de la regla del producto, cociente y la Regla de la Cadena.','Jonin (Maestro)'),(21,'Optimización Máxima','Uso de la primera y segunda derivada para hallar máximos y mínimos críticos.','Jonin (Maestro)'),(22,'Integración Básica','Antiderivadas y la aplicación del Teorema Fundamental del Cálculo.','Jonin (Maestro)'),(23,'Integración por Partes','La técnica milenaria para dividir y resolver integrales de funciones multiplicadas.','Jonin (Maestro)'),(24,'Volúmenes de Revolución','Cálculo de sólidos giratorios mediante el método de discos y arandelas.','Jonin (Maestro)'),(25,'Cilindros y Métodos Avanzados','Técnica avanzada para calcular volúmenes en ejes de rotación complejos.','Jonin (Maestro)');
-/*!40000 ALTER TABLE `modulos` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Dumping data for table `preguntas_diagnostico`

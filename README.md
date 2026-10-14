@@ -1,46 +1,85 @@
-# academia_pmm_2
-Mejorar frontend de PMM INTERACTIVO
+# PMM Interactivo (academia_pmm_2)
 
-## Despliegue del frontend en Vercel
+Plataforma web con inteligencia artificial para apoyar el aprendizaje de las matemáticas en la Institución Universitaria Antonio José Camacho. Trabajo de grado, Ingeniería de Sistemas, 2026.
 
-El workflow `.github/workflows/vercel.yml` despliega `pmm-frontend` en
-produccion cuando cambian el frontend o el workflow en `main` o `master`.
-Tambien se puede ejecutar desde Actions > Desplegar frontend en Vercel >
-Run workflow; la rama seleccionada se publicara en produccion.
+Versión desplegada: https://academia-pmm-2.vercel.app/
 
-1. En el proyecto de Vercel correspondiente a `VERCEL_PROJECT_ID`, configura:
-   - Root Directory: `pmm-frontend`.
-   - Framework Preset: `Vite`.
-   - Install Command: `npm ci`.
-   - Build Command: `npm run build`.
-   - Output Directory: `dist`.
-   - Node.js: `22.x`.
-2. En GitHub > Settings > Secrets and variables > Actions, agrega los secrets
-   `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` y `VERCEL_TOKEN`. Los IDs deben pertenecer
-   al mismo proyecto/equipo y el token debe tener acceso a ese proyecto.
-3. En Vercel > Settings > Environment Variables, configura `VITE_API_URL` para
-   Production con el origen HTTPS publico del backend, por ejemplo
-   `https://api.ejemplo.com`, sin agregar `/api` (las peticiones ya lo incluyen).
-   Esta variable se incorpora
-   al JavaScript durante la compilacion; no debe contener credenciales.
-4. Publica estos cambios en `main`/`master` o ejecuta el workflow manualmente
-   desde una rama que contenga este archivo. La URL aparecera en el resumen
-   de la ejecucion de GitHub Actions.
+## Estructura
 
-Los comandos de Vercel se ejecutan desde la raiz del repositorio y utilizan
-el Root Directory configurado en Vercel. `vercel pull` descarga la configuracion
-y variables de produccion, `vercel build` compila y `vercel deploy --prebuilt`
-publica el resultado. Las rutas de React Router ya estan cubiertas por
-`pmm-frontend/vercel.json`.
+| Carpeta | Contenido |
+|---|---|
+| `pmm-frontend` | Aplicación React, Vite y Tailwind |
+| `pmm-backend` | API Node.js, Express y Sequelize |
+| `pmm-ia-service` | Microservicio Flask con scikit-learn (clasificador del diagnóstico) |
+| `pmm-backend/backend/database` | Esquema y datos iniciales de MySQL |
+| `docs/pruebas` | Evidencia de las pruebas de aceptación |
 
-Este workflow publica solo el frontend. El backend Express, MySQL y el servicio
-Python de IA requieren servicios desplegados por separado. Configura
-`FRONTEND_URL` en el backend con el dominio del frontend para permitir CORS y
-generar los enlaces de correo. Sin `VITE_API_URL`, el frontend utiliza localhost.
-Si usas Google OAuth, autoriza tambien el dominio de Vercel en el cliente de Google.
+## Instalación local
 
-Si el proyecto tiene habilitados despliegues automaticos mediante la integracion
-Git de Vercel, desactivalos si quieres que GitHub Actions sea el unico mecanismo
-de despliegue. Este workflow es independiente del workflow de pruebas del backend.
+Requisitos: Node.js 20, Python 3.10 o superior y MySQL 8.
 
-Referencia: [GitHub Actions con Vercel](https://vercel.com/kb/guide/how-can-i-use-github-actions-with-vercel).
+**1. Base de datos**
+
+```sql
+CREATE DATABASE pmm_interactivo CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+```
+
+```bash
+mysql -u <usuario> -p pmm_interactivo < pmm-backend/backend/database/schema.sql
+mysql -u <usuario> -p pmm_interactivo < pmm-backend/backend/database/seed_data.sql
+```
+
+Carga 21 módulos, 210 ejercicios, 13 preguntas del diagnóstico, 24 insignias y 16 recursos. No incluye usuarios ni datos personales. Los usuarios se crean registrándose desde la plataforma.
+
+**2. Microservicio de IA** (puerto 5000 por defecto)
+
+```bash
+cd pmm-ia-service
+pip install -r requirements.txt
+python app.py
+```
+
+**3. Backend**
+
+```bash
+cd pmm-backend
+npm install
+npm run dev
+```
+
+Crear un archivo `.env` en `pmm-backend` con:
+
+| Variable | Uso |
+|---|---|
+| `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_DIALECT` | Conexión a MySQL (alternativa: `MYSQL_URL`) |
+| `JWT_SECRET` | Firma de los tokens de sesión |
+| `GEMINI_API_KEY` | API de Gemini (modelo 2.5 Flash-Lite) para el tutor |
+| `IA_SERVICE_URL` | URL del microservicio, por ejemplo `http://localhost:5000/api/ia/recomendar-ruta` |
+| `FRONTEND_URL` | Dominio del frontend (CORS y enlaces de correo) |
+| `DOMINIOS_DOCENTES` | Dominios de correo que reciben el rol docente |
+| `RESEND_API_KEY` | Envío de correos de verificación y recuperación |
+| `GOOGLE_CLIENT_ID` | Inicio de sesión con Google |
+| `PORT`, `UPLOADS_DIR` | Puerto y carpeta de imágenes del foro |
+
+**4. Frontend**
+
+```bash
+cd pmm-frontend
+npm install
+npm run dev
+```
+
+Variable en `pmm-frontend/.env`: `VITE_API_URL=http://localhost:3001` (sin `/api`).
+
+## Pruebas
+
+```bash
+cd pmm-backend
+npm test
+```
+
+Resultado esperado: 5 suites y 22 pruebas aprobadas. La evidencia de las pruebas de aceptación está en `docs/pruebas/pruebas_aceptacion.md`.
+
+## Despliegue
+
+Frontend en Vercel (raíz `pmm-frontend`, preset Vite, `npm ci`, `npm run build`, salida `dist`, Node 22) con `VITE_API_URL` apuntando al backend. Backend, base de datos y microservicio de IA en Railway. Las rutas de React Router están cubiertas por `pmm-frontend/vercel.json`.

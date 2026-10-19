@@ -7,3 +7,7 @@ pmm-frontend/build/
 Thumbs.db
 .vercel
 .env*
+
+# Archivos locales y contenido subido por usuarios
+pmm-frontend/.env
+pmm-backend/public/uploads/

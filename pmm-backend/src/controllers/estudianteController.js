@@ -863,6 +863,14 @@ exports.eliminarMision = async (req, res) => {
         );
 
         await db.query(
+            "DELETE FROM notificaciones WHERE ruta = ?",
+            {
+                replacements: [`/estudiante/foro?open=${id_post}`],
+                transaction: t
+            }
+        );
+
+        await db.query(
             "DELETE FROM foro_posts WHERE id_post = ? AND id_usuario = ?",
             { replacements: [id_post, id_usuario], transaction: t }
         );

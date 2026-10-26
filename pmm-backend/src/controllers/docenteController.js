@@ -170,11 +170,21 @@ exports.descargarReporteExcel = async (req, res) => {
  */
 exports.obtenerReporteIndividual = async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = Number(req.params.id);
+
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                mensaje: 'Identificador de estudiante inválido.'
+            });
+        }
 
         // 1. Identidad
         const [estudiante] = await db.query(
-            "SELECT nombre_completo, correo FROM usuarios WHERE id_usuario = :id",
+            `SELECT nombre_completo, correo
+             FROM usuarios
+             WHERE id_usuario = :id
+               AND rol = 'estudiante'
+             LIMIT 1`,
             { replacements: { id }, type: QueryTypes.SELECT }
         );
 
@@ -222,6 +232,9 @@ exports.obtenerReporteIndividual = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error al obtener el reporte individual:', error);
+        res.status(500).json({
+            error: 'No fue posible obtener el reporte individual.'
+        });
     }
 };

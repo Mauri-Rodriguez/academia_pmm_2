@@ -24,6 +24,7 @@ if (!resend) {
 // Versiones actuales de documentos legales
 const VERSION_POLITICA = '1.0';
 const VERSION_TERMINOS = '1.0';
+const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ============================================================================
 // 1. REGISTRO MANUAL
@@ -42,14 +43,28 @@ exports.register = async (req, res) => {
         } = req.body;
 
         // Validaciones básicas
-        if (!nombre_completo || !correo || !password) {
+        if (
+            typeof nombre_completo !== 'string' ||
+            typeof correo !== 'string' ||
+            typeof password !== 'string' ||
+            !nombre_completo.trim() ||
+            !correo.trim() ||
+            !password
+        ) {
             return res.status(400).json({
                 mensaje:
                     'Todos los campos obligatorios deben estar completos.'
             });
         }
 
-        if (!correo.includes('@')) {
+        const nombreNormalizado = nombre_completo.trim();
+        const correoNormalizado = correo.trim().toLowerCase();
+
+        if (
+            nombreNormalizado.length > 255 ||
+            correoNormalizado.length > 255 ||
+            !FORMATO_CORREO.test(correoNormalizado)
+        ) {
             return res.status(400).json({
                 mensaje: 'Formato de correo inválido.'
             });
@@ -63,7 +78,10 @@ exports.register = async (req, res) => {
         }
 
         // Consentimiento obligatorio
-        if (!acepta_politica_privacidad || !acepta_terminos) {
+        if (
+            acepta_politica_privacidad !== true ||
+            acepta_terminos !== true
+        ) {
             return res.status(400).json({
                 mensaje:
                     'Debes aceptar los Términos y la Política de Privacidad para registrarte.'
@@ -71,7 +89,7 @@ exports.register = async (req, res) => {
         }
 
         const usuarioExistente = await Usuario.findOne({
-            where: { correo }
+            where: { correo: correoNormalizado }
         });
 
         if (usuarioExistente) {
@@ -82,7 +100,7 @@ exports.register = async (req, res) => {
         }
 
         // Asignación de rol por dominio
-        const dominioUsuario = correo
+        const dominioUsuario = correoNormalizado
             .split('@')[1]
             .toLowerCase();
 
@@ -104,8 +122,8 @@ exports.register = async (req, res) => {
 
         // Crear usuario
         const nuevoUsuario = await Usuario.create({
-            nombre_completo,
-            correo,
+            nombre_completo: nombreNormalizado,
+            correo: correoNormalizado,
             hash_password,
             rol: rolAsignado,
             verificado: false,
@@ -151,7 +169,7 @@ exports.register = async (req, res) => {
                 await resend.emails.send({
                     from:
                         'PMM Interactivo <admin@academiapmm.online>',
-                    to: correo,
+                    to: correoNormalizado,
                     subject:
                         'Activa tu cuenta en PMM Interactivo',
                     html: `
@@ -229,7 +247,7 @@ exports.register = async (req, res) => {
                                                         margin:0 0 16px 0;
                                                     ">
                                                         ¡Bienvenido,
-                                                        ${nombre_completo || 'Estudiante'}!
+                                                        ${nombreNormalizado || 'Estudiante'}!
                                                     </h2>
 
                                                     <p style="
@@ -304,7 +322,7 @@ exports.register = async (req, res) => {
 
         if (process.env.NODE_ENV !== 'production') {
             console.log(
-                `[DEV LOG] Link de verificación para ${correo}: ${urlConfirmacion}`
+                `[DEV LOG] Link de verificación para ${correoNormalizado}: ${urlConfirmacion}`
             );
         }
 
@@ -402,21 +420,33 @@ exports.login = async (req, res) => {
             password
         } = req.body;
 
-        const usuario = await Usuario.findOne({
-            where: { correo }
-        });
-
-        if (!usuario) {
-            return res.status(404).json({
-                mensaje:
-                    'Credenciales inválidas.'
+        if (
+            typeof correo !== 'string' ||
+            typeof password !== 'string' ||
+            !correo.trim() ||
+            !password
+        ) {
+            return res.status(400).json({
+                mensaje: 'Correo y contraseña son obligatorios.'
             });
         }
 
-        if (!usuario.verificado) {
-            return res.status(403).json({
+        const correoNormalizado = correo.trim().toLowerCase();
+
+        if (!FORMATO_CORREO.test(correoNormalizado)) {
+            return res.status(400).json({
+                mensaje: 'Formato de correo inválido.'
+            });
+        }
+
+        const usuario = await Usuario.findOne({
+            where: { correo: correoNormalizado }
+        });
+
+        if (!usuario) {
+            return res.status(401).json({
                 mensaje:
-                    'Cuenta no activa. Por favor, verifica tu correo.'
+                    'Credenciales inválidas.'
             });
         }
 
@@ -430,6 +460,13 @@ exports.login = async (req, res) => {
             return res.status(401).json({
                 mensaje:
                     'Credenciales inválidas.'
+            });
+        }
+
+        if (!usuario.verificado || usuario.estado !== 'Activo') {
+            return res.status(403).json({
+                mensaje:
+                    'Cuenta no activa. Por favor, verifica tu correo.'
             });
         }
 

@@ -187,7 +187,7 @@ const Biblioteca = () => {
                     ) : (
                         <div className="col-span-full bg-white border-2 border-dashed border-slate-300 p-12 md:p-20 text-center rounded-3xl shadow-sm">
                             <img 
-                                src={busqueda ? "/pensando.png" : "/estudiando.png"} 
+                                src={busqueda ? "/pensando.png" : "/leyendo un libro robot.png"}
                                 alt={busqueda ? "Sin resultados" : "Sin recursos"} 
                                 className="w-24 h-24 object-contain mx-auto mb-4 opacity-60" 
                             />

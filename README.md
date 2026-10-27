@@ -47,7 +47,14 @@ npm install
 npm run dev
 ```
 
-Crear un archivo `.env` en `pmm-backend` con:
+Crear el entorno a partir de los ejemplos versionados (sin secretos):
+
+```bash
+cp pmm-backend/.env.example pmm-backend/.env
+cp pmm-frontend/.env.example pmm-frontend/.env
+# opcional:
+cp pmm-ia-service/.env.example pmm-ia-service/.env
+```
 
 | Variable | Uso |
 |---|---|
@@ -69,7 +76,7 @@ npm install
 npm run dev
 ```
 
-Variable en `pmm-frontend/.env`: `VITE_API_URL=http://localhost:3001` (sin `/api`).
+Variable en `pmm-frontend/.env` (ver `.env.example`): `VITE_API_URL=http://localhost:3001` (sin `/api`).
 
 ## Pruebas
 

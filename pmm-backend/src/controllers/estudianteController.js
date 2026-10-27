@@ -2,6 +2,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { literal, Op } = require('sequelize');
 const fs = require('fs/promises');
+const path = require('path');
 const db = require('../config/database');
 
 // 2. MODELOS
@@ -16,17 +17,42 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // 3. HELPERS
 const jwt = require('jsonwebtoken');
 const MAX_TEXTO_FORO_BYTES = 65535;
+const DIRECTORIO_UPLOADS = path.resolve(
+    process.env.UPLOADS_DIR || path.join(__dirname, '../../public/uploads')
+);
 
 const limpiarArchivoSubido = async (file) => {
     if (!file?.path) return;
 
+    const rutaArchivo = path.resolve(file.path);
+
+    if (
+        path.dirname(rutaArchivo).toLowerCase() !==
+        DIRECTORIO_UPLOADS.toLowerCase()
+    ) {
+        console.error('Se rechazó la limpieza de una ruta fuera de uploads.');
+        return;
+    }
+
     try {
-        await fs.unlink(file.path);
+        await fs.unlink(rutaArchivo);
     } catch (error) {
         if (error.code !== 'ENOENT') {
             console.error('No fue posible limpiar el archivo subido:', error);
         }
     }
+};
+
+const limpiarArchivoPorUrl = async (url) => {
+    if (typeof url !== 'string' || !url.startsWith('/uploads/')) return;
+
+    const nombreArchivo = path.basename(url);
+
+    if (!nombreArchivo) return;
+
+    await limpiarArchivoSubido({
+        path: path.join(DIRECTORIO_UPLOADS, nombreArchivo)
+    });
 };
 
 const validarPublicacionForo = (titulo, contenido) => {
@@ -787,6 +813,14 @@ exports.editarMision = async (req, res) => {
             }
         );
 
+        if (
+            req.file &&
+            post.imagen_url &&
+            post.imagen_url !== imagen_url
+        ) {
+            await limpiarArchivoPorUrl(post.imagen_url);
+        }
+
         res.json({ mensaje: "Publicación editada" });
     } catch (error) {
         await limpiarArchivoSubido(req.file);
@@ -962,7 +996,7 @@ exports.eliminarMision = async (req, res) => {
         t = await db.transaction();
 
         const [post] = await db.query(
-            "SELECT id_post FROM foro_posts WHERE id_post = ? AND id_usuario = ? LIMIT 1",
+            "SELECT id_post, imagen_url FROM foro_posts WHERE id_post = ? AND id_usuario = ? LIMIT 1",
             {
                 replacements: [id_post, id_usuario],
                 type: db.QueryTypes.SELECT,
@@ -997,6 +1031,9 @@ exports.eliminarMision = async (req, res) => {
 
         await t.commit();
         t = null;
+
+        await limpiarArchivoPorUrl(post.imagen_url);
+
         res.json({ mensaje: "Misión eliminada" });
     } catch (error) {
         if (t) await t.rollback();
@@ -1063,10 +1100,39 @@ exports.marcarNotificacionLeida = async (req, res) => {
 exports.actualizarAvatar = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: "No imagen" });
+        const id_usuario = extraerIdUsuario(req);
+        const [usuario] = await db.query(
+            'SELECT foto_perfil FROM usuarios WHERE id_usuario = ? LIMIT 1',
+            {
+                replacements: [id_usuario],
+                type: db.QueryTypes.SELECT
+            }
+        );
+
+        if (!usuario) {
+            await limpiarArchivoSubido(req.file);
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
         const url = `/uploads/${req.file.filename}`;
-        await db.query('UPDATE usuarios SET foto_perfil = ? WHERE id_usuario = ?', { replacements: [url, extraerIdUsuario(req)], type: db.QueryTypes.UPDATE });
+        await db.query(
+            'UPDATE usuarios SET foto_perfil = ? WHERE id_usuario = ?',
+            {
+                replacements: [url, id_usuario],
+                type: db.QueryTypes.UPDATE
+            }
+        );
+
+        if (usuario.foto_perfil && usuario.foto_perfil !== url) {
+            await limpiarArchivoPorUrl(usuario.foto_perfil);
+        }
+
         res.json({ mensaje: "Sello actualizado", url });
-    } catch (error) { res.status(500).send("Error avatar"); }
+    } catch (error) {
+        await limpiarArchivoSubido(req.file);
+        console.error("Error al actualizar avatar:", error);
+        res.status(500).send("Error avatar");
+    }
 };
 
 exports.obtenerSugerenciaIA = async (req, res) => {

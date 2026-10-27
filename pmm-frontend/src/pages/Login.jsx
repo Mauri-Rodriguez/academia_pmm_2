@@ -245,11 +245,17 @@ const Login = () => {
 
                             <div>
 
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                <label
+                                    htmlFor="login-correo"
+                                    className="block text-sm font-semibold text-slate-700 mb-2"
+                                >
                                     Correo electrónico
                                 </label>
 
                                 <input
+                                    id="login-correo"
+                                    name="correo"
+                                    autoComplete="email"
                                     required
                                     type="email"
                                     value={correo}
@@ -264,11 +270,17 @@ const Login = () => {
 
                             <div>
 
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                <label
+                                    htmlFor="login-password"
+                                    className="block text-sm font-semibold text-slate-700 mb-2"
+                                >
                                     Contraseña
                                 </label>
 
                                 <input
+                                    id="login-password"
+                                    name="password"
+                                    autoComplete="current-password"
                                     required
                                     type="password"
                                     value={password}

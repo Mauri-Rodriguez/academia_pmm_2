@@ -78,7 +78,7 @@ const DashboardEstudiante = () => {
         try {
             const resIA = await api.get('/api/estudiante/sugerencia-ia');
             setSugerenciaIA(resIA.data);
-        } catch (err) {
+        } catch {
             console.error("Error silencioso en IA");
         } finally {
             setLoadingIA(false);
@@ -644,11 +644,32 @@ const DashboardEstudiante = () => {
                         const estiloModulo = getEstiloNivel(modulo.nivel);
                         const misionBloqueada = index > 0 && (rutaUnica[index - 1].porcentaje_avance < 100);
 
+                        const abrirModulo = () => {
+                            if (!misionBloqueada) {
+                                navigate(`/estudiante/modulo/${modulo.id_modulo}`);
+                            }
+                        };
+
                         return (
                             <div
                                 key={modulo.id_modulo}
-                                onClick={() => !misionBloqueada && navigate(`/estudiante/modulo/${modulo.id_modulo}`)}
-                                className={`group relative p-6 md:p-8 rounded-3xl transition-all duration-500 shadow-lg overflow-hidden border
+                                role={misionBloqueada ? undefined : 'button'}
+                                tabIndex={misionBloqueada ? -1 : 0}
+                                aria-disabled={misionBloqueada || undefined}
+                                aria-label={
+                                    misionBloqueada
+                                        ? `${modulo.nombre_modulo}. Completa el módulo anterior`
+                                        : `Abrir módulo ${modulo.nombre_modulo}`
+                                }
+                                onClick={abrirModulo}
+                                onKeyDown={(e) => {
+                                    if (misionBloqueada) return;
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        abrirModulo();
+                                    }
+                                }}
+                                className={`group relative p-6 md:p-8 rounded-3xl transition-all duration-500 shadow-lg overflow-hidden border focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0A3D62] focus-visible:ring-offset-2
                                     ${misionBloqueada
                                         ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-60 grayscale'
                                         : 'bg-white border-slate-200 cursor-pointer hover:bg-slate-50 hover:-translate-y-1 md:hover:-translate-y-2 hover:shadow-2xl'}`}

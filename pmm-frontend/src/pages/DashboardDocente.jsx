@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Users, Activity, ChevronRight, Loader2, FileDown, RefreshCw, LogOut, LayoutDashboard } from 'lucide-react';
+import { Search, Activity, ChevronRight, Loader2, FileDown, RefreshCw, LogOut, LayoutDashboard } from 'lucide-react';
 import api from '../api/api';
 
 const DashboardDocente = () => {
@@ -95,7 +95,7 @@ const DashboardDocente = () => {
             } else {
                 return { texto: `Inactivo ${diferenciaDias}d`, estilo: 'border-rose-500/30 text-rose-600 bg-rose-50', dot: 'bg-rose-500' };
             }
-        } catch (e) {
+        } catch {
             return { texto: 'Error Fecha', estilo: 'border-slate-500/30 text-slate-600 bg-slate-50', dot: 'bg-slate-500' };
         }
     };

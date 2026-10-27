@@ -129,24 +129,24 @@ const Registro = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre Completo</label>
-                        <input name="nombre_completo" required type="text" value={formData.nombre_completo} onChange={handleChange}
+                        <label htmlFor="registro-nombre" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre Completo</label>
+                        <input id="registro-nombre" name="nombre_completo" autoComplete="name" required type="text" value={formData.nombre_completo} onChange={handleChange}
                             className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 focus:border-[#0A3D62] focus:bg-white outline-none text-slate-900 transition-all" placeholder="Ej. Taylor Valencia" />
                     </div>
 
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Correo</label>
+                            <label htmlFor="registro-correo" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Correo</label>
                             {detectedRole && <span className="text-[10px] bg-[#0A3D62] text-white px-2 py-0.5 rounded-full font-bold uppercase">Rol: {detectedRole}</span>}
                         </div>
-                        <input name="correo" required type="email" value={formData.correo} onChange={handleChange}
+                        <input id="registro-correo" name="correo" autoComplete="email" required type="email" value={formData.correo} onChange={handleChange}
                             className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 focus:border-[#0A3D62] focus:bg-white outline-none text-slate-900 transition-all" placeholder="usuario@uniajc.edu.co" />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Contraseña</label>
-                            <input name="password" required type="password" value={formData.password} onChange={handleChange}
+                            <label htmlFor="registro-password" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Contraseña</label>
+                            <input id="registro-password" name="password" autoComplete="new-password" required type="password" value={formData.password} onChange={handleChange}
                                 className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 focus:border-[#0A3D62] focus:bg-white outline-none text-slate-900 transition-all" placeholder="••••••••" />
                             <div className="mt-2 h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
                                 <div className={`h-full transition-all duration-500 rounded-full ${strength.color}`} style={{ width: strength.width }}></div>
@@ -155,8 +155,8 @@ const Registro = () => {
                         </div>
 
                         <div>
-                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Confirmar</label>
-                            <input name="confirmarPassword" required type="password" value={formData.confirmarPassword} onChange={handleChange}
+                            <label htmlFor="registro-confirmar" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Confirmar</label>
+                            <input id="registro-confirmar" name="confirmarPassword" autoComplete="new-password" required type="password" value={formData.confirmarPassword} onChange={handleChange}
                                 className={`w-full bg-slate-50 border rounded-xl p-3.5 outline-none transition-all ${passwordMatch ? 'border-slate-300 focus:border-[#0A3D62] focus:bg-white text-slate-900' : 'border-red-500 bg-red-50 text-red-900'
                                     }`} placeholder="••••••••" />
                             {!passwordMatch && <p className="text-[10px] text-red-600 font-bold mt-1 uppercase">No coinciden</p>}
@@ -165,8 +165,9 @@ const Registro = () => {
 
                     {/* 🚩 SECCIÓN LEGAL: Consentimiento explícito (Ley 1581 de 2012) */}
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <label className="flex items-start gap-3 cursor-pointer group">
+                        <label htmlFor="registro-terminos" className="flex items-start gap-3 cursor-pointer group">
                             <input
+                                id="registro-terminos"
                                 type="checkbox"
                                 required
                                 checked={aceptaTerminos}

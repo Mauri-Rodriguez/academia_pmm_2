@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, BarChart3, Target, AlertCircle, Loader2, FileText } from 'lucide-react';
+import { ChevronLeft, BarChart3, Target, AlertCircle, FileText } from 'lucide-react';
 import api from '../api/api';
 import html2pdf from 'html2pdf.js';
 

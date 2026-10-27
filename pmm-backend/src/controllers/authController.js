@@ -927,9 +927,26 @@ exports.forgotPassword = async (req, res) => {
     try {
         const { correo } = req.body;
 
+        if (
+            typeof correo !== 'string' ||
+            !correo.trim()
+        ) {
+            return res.status(400).json({
+                mensaje: 'Debes ingresar un correo válido.'
+            });
+        }
+
+        const correoNormalizado = correo.trim().toLowerCase();
+
+        if (!FORMATO_CORREO.test(correoNormalizado)) {
+            return res.status(400).json({
+                mensaje: 'Debes ingresar un correo válido.'
+            });
+        }
+
         const usuario =
             await Usuario.findOne({
-                where: { correo }
+                where: { correo: correoNormalizado }
             });
 
         // Anti-enumeración
@@ -968,7 +985,7 @@ exports.forgotPassword = async (req, res) => {
             'production'
         ) {
             console.log(
-                `[DEV LOG] Token de recuperación para ${correo}: ${urlRecuperacion}`
+                `[DEV LOG] Token de recuperación para ${correoNormalizado}: ${urlRecuperacion}`
             );
         }
 
@@ -978,7 +995,7 @@ exports.forgotPassword = async (req, res) => {
                     'Seguridad PMM <admin@academiapmm.online>',
 
                 to:
-                    correo,
+                    usuario.correo,
 
                 subject:
                     'Recuperación de acceso a PMM Interactivo',
@@ -1056,6 +1073,16 @@ exports.resetPassword = async (req, res) => {
         const { token } = req.params;
         const { nuevaPassword } = req.body;
 
+        if (
+            typeof nuevaPassword !== 'string' ||
+            nuevaPassword.length < 6
+        ) {
+            return res.status(400).json({
+                mensaje:
+                    'La nueva contraseña debe tener mínimo 6 caracteres.'
+            });
+        }
+
         const usuario =
             await Usuario.findOne({
                 where: {
@@ -1111,9 +1138,19 @@ exports.resetPassword = async (req, res) => {
             error.message
         );
 
-        return res.status(401).json({
+        if (
+            error.name === 'JsonWebTokenError' ||
+            error.name === 'TokenExpiredError'
+        ) {
+            return res.status(401).json({
+                mensaje:
+                    'El enlace de recuperación es inválido o corrupto.'
+            });
+        }
+
+        return res.status(500).json({
             mensaje:
-                'El enlace de recuperación es inválido o corrupto.'
+                'Error interno al restablecer la contraseña.'
         });
     }
 };

@@ -18,3 +18,7 @@ pmm-backend/public/uploads/
 __pycache__/
 *.py[cod]
 *.pyo
+
+# Monografía / tesis (datos sensibles): consultada en auditoría, no versionar
+TRABAJO-DE-GRADO*.docx
+**/TRABAJO-DE-GRADO*.docx

@@ -243,5 +243,3 @@ export const renderizarConMatematicas = (texto) => {
     
     return renderPartes(parsearTexto(textoLimpio));
 };
-
-export const RenderMatematicas = ({ texto }) => renderizarConMatematicas(texto);

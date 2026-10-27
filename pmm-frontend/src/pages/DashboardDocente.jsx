@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Users, Activity, ChevronRight, Loader2, FileDown, RefreshCw, LogOut, LayoutDashboard } from 'lucide-react';
+import { Search, Activity, ChevronRight, Loader2, FileDown, RefreshCw, LogOut, LayoutDashboard } from 'lucide-react';
 import api from '../api/api';
 
 const DashboardDocente = () => {

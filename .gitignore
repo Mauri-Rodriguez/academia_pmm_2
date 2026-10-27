@@ -11,3 +11,8 @@ Thumbs.db
 # Archivos locales y contenido subido por usuarios
 pmm-frontend/.env
 pmm-backend/public/uploads/
+
+# Artefactos locales de Python (microservicio Flask)
+__pycache__/
+*.py[cod]
+*.pyo

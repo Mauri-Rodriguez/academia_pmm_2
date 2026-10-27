@@ -50,6 +50,7 @@ router.post(
       next();
     });
   },
+  upload.validarFirmaImagen,
   estudianteController.actualizarAvatar,
 );
 
@@ -65,6 +66,7 @@ router.post(
       next();
     });
   },
+  upload.validarFirmaImagen,
   estudianteController.crearMisionForo,
 );
 
@@ -82,6 +84,7 @@ router.put(
       next();
     });
   },
+  upload.validarFirmaImagen,
   estudianteController.editarMision,
 );
 router.delete("/foro/post/:id_post", estudianteController.eliminarMision);

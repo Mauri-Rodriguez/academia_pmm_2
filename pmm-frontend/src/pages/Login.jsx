@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import api from '../api/api';
 
+const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const Login = () => {
     const [correo, setCorreo] = useState('');
     const [password, setPassword] = useState('');
@@ -13,16 +15,6 @@ const Login = () => {
     const [aceptaGoogleLegal, setAceptaGoogleLegal] = useState(false);
 
     const navigate = useNavigate();
-
-    const DOMINIOS_PERMITIDOS = [
-        'uniajc.edu.co',
-        'estudiante.uniajc.edu.co',
-        'profesores.uniajc.edu.co',
-        'admon.uniajc.edu.co',
-        'gmail.com',
-        'outlook.com',
-        'hotmail.com'
-    ];
 
     const guardarSesion = (token, usuario, requiereDiagnostico) => {
         localStorage.clear();
@@ -127,21 +119,12 @@ const Login = () => {
 
         setError('');
 
-        const regexCorreo =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const correoNormalizado =
+            correo.trim().toLowerCase();
 
-        if (!regexCorreo.test(correo)) {
+        if (!FORMATO_CORREO.test(correoNormalizado)) {
             return setError(
                 'El formato del correo es inválido.'
-            );
-        }
-
-        const dominio =
-            correo.split('@')[1]?.toLowerCase();
-
-        if (!DOMINIOS_PERMITIDOS.includes(dominio)) {
-            return setError(
-                `Dominio no autorizado. Usa: ${DOMINIOS_PERMITIDOS.join(', ')}`
             );
         }
 
@@ -152,7 +135,7 @@ const Login = () => {
             const res = await api.post(
                 '/api/auth/login',
                 {
-                    correo,
+                    correo: correoNormalizado,
                     password
                 }
             );

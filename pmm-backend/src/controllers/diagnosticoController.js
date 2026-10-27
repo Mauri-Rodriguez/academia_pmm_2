@@ -347,32 +347,3 @@ exports.evaluarDiagnostico = async (req, res) => {
 
 // ============================================================================
 // RUTA DE DESARROLLO: Resetear progreso para pruebas
-// ============================================================================
-/**
- * Elimina todo el progreso, insignias y diagnósticos del usuario (Útil para pruebas).
- * @param {import('express').Request} req - Objeto de petición Express.
- * @param {import('express').Response} res - Objeto de respuesta Express.
- */
-exports.resetearProgresoPruebas = async (req, res) => {
-    const sequelize = Diagnostico.sequelize;
-    const t = await sequelize.transaction();
-
-    try {
-        const id_usuario = req.usuario?.id_usuario || req.user?.id_usuario;
-
-        // Borramos todo el rastro del usuario en progreso, insignias y diagnósticos
-        await sequelize.query(`DELETE FROM progreso_estudiante WHERE id_usuario = ${id_usuario}`, { transaction: t });
-        await sequelize.query(`DELETE FROM usuarios_insignias WHERE id_usuario = ${id_usuario}`, { transaction: t });
-        await sequelize.query(`DELETE FROM diagnostico WHERE id_usuario = ${id_usuario}`, { transaction: t });
-
-        // Regresamos el rango a Genin en la tabla usuarios
-        await sequelize.query(`UPDATE usuarios SET rango = 'Genin (Iniciado)', rango_actual = 'Genin (Iniciado)' WHERE id_usuario = ${id_usuario}`, { transaction: t });
-
-        await t.commit();
-        res.status(200).json({ mensaje: '¡Progreso reseteado! Ahora eres un ninja novato de nuevo.' });
-    } catch (error) {
-        if (t) await t.rollback();
-        console.error('Error reseteando:', error);
-        res.status(500).json({ mensaje: 'Error al limpiar la base de datos.' });
-    }
-};

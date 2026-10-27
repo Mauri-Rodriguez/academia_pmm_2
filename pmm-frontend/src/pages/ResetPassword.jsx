@@ -74,10 +74,13 @@ const ResetPassword = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                        <label htmlFor="reset-password" className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                             Nueva Contraseña
                         </label>
-                        <input 
+                        <input
+                            id="reset-password"
+                            name="password"
+                            autoComplete="new-password"
                             required 
                             type="password" 
                             value={password} 
@@ -88,10 +91,13 @@ const ResetPassword = () => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                        <label htmlFor="reset-confirmar" className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                             Confirmar Contraseña
                         </label>
-                        <input 
+                        <input
+                            id="reset-confirmar"
+                            name="confirmarPassword"
+                            autoComplete="new-password"
                             required 
                             type="password" 
                             value={confirmarPassword} 

@@ -37,6 +37,7 @@ const ModuloEstudio = () => {
     const [bloqueado, setBloqueado] = useState(false);
     const [modoRepaso, setModoRepaso] = useState(false);
     const [modalIA, setModalIA] = useState({ visible: false, explicacion: '' });
+    const [retroalimentacion, setRetroalimentacion] = useState(null);
     const [logroActivo, setLogroActivo] = useState(null);
     const [mostrarAscenso, setMostrarAscenso] = useState(false);
     const [datosAscenso, setDatosAscenso] = useState(null);
@@ -119,11 +120,17 @@ const ModuloEstudio = () => {
         if (bloqueado) return;
         const ejActual = ejercicios[indice];
         setBloqueado(true);
+        setRetroalimentacion(null);
 
         try {
             const evaluacion = await api.post('/api/ejercicios/evaluar', {
                 id_ejercicio: ejActual.id_ejercicio,
                 respuesta_estudiante: itemSeleccionado.campo
+            });
+
+            setRetroalimentacion({
+                esCorrecta: evaluacion.data.es_correcta,
+                mensaje: evaluacion.data.mensaje
             });
 
             if (evaluacion.data.es_correcta) {
@@ -291,6 +298,21 @@ const ModuloEstudio = () => {
                         <motion.div initial={{ width: 0 }} animate={{ width: `${progresoPorcentaje}%` }} className="h-full bg-[#0A3D62]" />
                     </div>
                 </div>
+
+                {retroalimentacion && (
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        className={`mb-6 rounded-xl border px-4 py-3 text-center font-bold ${
+                            retroalimentacion.esCorrecta
+                                ? 'border-green-300 bg-green-50 text-green-700'
+                                : 'border-red-300 bg-red-50 text-red-700'
+                        }`}
+                    >
+                        {retroalimentacion.mensaje}
+                    </div>
+                )}
 
                 {/* 🚩 Tarjeta de Pregunta con Renderizado KaTeX */}
                 <motion.div key={indice} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 p-5 sm:p-6 md:p-10 rounded-3xl shadow-lg border-t-4 border-t-[#FBE000] relative">

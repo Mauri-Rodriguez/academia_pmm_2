@@ -61,7 +61,7 @@ const ForoComunidad = () => {
                 const payload = JSON.parse(window.atob(token.split('.')[1]));
                 const id = payload.id_usuario || payload.id || payload.sub;
                 setUsuarioActualId(Number(id));
-            } catch (e) { console.error("Error de sesión"); }
+            } catch { console.error("Error de sesión"); }
         }
         cargarForo();
     }, []);
@@ -82,7 +82,7 @@ const ForoComunidad = () => {
         try {
             const res = await api.get('/api/estudiante/foro/temas');
             setPosts(Array.isArray(res.data) ? res.data : []);
-        } catch (err) { console.error("Error al cargar muro"); }
+        } catch { console.error("Error al cargar muro"); }
         finally { setLoading(false); }
     };
 
@@ -90,7 +90,7 @@ const ForoComunidad = () => {
         try {
             const res = await api.get(`/api/estudiante/foro/comentarios/${id_post}`);
             setComentarios(Array.isArray(res.data) ? res.data : []);
-        } catch (err) { console.error("Error al cargar respuestas"); }
+        } catch { console.error("Error al cargar respuestas"); }
     };
 
     useEffect(() => {
@@ -116,8 +116,8 @@ const ForoComunidad = () => {
             setMostrarModal(false);
             setErrorModal('');
             cargarForo();
-        } catch (err) { 
-            setErrorModal("No se pudo publicar la consulta. Inténtalo de nuevo."); 
+        } catch {
+            setErrorModal("No se pudo publicar la consulta. Inténtalo de nuevo.");
         } finally {
             setLoadingPublicacion(false);
         }
@@ -148,8 +148,8 @@ const ForoComunidad = () => {
             setMostrarModalEdicion(false);
             setErrorModal('');
             cargarForo();
-        } catch (err) { 
-            setErrorModal("No se pudo guardar la edición. Inténtalo de nuevo."); 
+        } catch {
+            setErrorModal("No se pudo guardar la edición. Inténtalo de nuevo.");
         } finally {
             setLoadingEdicion(false);
         }
@@ -166,7 +166,7 @@ const ForoComunidad = () => {
             setModalConfirmacion({ visible: false, tipo: '', id: null });
             cargarForo();
             setMisionSeleccionada(null);
-        } catch (err) { alert("Error al borrar la publicación."); }
+        } catch { alert("Error al borrar la publicación."); }
     };
 
     const solicitarEliminarComentario = (id_comentario) => {
@@ -178,7 +178,7 @@ const ForoComunidad = () => {
             await api.delete(`/api/estudiante/foro/comentario/${id_comentario}`);
             setModalConfirmacion({ visible: false, tipo: '', id: null });
             cargarComentarios(misionSeleccionada.id_post);
-        } catch (err) { console.error("Error al borrar"); }
+        } catch { console.error("Error al borrar"); }
     };
 
     const enviarComentario = async (e) => {
@@ -192,7 +192,7 @@ const ForoComunidad = () => {
             });
             setNuevoComentario("");
             cargarComentarios(misionSeleccionada.id_post);
-        } catch (err) { alert("Error al enviar el comentario."); }
+        } catch { alert("Error al enviar el comentario."); }
         finally { setEnviandoComentario(false); }
     };
 
@@ -204,7 +204,7 @@ const ForoComunidad = () => {
             });
             setComentarioEditando(null);
             cargarComentarios(misionSeleccionada.id_post);
-        } catch (err) {
+        } catch {
             alert("Error al editar el comentario.");
         }
     };

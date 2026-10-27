@@ -17,6 +17,10 @@ const progresoRoutes = require('./routes/progresoRoutes');
 
 const app = express();
 
+// Railway / proxies: necesario para que express-rate-limit use la IP real del cliente.
+// Valor 1 = confiar solo en el primer hop (evita trust proxy permisivo).
+app.set('trust proxy', 1);
+
 // === MIDDLEWARES ===
 
 const origenesPermitidos = [

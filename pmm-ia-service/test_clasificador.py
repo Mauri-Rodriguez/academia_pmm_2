@@ -1,6 +1,7 @@
 # ============================================================================
-# test_app.py
-# Pruebas del clasificador Flask
+# test_clasificador.py
+# Pruebas del clasificador Flask alineadas con F-CLA-400:
+# enteros 0–13 → 200; inválidos / fuera de rango → 400.
 # ============================================================================
 
 from app import app
@@ -18,26 +19,24 @@ client = app.test_client()
 # ============================================================================
 
 print("=" * 75)
-print("PRUEBAS DEL CLASIFICADOR IA")
+print("PRUEBAS DEL CLASIFICADOR IA (F-CLA-400)")
 print("=" * 75)
 
 
 # ============================================================================
-# 3. Función auxiliar
+# 3. Funciones auxiliares
 # ============================================================================
 
-def probar(puntaje, esperado_nivel, esperado_nombre, descripcion):
+def probar_valido(puntaje, esperado_nivel, esperado_nombre, descripcion):
     response = client.post(
         "/api/ia/recomendar-ruta",
         json={"puntaje": puntaje}
     )
 
     datos = response.get_json()
-
     nivel = datos.get("nivel_id") if datos else None
     estado_http = response.status_code
 
-    # El puntaje recibido debe conservar el valor original
     puntaje_recibido = (
         datos.get("puntaje_recibido")
         if datos
@@ -59,6 +58,29 @@ def probar(puntaje, esperado_nivel, esperado_nombre, descripcion):
         f"Nivel: {str(nivel):<5} | "
         f"Esperado: {esperado_nombre:<6} | "
         f"{estado}"
+    )
+
+    if not correcto:
+        print(f"   Respuesta: {datos}")
+
+    return correcto
+
+
+def probar_rechazo(descripcion, **kwargs):
+    """Espera HTTP 400 con campo mensaje (F-CLA-400)."""
+    response = client.post("/api/ia/recomendar-ruta", **kwargs)
+    datos = response.get_json()
+
+    correcto = (
+        response.status_code == 400
+        and isinstance(datos, dict)
+        and "mensaje" in datos
+    )
+
+    print(
+        f"{descripcion:<35} | "
+        f"HTTP: {response.status_code:<3} | "
+        f"{'APROBADO' if correcto else 'FALLIDO'}"
     )
 
     if not correcto:
@@ -90,7 +112,7 @@ for puntaje in range(14):
         esperado_nivel = 2
         esperado_nombre = "Jonin"
 
-    if probar(
+    if probar_valido(
         puntaje,
         esperado_nivel,
         esperado_nombre,
@@ -102,227 +124,98 @@ for puntaje in range(14):
 
 
 # ============================================================================
-# 5. PRUEBAS DE DECIMALES
+# 5. PRUEBAS DE DECIMALES → 400
 # ============================================================================
 
-print("\n--- PUNTAJES DECIMALES ---")
+print("\n--- PUNTAJES DECIMALES (rechazo 400) ---")
 
-casos_decimales = [
-    (0.5, 0, "Genin"),
-    (6.5, 0, "Genin"),
-    (6.9, 0, "Genin"),
-    (7.5, 1, "Chunin"),
-    (9.5, 1, "Chunin"),
-    (10.5, 2, "Jonin"),
-    (12.5, 2, "Jonin"),
-]
+casos_decimales = [0.5, 6.5, 6.9, 7.5, 9.5, 10.5, 12.5]
 
-for puntaje, esperado_nivel, esperado_nombre in casos_decimales:
-
-    if probar(
-        puntaje,
-        esperado_nivel,
-        esperado_nombre,
-        f"Decimal {puntaje}"
-    ):
+for puntaje in casos_decimales:
+    if probar_rechazo(f"Decimal {puntaje}", json={"puntaje": puntaje}):
         aprobadas += 1
-
     totales += 1
 
 
 # ============================================================================
-# 6. PRUEBAS DE PUNTAJES MAYORES A 13
+# 6. PRUEBAS DE PUNTAJES MAYORES A 13 → 400
 # ============================================================================
-# teniendo en cuenta al file app.py:
-#
-# if puntaje_original > 13:
-#     puntaje_validado = 0
-#
-# Por tanto, cualquier puntaje > 13 debe devolver Genin (0).
+# F-CLA-400 (opción A): fuera de 0–13 se rechaza; ya no aplica >13 → Genin.
 # ============================================================================
 
-print("\n--- PUNTAJES MAYORES A 13 ---")
+print("\n--- PUNTAJES MAYORES A 13 (rechazo 400) ---")
 
-casos_mayores = [
-    14,
-    15,
-    20,
-    50,
-    100,
-    999,
-]
+casos_mayores = [14, 15, 20, 50, 100, 999]
 
 for puntaje in casos_mayores:
-
-    if probar(
-        puntaje,
-        0,
-        "Genin",
-        f"Fuera de rango {puntaje}"
-    ):
+    if probar_rechazo(f"Fuera de rango {puntaje}", json={"puntaje": puntaje}):
         aprobadas += 1
-
     totales += 1
 
 
 # ============================================================================
-# 7. PRUEBAS DE PUNTAJES NEGATIVOS
-# ============================================================================
-#  app.py NO rechaza valores negativos.
-# El árbol los clasificará como Genin porque están por debajo del primer corte.
+# 7. PRUEBAS DE PUNTAJES NEGATIVOS → 400
 # ============================================================================
 
-print("\n--- PUNTAJES NEGATIVOS ---")
+print("\n--- PUNTAJES NEGATIVOS (rechazo 400) ---")
 
-casos_negativos = [
-    -1,
-    -5,
-    -100,
-]
+casos_negativos = [-1, -5, -100]
 
 for puntaje in casos_negativos:
-
-    if probar(
-        puntaje,
-        0,
-        "Genin",
-        f"Negativo {puntaje}"
-    ):
+    if probar_rechazo(f"Negativo {puntaje}", json={"puntaje": puntaje}):
         aprobadas += 1
-
     totales += 1
 
 
 # ============================================================================
-# 8. PRUEBA SIN PUNTAJE
-# ============================================================================
-# datos.get('puntaje', 0)
-#
-# Si no existe "puntaje", app.py utiliza 0.
+# 8. AUSENCIA DE PUNTAJE → 400
 # ============================================================================
 
 print("\n--- AUSENCIA DE PUNTAJE ---")
 
-response = client.post(
-    "/api/ia/recomendar-ruta",
-    json={}
-)
-
-datos = response.get_json()
-
-correcto = (
-    response.status_code == 200
-    and datos.get("nivel_id") == 0
-    and datos.get("puntaje_recibido") == 0
-    and datos.get("mensaje") == "Clasificación exitosa"
-)
-
-print(
-    f"{'JSON sin puntaje':<35} | "
-    f"HTTP: {response.status_code:<3} | "
-    f"Nivel: {datos.get('nivel_id') if datos else None:<5} | "
-    f"{'APROBADO' if correcto else 'FALLIDO'}"
-)
-
-if correcto:
+if probar_rechazo("JSON sin puntaje", json={}):
     aprobadas += 1
-
 totales += 1
 
 
 # ============================================================================
-# 9. PRUEBA DE TEXTO NUMÉRICO
-# ============================================================================
-# float("7") funciona correctamente.
+# 9. TEXTO NUMÉRICO → 400 (solo enteros JSON, no coerción de string)
 # ============================================================================
 
 print("\n--- TEXTO NUMÉRICO ---")
 
-response = client.post(
-    "/api/ia/recomendar-ruta",
-    json={"puntaje": "7"}
-)
-
-datos = response.get_json()
-
-correcto = (
-    response.status_code == 200
-    and datos.get("nivel_id") == 1
-    and datos.get("puntaje_recibido") == 7.0
-)
-
-print(
-    f"{'Texto numérico \"7\"':<35} | "
-    f"HTTP: {response.status_code:<3} | "
-    f"Nivel: {datos.get('nivel_id') if datos else None:<5} | "
-    f"{'APROBADO' if correcto else 'FALLIDO'}"
-)
-
-if correcto:
+if probar_rechazo('Texto numérico "7"', json={"puntaje": "7"}):
     aprobadas += 1
-
 totales += 1
 
 
 # ============================================================================
-# 10. PRUEBA DE TEXTO INVÁLIDO
-# ============================================================================
-# float("abc") genera una excepción.
-# app.py debe devolver HTTP 500.
+# 10. TEXTO INVÁLIDO → 400
 # ============================================================================
 
 print("\n--- DATOS INVÁLIDOS ---")
 
-response = client.post(
-    "/api/ia/recomendar-ruta",
-    json={"puntaje": "abc"}
-)
-
-datos = response.get_json()
-
-correcto = (
-    response.status_code == 500
-    and "error" in datos
-)
-
-print(
-    f"{'Texto inválido \"abc\"':<35} | "
-    f"HTTP: {response.status_code:<3} | "
-    f"{'APROBADO' if correcto else 'FALLIDO'}"
-)
-
-if correcto:
+if probar_rechazo('Texto inválido "abc"', json={"puntaje": "abc"}):
     aprobadas += 1
+totales += 1
 
+if probar_rechazo("puntaje null", json={"puntaje": None}):
+    aprobadas += 1
+totales += 1
+
+if probar_rechazo("puntaje objeto", json={"puntaje": {"x": 1}}):
+    aprobadas += 1
 totales += 1
 
 
 # ============================================================================
-# 11. PRUEBA DE JSON SIN CONTENIDO
+# 11. JSON VACÍO / AUSENTE → 400
 # ============================================================================
 
 print("\n--- JSON VACÍO / AUSENTE ---")
 
-response = client.post(
-    "/api/ia/recomendar-ruta"
-)
-
-datos = response.get_json()
-
-# Dependiendo de la configuración de Flask, request.get_json()
-# puede generar un error y entrar al except.
-
-correcto = response.status_code in [400, 500]
-
-print(
-    f"{'Petición sin JSON':<35} | "
-    f"HTTP: {response.status_code:<3} | "
-    f"{'APROBADO' if correcto else 'FALLIDO'}"
-)
-
-if correcto:
+if probar_rechazo("Petición sin JSON"):
     aprobadas += 1
-
 totales += 1
 
 
@@ -348,3 +241,6 @@ else:
     print("\nRESULTADO FINAL: EXISTEN PRUEBAS FALLIDAS")
 
 print("=" * 75)
+
+# Código de salida para CI / scripts
+raise SystemExit(0 if aprobadas == totales else 1)

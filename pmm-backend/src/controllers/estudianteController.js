@@ -1,6 +1,7 @@
 // 1. IMPORTACIONES
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { literal, Op } = require('sequelize');
+const fs = require('fs/promises');
 const db = require('../config/database');
 
 // 2. MODELOS
@@ -14,6 +15,61 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // 3. HELPERS
 const jwt = require('jsonwebtoken');
+const MAX_TEXTO_FORO_BYTES = 65535;
+
+const limpiarArchivoSubido = async (file) => {
+    if (!file?.path) return;
+
+    try {
+        await fs.unlink(file.path);
+    } catch (error) {
+        if (error.code !== 'ENOENT') {
+            console.error('No fue posible limpiar el archivo subido:', error);
+        }
+    }
+};
+
+const validarPublicacionForo = (titulo, contenido) => {
+    if (typeof titulo !== 'string' || typeof contenido !== 'string') {
+        return { error: 'El título y el contenido deben ser texto.' };
+    }
+
+    const tituloNormalizado = titulo.trim();
+    const contenidoNormalizado = contenido.trim();
+
+    if (tituloNormalizado.length < 5 || tituloNormalizado.length > 150) {
+        return { error: 'El título debe tener entre 5 y 150 caracteres.' };
+    }
+
+    if (
+        contenidoNormalizado.length < 10 ||
+        Buffer.byteLength(contenidoNormalizado, 'utf8') > MAX_TEXTO_FORO_BYTES
+    ) {
+        return { error: 'El contenido no cumple la longitud permitida.' };
+    }
+
+    return {
+        titulo: tituloNormalizado,
+        contenido: contenidoNormalizado
+    };
+};
+
+const validarComentarioForo = (comentario) => {
+    if (typeof comentario !== 'string') {
+        return { error: 'El comentario debe ser texto.' };
+    }
+
+    const comentarioNormalizado = comentario.trim();
+
+    if (
+        !comentarioNormalizado ||
+        Buffer.byteLength(comentarioNormalizado, 'utf8') > MAX_TEXTO_FORO_BYTES
+    ) {
+        return { error: 'El comentario no cumple la longitud permitida.' };
+    }
+
+    return { comentario: comentarioNormalizado };
+};
 
 /**
  * Extrae el ID del usuario desencriptando el JWT del header de autorización.
@@ -644,10 +700,31 @@ exports.crearMisionForo = async (req, res) => {
     try {
         const { titulo, contenido } = req.body;
         const id_usuario = extraerIdUsuario(req);
+        const publicacion = validarPublicacionForo(titulo, contenido);
+
+        if (publicacion.error) {
+            await limpiarArchivoSubido(req.file);
+            return res.status(400).json({ error: publicacion.error });
+        }
+
         const url = req.file ? `/uploads/${req.file.filename}` : null;
-        await db.query("INSERT INTO foro_posts (id_usuario, titulo, contenido, imagen_url) VALUES (?, ?, ?, ?)", { replacements: [id_usuario, titulo, contenido, url] });
+        await db.query(
+            "INSERT INTO foro_posts (id_usuario, titulo, contenido, imagen_url) VALUES (?, ?, ?, ?)",
+            {
+                replacements: [
+                    id_usuario,
+                    publicacion.titulo,
+                    publicacion.contenido,
+                    url
+                ]
+            }
+        );
         res.json({ mensaje: "Publicado" });
-    } catch (error) { res.status(500).json({ error: "Falla foro" }); }
+    } catch (error) {
+        await limpiarArchivoSubido(req.file);
+        console.error("Error al crear publicación:", error);
+        res.status(500).json({ error: "Falla foro" });
+    }
 };
 
 exports.obtenerTemasForo = async (req, res) => {
@@ -662,17 +739,20 @@ exports.editarMision = async (req, res) => {
     try {
         const id_usuario = extraerIdUsuario(req);
         const id_post = Number(req.params.id_post);
-        const titulo = String(req.body?.titulo || '').trim();
-        const contenido = String(req.body?.contenido || '').trim();
 
         if (!Number.isInteger(id_post) || id_post <= 0) {
+            await limpiarArchivoSubido(req.file);
             return res.status(400).json({ error: "Publicación inválida" });
         }
 
-        if (titulo.length < 5 || contenido.length < 10) {
-            return res.status(400).json({
-                error: "El título y el contenido no cumplen la longitud mínima"
-            });
+        const publicacion = validarPublicacionForo(
+            req.body?.titulo,
+            req.body?.contenido
+        );
+
+        if (publicacion.error) {
+            await limpiarArchivoSubido(req.file);
+            return res.status(400).json({ error: publicacion.error });
         }
 
         const [post] = await db.query(
@@ -684,6 +764,7 @@ exports.editarMision = async (req, res) => {
         );
 
         if (!post) {
+            await limpiarArchivoSubido(req.file);
             return res.status(404).json({
                 error: "Publicación no encontrada o sin permisos para editarla"
             });
@@ -696,12 +777,19 @@ exports.editarMision = async (req, res) => {
         await db.query(
             "UPDATE foro_posts SET titulo = ?, contenido = ?, imagen_url = ? WHERE id_post = ? AND id_usuario = ?",
             {
-                replacements: [titulo, contenido, imagen_url, id_post, id_usuario]
+                replacements: [
+                    publicacion.titulo,
+                    publicacion.contenido,
+                    imagen_url,
+                    id_post,
+                    id_usuario
+                ]
             }
         );
 
         res.json({ mensaje: "Publicación editada" });
     } catch (error) {
+        await limpiarArchivoSubido(req.file);
         console.error("Error al editar publicación:", error);
         res.status(500).json({ error: "No fue posible editar la publicación" });
     }
@@ -709,8 +797,11 @@ exports.editarMision = async (req, res) => {
 
 exports.comentarMision = async (req, res) => {
     try {
-        const { id_post, comentario } = req.body;
+        const id_post = Number(req.body?.id_post);
         const id_usuario = extraerIdUsuario(req);
+        const comentarioValidado = validarComentarioForo(
+            req.body?.comentario
+        );
 
         // 🛡️ 1. Verificación de seguridad
         if (!id_usuario) {
@@ -718,18 +809,39 @@ exports.comentarMision = async (req, res) => {
         }
 
         // 💬 2. Guardamos el comentario (Esto es lo principal)
+        if (!Number.isInteger(id_post) || id_post <= 0) {
+            return res.status(400).json({ error: "Publicación inválida" });
+        }
+
+        if (comentarioValidado.error) {
+            return res.status(400).json({ error: comentarioValidado.error });
+        }
+
+        const [postOriginal] = await db.query(
+            "SELECT id_usuario FROM foro_posts WHERE id_post = ? LIMIT 1",
+            {
+                replacements: [id_post],
+                type: db.QueryTypes.SELECT
+            }
+        );
+
+        if (!postOriginal) {
+            return res.status(404).json({ error: "Publicación no encontrada" });
+        }
+
         await db.query("INSERT INTO foro_comentarios (id_post, id_usuario, comentario) VALUES (?, ?, ?)",
-            { replacements: [id_post, id_usuario, comentario] });
+            {
+                replacements: [
+                    id_post,
+                    id_usuario,
+                    comentarioValidado.comentario
+                ]
+            });
 
         // 🔔 3. Sistema de Notificaciones (AISLADO en su propio try-catch)
         try {
-            const postOriginalArray = await db.query("SELECT id_usuario FROM foro_posts WHERE id_post = ?",
-                { replacements: [id_post], type: db.QueryTypes.SELECT });
-
-            const postOriginal = postOriginalArray[0];
-
             // Solo le notificamos si alguien MÁS comentó su post
-            if (postOriginal && Number(postOriginal.id_usuario) !== Number(id_usuario)) {
+            if (Number(postOriginal.id_usuario) !== Number(id_usuario)) {
                 // 🚩 Usamos el Helper blindado que ya calcula la hora de Colombia y acepta la ruta
                 await crearNotificacion(
                     postOriginal.id_usuario,
@@ -763,14 +875,16 @@ exports.editarComentario = async (req, res) => {
     try {
         const id_usuario = extraerIdUsuario(req);
         const id_comentario = Number(req.params.id_comentario);
-        const comentario = String(req.body?.comentario || '').trim();
+        const comentarioValidado = validarComentarioForo(
+            req.body?.comentario
+        );
 
         if (!Number.isInteger(id_comentario) || id_comentario <= 0) {
             return res.status(400).json({ error: "Comentario inválido" });
         }
 
-        if (!comentario) {
-            return res.status(400).json({ error: "El comentario no puede estar vacío" });
+        if (comentarioValidado.error) {
+            return res.status(400).json({ error: comentarioValidado.error });
         }
 
         const [comentarioExistente] = await db.query(
@@ -789,7 +903,13 @@ exports.editarComentario = async (req, res) => {
 
         await db.query(
             "UPDATE foro_comentarios SET comentario = ? WHERE id_comentario = ? AND id_usuario = ?",
-            { replacements: [comentario, id_comentario, id_usuario] }
+            {
+                replacements: [
+                    comentarioValidado.comentario,
+                    id_comentario,
+                    id_usuario
+                ]
+            }
         );
 
         res.json({ mensaje: "Editado" });

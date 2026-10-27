@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/api';
 
+const DOMINIOS_DOCENTES = [
+    'profesores.uniajc.edu.co',
+    'admon.uniajc.edu.co'
+];
+const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const Registro = () => {
     const [formData, setFormData] = useState({
         nombre_completo: '',
@@ -19,13 +25,6 @@ const Registro = () => {
     const [detectedRole, setDetectedRole] = useState('');
     const navigate = useNavigate();
 
-    const DOMINIOS_DOCENTES = ['profesores.uniajc.edu.co', 'admon.uniajc.edu.co'];
-    const DOMINIOS_PERMITIDOS = [
-        ...DOMINIOS_DOCENTES,
-        'estudiante.uniajc.edu.co',
-        'gmail.com', 'outlook.com', 'hotmail.com'
-    ];
-
     useEffect(() => {
         if (formData.confirmarPassword !== '') {
             setPasswordMatch(formData.password === formData.confirmarPassword);
@@ -33,15 +32,18 @@ const Registro = () => {
             setPasswordMatch(true);
         }
 
-        const dominio = formData.correo.split('@')[1]?.toLowerCase();
+        const correoNormalizado =
+            formData.correo.trim().toLowerCase();
+        const dominio = correoNormalizado.split('@')[1];
+
         if (DOMINIOS_DOCENTES.includes(dominio)) {
             setDetectedRole('Docente/Administrativo');
-        } else if (dominio && DOMINIOS_PERMITIDOS.includes(dominio)) {
+        } else if (FORMATO_CORREO.test(correoNormalizado)) {
             setDetectedRole('Estudiante');
         } else {
             setDetectedRole('');
         }
-    }, [formData, DOMINIOS_DOCENTES, DOMINIOS_PERMITIDOS]);
+    }, [formData]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -65,16 +67,18 @@ const Registro = () => {
         if (!passwordMatch) return setMensaje({ texto: 'Las contraseñas no coinciden.', tipo: 'error' });
         if (formData.password.length < 6) return setMensaje({ texto: 'La contraseña debe tener mínimo 6 caracteres.', tipo: 'error' });
 
-        const dominio = formData.correo.split('@')[1]?.toLowerCase();
-        if (!DOMINIOS_PERMITIDOS.includes(dominio)) {
-            return setMensaje({ texto: 'Este dominio no tiene acceso a la plataforma.', tipo: 'error' });
+        const correoNormalizado =
+            formData.correo.trim().toLowerCase();
+
+        if (!FORMATO_CORREO.test(correoNormalizado)) {
+            return setMensaje({ texto: 'El formato del correo es inválido.', tipo: 'error' });
         }
 
         setLoading(true);
         try {
             await api.post('/api/auth/register', {
-                nombre_completo: formData.nombre_completo,
-                correo: formData.correo,
+                nombre_completo: formData.nombre_completo.trim(),
+                correo: correoNormalizado,
                 password: formData.password,
 
                 acepta_politica_privacidad: aceptaTerminos,

@@ -124,7 +124,7 @@ const VisualizadorModulo = () => {
                         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-700 to-slate-900"></div>
                         
                         <div className="relative z-10 text-center p-6">
-                            <img src="/estudiando.png" alt="Estudiando" className="w-24 h-24 md:w-32 md:h-32 object-contain mx-auto mb-4 opacity-80 group-hover:scale-105 transition-transform duration-500" />
+                            <img src="/leyendo un libro robot.png" alt="Estudiando" className="w-24 h-24 md:w-32 md:h-32 object-contain mx-auto mb-4 opacity-80 group-hover:scale-105 transition-transform duration-500" />
                             <p className="text-slate-300 font-medium italic text-sm md:text-base">
                                 [ Reproductor de video para: {actual.titulo} ]
                             </p>

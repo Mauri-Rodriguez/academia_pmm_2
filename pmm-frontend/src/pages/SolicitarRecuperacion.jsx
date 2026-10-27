@@ -65,10 +65,13 @@ const SolicitarRecuperacion = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                        <label htmlFor="recuperar-correo" className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
                             Correo Electrónico
                         </label>
-                        <input 
+                        <input
+                            id="recuperar-correo"
+                            name="correo"
+                            autoComplete="email"
                             required 
                             type="email" 
                             value={correo} 

@@ -4,10 +4,12 @@ import confetti from 'canvas-confetti';
 
 const AscensoModal = ({ datos, onClose }) => {
     const modalRef = useRef(null);
+    const botonCerrarRef = useRef(null);
 
     // 🚩 1. EFECTO DE CONFETI AL ABRIR (Gamificación)
     useEffect(() => {
         if (datos) {
+            botonCerrarRef.current?.focus();
             const duration = 3 * 1000;
             const animationEnd = Date.now() + duration;
             const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
@@ -100,11 +102,13 @@ const AscensoModal = ({ datos, onClose }) => {
                     </p>
 
                     {/* Botón de Acción (Patrón Oficial PMM) */}
-                    <motion.button 
+                    <motion.button
+                        ref={botonCerrarRef}
+                        type="button"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={onClose}
-                        className="relative z-10 w-full bg-[#0A3D62] text-white font-bold py-4 rounded-xl uppercase tracking-wider text-sm transition-all shadow-md hover:bg-[#083252] hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                        className="relative z-10 w-full bg-[#0A3D62] text-white font-bold py-4 rounded-xl uppercase tracking-wider text-sm transition-all shadow-md hover:bg-[#083252] hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FBE000] focus-visible:ring-offset-2"
                     >
                         <span>Continuar al Panel</span>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -230,14 +230,43 @@ Estructura de tu respuesta:
             explicacionIA = "El Tutor está meditando en las montañas.";
         }
 
-        // 4. Guardar SIEMPRE en el historial para no perder las analíticas del profesor
-        await HistorialError.create({
-            id_usuario,
-            id_pregunta,
-            respuesta_dada: columnaDada,
-            explicacion_ia: explicacionIA,
-            fecha_error: new Date()
-        });
+        // 4. Completar el fallo ya registrado por /ejercicios/evaluar (o crear si solo llegó aquí).
+        const [falloReciente] = await db.query(
+            `SELECT id_error
+             FROM historial_errores
+             WHERE id_usuario = ?
+               AND id_pregunta = ?
+               AND fecha_error >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+             ORDER BY id_error DESC
+             LIMIT 1`,
+            {
+                replacements: [id_usuario, id_pregunta],
+                type: db.QueryTypes.SELECT
+            }
+        );
+
+        if (falloReciente?.id_error) {
+            await db.query(
+                `UPDATE historial_errores
+                 SET respuesta_dada = ?, explicacion_ia = ?
+                 WHERE id_error = ?`,
+                {
+                    replacements: [
+                        columnaDada,
+                        explicacionIA,
+                        falloReciente.id_error
+                    ]
+                }
+            );
+        } else {
+            await HistorialError.create({
+                id_usuario,
+                id_pregunta,
+                respuesta_dada: columnaDada,
+                explicacion_ia: explicacionIA,
+                fecha_error: new Date()
+            });
+        }
 
         const [fallosHoy] = await db.query(`
             SELECT COUNT(*) as total FROM historial_errores 

@@ -3,6 +3,7 @@
 const db = require('../config/database');
 const Ejercicio = require('../models/Ejercicio');
 const ProgresoEstudiante = require('../models/ProgresoEstudiante');
+const HistorialError = require('../models/HistorialError');
 const { finalizarModulo } = require('../services/finalizacionModuloService');
 
 const normalizarOpcion = (valor) => {
@@ -139,6 +140,18 @@ exports.evaluarEjercicio = async (req, res) => {
             progreso.porcentaje_avance = ejerciciosCompletados === totalEjercicios
                 ? 100
                 : (ejerciciosCompletados / totalEjercicios) * 100;
+        }
+
+        // HU-11: todo fallo queda en historial al evaluar (sin depender de Gemini).
+        // registrar-fallo solo añade/actualiza la explicación de IA después.
+        if (!esCorrecta) {
+            await HistorialError.create({
+                id_usuario: idUsuario,
+                id_pregunta: idEjercicio,
+                respuesta_dada: respuestaNormalizada,
+                explicacion_ia: null,
+                fecha_error: new Date()
+            }, { transaction });
         }
 
         await progreso.save({ transaction });

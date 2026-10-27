@@ -67,7 +67,7 @@ const TutorOraculo = ({ idPreguntaActual }) => {
                                     <h3 className="text-[#0A3D62] font-bold text-sm uppercase tracking-wider">Tutor IA</h3>
                                     <p className="text-[10px] text-green-600 font-bold uppercase tracking-widest flex items-center gap-1">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                                        En línea
+                                        Asistencia mediante IA
                                     </p>
                                 </div>
                             </div>
@@ -117,6 +117,7 @@ const TutorOraculo = ({ idPreguntaActual }) => {
                                     type="text" 
                                     value={mensaje}
                                     onChange={(e) => setMensaje(e.target.value)}
+                                    maxLength={1000}
                                     placeholder="Escribe tu duda aquí..."
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-4 pr-12 text-sm text-slate-800 focus:outline-none focus:border-[#0A3D62] focus:ring-1 focus:ring-[#0A3D62] transition-all placeholder:text-slate-400"
                                     disabled={cargando}

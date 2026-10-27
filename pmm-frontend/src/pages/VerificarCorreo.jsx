@@ -65,7 +65,7 @@ const VerificarCorreo = () => {
                 {/* ESTADO: ERROR */}
                 {estado === 'error' && (
                     <div className="flex flex-col items-center">
-                        <img src="/incorrecto.png" alt="Error" className="w-32 h-32 object-contain mb-6" />
+                        <img src="/respuesta incorrecta robot.png" alt="Error" className="w-32 h-32 object-contain mb-6" />
                         <h2 className="text-2xl font-extrabold text-red-600 mb-2">Enlace Inválido o Expirado</h2>
                         <p className="text-sm text-slate-600 mb-8">
                             El enlace de verificación no es válido, ya fue utilizado o ha caducado. Por favor, solicita un nuevo registro.

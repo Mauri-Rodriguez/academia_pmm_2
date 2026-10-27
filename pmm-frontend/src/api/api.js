@@ -9,7 +9,7 @@ const RUTAS_PROTEGIDAS = [
 ];
 
 // 1. Tomamos la URL (ya sea de Vercel/Railway o de Localhost)
-const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // 2. Exportamos la URL para las fotos (Le quitamos el /api del final de forma segura)
 export const BACKEND_URL = rawUrl.replace(/\/$/, '').replace(/\/api$/, '');

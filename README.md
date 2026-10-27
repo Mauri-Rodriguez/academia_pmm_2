@@ -54,7 +54,7 @@ Crear un archivo `.env` en `pmm-backend` con:
 | `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_DIALECT` | Conexión a MySQL (alternativa: `MYSQL_URL`) |
 | `JWT_SECRET` | Firma de los tokens de sesión |
 | `GEMINI_API_KEY` | API de Gemini (modelo 2.5 Flash-Lite) para el tutor |
-| `IA_SERVICE_URL` | URL del microservicio, por ejemplo `http://localhost:5000/api/ia/recomendar-ruta` |
+| `IA_SERVICE_URL` | URL base del microservicio, por ejemplo `http://127.0.0.1:5000` (sin `/api/ia/recomendar-ruta`, porque el backend agrega esa ruta) |
 | `FRONTEND_URL` | Dominio del frontend (CORS y enlaces de correo) |
 | `DOMINIOS_DOCENTES` | Dominios de correo que reciben el rol docente |
 | `RESEND_API_KEY` | Envío de correos de verificación y recuperación |

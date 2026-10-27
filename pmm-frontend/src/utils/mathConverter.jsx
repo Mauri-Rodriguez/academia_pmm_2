@@ -52,7 +52,7 @@ const consumirSubSuper = (s, i) => {
         const end = consumirLlaves(s, j);
         return end !== -1 ? end : j;
     }
-    while (j < s.length && /[a-zA-Z0-9+\-]/.test(s[j])) j++;
+    while (j < s.length && /[a-zA-Z0-9+-]/.test(s[j])) j++;
     return j;
 };
 
@@ -170,7 +170,7 @@ const parsearTexto = (texto) => {
         }
 
         if ((texto[i] === '^' || texto[i] === '_') && i + 1 < texto.length) {
-            const match = buf.match(/([a-zA-Z0-9\)\]\}]+)$/);
+            const match = buf.match(/([a-zA-Z0-9)\]}]+)$/);
             if (match) {
                 const base = match[1];
                 buf = buf.slice(0, -base.length);
@@ -243,5 +243,3 @@ export const renderizarConMatematicas = (texto) => {
     
     return renderPartes(parsearTexto(textoLimpio));
 };
-
-export const RenderMatematicas = ({ texto }) => renderizarConMatematicas(texto);

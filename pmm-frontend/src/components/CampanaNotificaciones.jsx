@@ -22,8 +22,9 @@ const CampanaNotificaciones = () => {
     };
 
     useEffect(() => {
+        // Carga inicial + polling: sincronización con el servidor (caso válido de effect).
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount / interval
         cargarNotificaciones();
-        // Opcional: Recargar cada 1 minuto (60000 ms) para notificaciones en vivo
         const intervalo = setInterval(cargarNotificaciones, 60000);
         return () => clearInterval(intervalo);
     }, []);

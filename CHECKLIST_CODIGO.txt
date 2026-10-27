@@ -160,10 +160,6 @@ La monografía final se consultó como base de trazabilidad y NO se versiona en 
 
 [X] Ascenso automático de rango vía finalizacionModuloService.js.
 
-[P] Coherencia formal modelo Sequelize vs columna `rango`.
-    En MySQL existen `rango` y `rango_actual`; el modelo Usuario declara `rango_actual`.
-    El código actualiza ambas por SQL. Decisión: observación de alineación (no bloquea CU);
-    unificación formal queda como mejora futura.
 
 
 ============================================================
@@ -266,6 +262,4 @@ La monografía final se consultó como base de trazabilidad y NO se versiona en 
 [X] Concepto técnico de auditoría: A — Conforme (docsRevisionRepo/).
 
 Pendientes no bloqueantes (observaciones):
-- Unificar formalmente columna `rango` en el modelo Sequelize (o documentar SQL-only).
-- Front alterno academia-pmm.vercel.app (fuera del despliegue oficial).
 - Residual moderate/low de npm audit y peso del bundle JS.

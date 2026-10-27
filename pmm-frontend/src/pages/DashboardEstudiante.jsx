@@ -78,7 +78,7 @@ const DashboardEstudiante = () => {
         try {
             const resIA = await api.get('/api/estudiante/sugerencia-ia');
             setSugerenciaIA(resIA.data);
-        } catch (err) {
+        } catch {
             console.error("Error silencioso en IA");
         } finally {
             setLoadingIA(false);

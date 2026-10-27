@@ -1,16 +1,20 @@
 CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
 Proyecto: PMM Interactivo
 Finalidad: qué falta para cumplir completamente con la monografía.
-Última actualización: 27 de septiembre de 2026.
+Última actualización: 27 de octubre de 2026 (cierre auditoría técnica, concepto A).
 
 Leyenda:
-[X] CUMPLE: se encontró implementado en el repositorio.
-[P] PARCIAL: existe, pero tiene una diferencia o necesita completarse.
+[X] CUMPLE: se encontró implementado en el repositorio / verificado.
+[P] PARCIAL: existe, pero tiene una diferencia documentada o mejora futura no bloqueante.
 [ ] FALTA: no se encontró implementado o versionado.
 
 IMPORTANTE:
-Este checklist corresponde a una revisión estática del código. Los puntos marcados con [X]
-se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app/
+Este checklist refleja el estado del código tras la auditoría técnica de octubre 2026.
+Despliegue oficial: https://academia-pmm-2.vercel.app/
+API oficial: https://academiapmm2-production.up.railway.app
+Entregables de auditoría: docsRevisionRepo/ (concepto A).
+La monografía final se consultó como base de trazabilidad y NO se versiona en el repo
+(datos sensibles); hash y nota en docsRevisionRepo/evidencias_revision/00_linea_base/.
 
 ============================================================
 1. ARQUITECTURA PROPUESTA EN LA MONOGRAFÍA
@@ -29,15 +33,15 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     Evidencia: pmm-ia-service/app.py.
 
 [X] Clasificador implementado con DecisionTreeClassifier de scikit-learn.
-    Evidencia: pmm-ia-service/app.py.
+    Evidencia: pmm-ia-service/app.py (validación F-CLA-400: enteros 0-13; inválidos → 400).
 
-[X] Integración con la API de Gemini 2.5 Flash-Lite.
+[X] Integración con la API de Gemini (tutor / retroalimentación).
     Evidencia: pmm-backend/src/controllers/estudianteController.js.
 
 [X] Separación entre frontend, backend, microservicio y base de datos.
     Evidencia: carpetas pmm-frontend, pmm-backend y pmm-ia-service.
 
-[X] Configuración de despliegue disponible.
+[X] Configuración de despliegue disponible (Vercel + Railway).
 
 
 ============================================================
@@ -47,7 +51,7 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] Registro de usuarios implementado.
 [X] Inicio de sesión implementado.
 [X] Verificación de correo implementada.
-[X] Recuperación y cambio de contraseña implementados.
+[X] Recuperación y cambio de contraseña implementados (validación de longitud/tipo).
 [X] Contraseñas almacenadas mediante bcrypt.
 [X] Autenticación mediante JWT.
 [X] Roles de estudiante y docente implementados.
@@ -55,17 +59,18 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] Aceptación de términos y política de privacidad almacenada con fecha y versión.
     Evidencia: authController.js, authMiddleware.js, Usuario.js y ProtectedRoute.jsx.
 
-[P] Registro con correo institucional.
-    Tenemos: validación básica de que el correo contenga "@" y asignación del rol docente
-    según dominios configurados.
-    Decisión actual: se retiró la restricción de dominio académico debido a los bloqueos
-    de envío con Microsoft. Para cerrar el punto se debe restaurar la restricción o dejar
-    documentada esta diferencia frente a la monografía.
+[X] Registro con correo (limitación documentada CA-01.1).
+    La monografía declara retirada la restricción de dominio institucional.
+    El software acepta correo con formato válido; el rol docente se asigna por
+    DOMINIOS_DOCENTES. Alineado con la limitación documentada (no es defecto abierto).
 
 [X] Protección de rutas de estudiante por rol.
-    Verificado: estudianteRoutes.js aplica globalmente verificarToken y
-    verificarRol(['estudiante']). Las rutas vigentes de ejercicios y consulta del estado
-    del progreso también comprueban token, rol y acceso al módulo.
+    Verificado: estudianteRoutes.js, ejercicios y progreso con token/rol/acceso a módulo.
+
+[X] Limitación de intentos en autenticación (H-001).
+    Verificado: express-rate-limit en login/Google/registro/forgot/reset.
+    Smoke producción 2026-10-27: fallos → 401 y luego HTTP 429 con Retry-After.
+
 
 ============================================================
 3. DIAGNÓSTICO Y CLASIFICACIÓN INICIAL
@@ -82,21 +87,17 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     Evidencia: diagnosticoController.js y pmm-ia-service/app.py.
 [X] Las 13 preguntas coinciden con el Apéndice C.
 
-
 [X] Mecanismo alternativo cuando Flask no responde.
-    Verificado: el backend y Flask aplican los mismos cortes:
-    0-6 Genin, 7-10 Chunin y 11-13 Jonin.
+    Verificado: backend y Flask aplican los mismos cortes 0-6 / 7-10 / 11-13.
 
-[P] Impedir que el estudiante repita inmediatamente el diagnóstico.
-    Cumple en el flujo normal: obtenerPreguntas y evaluarDiagnostico rechazan un segundo
-    diagnóstico. Decisión del equipo del 27 de septiembre: se conserva por el momento el
-    endpoint autenticado DELETE /api/diagnostico/reset porque se utiliza durante el
-    desarrollo. El punto permanece parcial mientras la ruta también esté disponible en
-    producción; más adelante podrá limitarse mediante NODE_ENV sin eliminar el controlador.
+[X] Impedir que el estudiante repita inmediatamente el diagnóstico.
+    obtenerPreguntas y evaluarDiagnostico rechazan un segundo diagnóstico (409).
+    La ruta de reset de desarrollo fue retirada; el controlador huérfano se eliminó
+    en la depuración de código muerto (octubre 2026).
 
 [X] Cerrar el endpoint que exponía las respuestas correctas del diagnóstico.
-    Verificado: se eliminó GET /api/estudiante/preguntas-diagnostico. La ruta oficial
-    /api/diagnostico/preguntas exige token y rol estudiante y excluye respuesta_correcta.
+    Verificado: no existe GET que entregue respuesta_correcta al cliente.
+
 
 ============================================================
 4. RUTAS, MÓDULOS Y EJERCICIOS
@@ -105,35 +106,22 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] El dashboard obtiene módulos de acuerdo con el rango del estudiante.
 [X] Existen rutas para consultar los ejercicios de cada módulo.
 [X] Existen ejercicios de selección múltiple.
-[X] El sistema identifica respuestas correctas e incorrectas.
+[X] El sistema identifica respuestas correctas e incorrectas (feedback accesible HU-05).
 [X] El progreso se guarda durante el desarrollo del módulo.
 [X] El porcentaje mayor alcanzado no es reemplazado por uno menor.
-[X] Los errores del estudiante quedan almacenados.
+[X] Los errores del estudiante quedan almacenados (también al evaluar incorrecta).
 [X] Existe una pantalla de historial de errores.
     Evidencia: estudianteController.js, ejercicioController.js, progresoController.js,
     DashboardEstudiante.jsx, ModuloEstudio.jsx e HistorialErrores.jsx.
 
 [X] Bloqueo secuencial de módulos.
-    Verificado: el frontend bloquea el módulo siguiente y el backend aplica
-    accesoModuloMiddleware en las rutas de consulta, evaluación, estado del progreso,
-    tutor y registro de fallos. El avance y la finalización se ejecutan exclusivamente
-    como parte de la evaluación protegida del ejercicio.
+    Frontend + accesoModuloMiddleware; avance/finalización solo vía evaluación protegida.
 
-[X] Ruta de aprendizaje según la clasificación.
-    Verificado: los módulos utilizan exclusivamente Genin (Iniciado),
-    Chunin (Guerrero) y Jonin (Maestro). Bajo, Intermedio y Alto se conservan
-    solamente como niveles de dificultad de biblioteca, de acuerdo con la base de datos.
+[X] Ruta de aprendizaje según la clasificación (Genin / Chunin / Jonin).
 
 [X] Evitar exponer las respuestas correctas de los ejercicios al navegador.
-    Verificado: ModuloEstudio.jsx obtiene los ejercicios desde la ruta protegida
-    /api/ejercicios/modulo/:id_modulo, que excluye respuesta_correcta, y envía la
-    opción elegida a /api/ejercicios/evaluar. El backend compara la respuesta, exige
-    el ejercicio siguiente, registra intentos y avance y finaliza el módulo dentro de
-    una transacción. La respuesta HTTP no revela la solución correcta.
+    /api/ejercicios/modulo/:id excluye respuesta_correcta; evaluación en servidor.
 
-    También se retiraron las rutas que permitían al navegador enviar porcentajes o
-    solicitar directamente la finalización. El modo repaso no vuelve a sumar progreso,
-    insignias ni ascensos. No se modificó la estructura ni la información de MySQL.
 
 ============================================================
 5. RETROALIMENTACIÓN Y TUTOR CON GEMINI
@@ -144,15 +132,12 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] El prompt indica que no debe entregar directamente la respuesta correcta.
 [X] El prompt busca identificar el error conceptual.
 [X] Existe un tutor para que el estudiante formule preguntas.
-[X] El tutor limita la extensión de la respuesta.
+[X] El tutor limita la extensión de la respuesta y valida entrada.
 [X] Existen mensajes alternativos cuando Gemini no está disponible.
 [X] No se envían intencionalmente nombre, correo o identificador del estudiante a Gemini.
     Evidencia: estudianteController.js y TutorOraculo.jsx.
 
-[X] Formato matemático de la respuesta.
-    Verificado: el tutor general y la retroalimentación automática solicitan LaTeX crudo
-    sin delimitadores. Ambos prompts usan String.raw y el frontend renderiza con KaTeX
-    en el módulo, el tutor y el historial de errores.
+[X] Formato matemático de la respuesta (LaTeX / KaTeX).
 
 
 ============================================================
@@ -171,16 +156,11 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] Cálculo de racha de actividad.
 [X] Notificaciones de ascenso.
     Evidencia: estudianteController.js, progresoController.js, PerfilEstudiante.jsx,
-    LibroDeBingo.jsx y SeccionInsignias.jsx.
+    LibroDeBingo.jsx (UI de insignias en perfil; SeccionInsignias.jsx huérfano retirado).
 
-[X] Ascenso automático de rango.
-    Verificado: la evaluación segura del último ejercicio llama al servicio transaccional
-    finalizacionModuloService.js, que asigna la insignia y evalúa el ascenso.
+[X] Ascenso automático de rango vía finalizacionModuloService.js.
 
-[X] Coherencia funcional del rango almacenado.
-    Verificado en MySQL: rango y rango_actual existen y contienen valores idénticos para
-    los 27 usuarios revisados. Decisión: no modificar ni eliminar columnas de producción;
-    su unificación queda registrada como mejora técnica futura.
+
 
 ============================================================
 7. BIBLIOTECA Y MATERIALES DE APOYO
@@ -193,6 +173,7 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     Evidencia: Biblioteca.jsx y obtenerBiblioteca en estudianteController.js.
 [X] Contenido de la biblioteca.
 
+
 ============================================================
 8. PANEL Y REPORTES DEL DOCENTE
 ============================================================
@@ -201,8 +182,8 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] Listado de estudiantes.
 [X] Visualización de nombre, correo, rango, diagnóstico y avance.
 [X] Filtro por nivel.
-[X] Búsqueda por nombre.
-[X] Reporte individual de cada estudiante.
+[X] Búsqueda por nombre y correo.
+[X] Reporte individual de cada estudiante (solo objetivos con rol estudiante).
 [X] Progreso detallado por módulo.
 [X] Identificación de los temas con más errores.
 [X] Cantidad de fallos por tema.
@@ -211,10 +192,6 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
     Evidencia: docenteController.js, DashboardDocente.jsx y
     ReporteDetalladoEstudiante.jsx.
 
-[X] Búsqueda por correo del estudiante.
-    Verificado: DashboardDocente.jsx normaliza el término ingresado y filtra por nombre
-    o correo sin afectar el filtro simultáneo por rango. El texto del buscador comunica
-    ambas opciones y el build de producción finalizó correctamente.
 
 ============================================================
 9. FORO Y NOTIFICACIONES
@@ -225,25 +202,14 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] Límite de archivo de 5 MB.
 [X] Creación de comentarios.
 [X] Edición y eliminación de comentarios propios.
-    Verificado: frontend y backend usan el campo "comentario"; el controlador valida el
-    contenido y comprueba que el comentario pertenezca al usuario antes de editar o borrar.
 [X] Eliminación de publicaciones propias.
-    Verificado: el controlador comprueba la propiedad antes de borrar y elimina comentarios
-    y publicación dentro de una transacción.
 [X] Notificación al autor cuando otra persona comenta.
 [X] Enlace desde la notificación hacia la publicación.
+[X] Edición de publicaciones.
+[X] Seguridad de notificaciones (propiedad por id_usuario).
     Evidencia: estudianteRoutes.js, estudianteController.js, subidaMiddleware.js y
     ForoComunidad.jsx.
 
-[X] Edición de publicaciones.
-    Verificado: existe PUT /foro/post/:id_post con soporte de imagen, validación de
-    título y contenido, comprobación de propiedad y conservación de la imagen anterior
-    cuando no se adjunta un reemplazo.
-
-[X] Seguridad de notificaciones.
-    Verificado: se conserva una sola ruta para marcar como leída; el controlador valida
-    el identificador y exige que id_notificacion e id_usuario coincidan tanto en la
-    consulta de propiedad como en la actualización.
 
 ============================================================
 10. BASE DE DATOS Y CONFIGURACIÓN
@@ -252,41 +218,48 @@ se pueden verificar en la pagina desplegada en https://academia-pmm-2.vercel.app
 [X] Existen modelos para usuarios, diagnósticos, preguntas, módulos, ejercicios,
     progreso, resultados, errores e insignias.
 
-[ ] Volcado SQL sanitizado para los entregables.
-    Decisión del equipo: se agregará un archivo que permita reproducir la estructura de
-    la base de datos en otro entorno. Podrá incluir datos académicos indispensables para
-    ejecutar la plataforma, pero no usuarios, contraseñas, correos, tokens, historiales
-    personales ni otra información sensible de producción.
+[X] Volcado / scripts SQL para reproducir estructura y datos académicos.
+    Evidencia: pmm-backend/backend/database/schema.sql y seed_data.sql
+    (sin PII de producción).
 
-[P] Instrucciones de instalación.
-    Tenemos: README_LOCAL.md explica dependencias, variables y ejecución de los tres
-    servicios, y deja explícito que el volcado SQL se agregará en los entregables.
-    Falta: incorporar el archivo y documentar su comando de importación.
+[X] Instrucciones de instalación / variables de entorno.
+    Evidencia: README.md, .env.example en backend/frontend/ia-service.
+
 
 ============================================================
-11. PRUEBAS DEL CÓDIGO
+11. PRUEBAS DEL CÓDIGO Y AUDITORÍA
 ============================================================
 
-[X] Existen pruebas Jest para la API.
-[X] Existen pruebas de autenticación.
-[X] Existen pruebas de módulos y progreso.
-[X] Existen pruebas del diagnóstico.
-[X] El reporte guardado registra 5 suites aprobadas.
-[X] El reporte guardado registra 22 de 22 pruebas aprobadas.
-    Evidencia: pmm-backend/test y pmm-backend/jest-report.json.
+[X] Existen pruebas Jest para la API (auth, diagnóstico, progreso, rate limit).
+[X] Ejecución actual de Jest: 5 suites / 13 pruebas aprobadas
+    (octubre 2026; se retiraron tests de controladores muertos; se añadió rate limit).
+    Evidencia: pmm-backend/test/.
 
-[X] Ejecución actual de las pruebas.
-    Verificado el 25 de septiembre de 2026 después de asegurar la evaluación de ejercicios:
-    5 suites aprobadas y 22 de 22 pruebas aprobadas.
+[X] Compilación actual del frontend (Vite build OK; ESLint 0 errores).
 
-[X] Compilación actual del frontend.
-    Verificado: las dependencias se instalaron con npm ci y el build de producción de
-    Vite finalizó correctamente el 27 de septiembre de 2026 después de reemplazar las
-    referencias inexistentes a festejando.png por logro.png en el modal de ascenso y el
-    historial de errores. NPM reportó 0 vulnerabilidades en la instalación del frontend.
+[X] Evidencia versionada de cobertura de los 15 casos / HU.
+    Evidencia: docsRevisionRepo/matrices/matriz_cobertura.md y
+    RESULTADOS_PRUEBAS_PMM.md.
 
-[ ] Evidencia versionada de las 15 pruebas de aceptación.
-    Falta: no se encontró una matriz o reporte con el resultado de cada HU y sus criterios.
+[X] Evidencia versionada de hallazgos, severidad y correcciones.
+    Evidencia: docsRevisionRepo/REVISION_TECNICA_PMM.md
+    (altos/críticos cerrados: H-001 rate limit, H-002 high deps).
 
-[ ] Evidencia versionada de la inspección heurística.
-    Falta: no se encontró un reporte con hallazgos, severidad y correcciones.
+[P] npm audit residual (no alto/crítico).
+    Backend: 3 moderate (uuid transitivo sequelize/exceljs).
+    Frontend: 2 low (katex). Documentado; no se usa --force.
+
+
+============================================================
+12. RESUMEN DE CIERRE (OCTUBRE 2026)
+============================================================
+
+[X] Código muerto / endpoints huérfanos retirados (VisualizadorModulo, foroController,
+    moduloController, reset de diagnóstico, etc.).
+[X] Rate limit auth en producción (429 verificado).
+[X] Clasificador: bordes inválidos → 400; test_clasificador.py alineado.
+[X] Accesibilidad básica: labels htmlFor, módulos tecléables, foco en AscensoModal.
+[X] Concepto técnico de auditoría: A — Conforme (docsRevisionRepo/).
+
+Pendientes no bloqueantes (observaciones):
+- Residual moderate/low de npm audit y peso del bundle JS.

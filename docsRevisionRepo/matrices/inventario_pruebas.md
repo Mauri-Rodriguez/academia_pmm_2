@@ -11,7 +11,7 @@ Identificadores alineados a la bitácora operativa (`PLAN_EJECUCION_AUDITORIA_PM
 | T-SEC-02 | Matriz permisos/IDOR | PASS |
 | T-SEC-03 | Validaciones auth/foro/archivos | PASS |
 | T-SEC-04 | Rate limit auth | PASS local + PASS prod 2026-10-27 (10×401 luego 429 + Retry-After) |
-| T-JEST-01 | 5 suites / 13 casos (post-depuración) | PASS |
+| T-JEST-01 | 5 suites / 22 casos sobre implementación vigente | PASS (dos ejecuciones consecutivas, 29-10-2026) |
 | T-HU01…15 | Casos de uso | Ver matriz_cobertura.md |
 | T-CLA-01 | Enteros 0–13 | PASS |
 | T-CLA-02 | Bordes/inválidos → 400 | PASS (post F-CLA-400) |

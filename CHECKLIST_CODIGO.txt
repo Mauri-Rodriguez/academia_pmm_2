@@ -230,9 +230,9 @@ La monografía final se consultó como base de trazabilidad y NO se versiona en 
 11. PRUEBAS DEL CÓDIGO Y AUDITORÍA
 ============================================================
 
-[X] Existen pruebas Jest para la API (auth, diagnóstico, progreso, rate limit).
-[X] Ejecución actual de Jest: 5 suites / 13 pruebas aprobadas
-    (octubre 2026; se retiraron tests de controladores muertos; se añadió rate limit).
+[X] Existen pruebas Jest para la API, autenticación, diagnóstico,
+    módulos/ejercicios y progreso.
+[X] Ejecución actual de Jest: 5 suites / 22 pruebas aprobadas
     Evidencia: pmm-backend/test/.
 
 [X] Compilación actual del frontend (Vite build OK; ESLint 0 errores).

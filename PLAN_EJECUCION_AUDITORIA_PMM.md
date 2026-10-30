@@ -192,7 +192,7 @@ Comprobar que una persona diferente al equipo puede instalar, compilar y ejecuta
 - [X] Registrar comandos, versiones, tiempos, advertencias y pasos no documentados.
 - [X] Contrastar los puertos y URLs locales documentados con el código.
 
-### Resultados iniciales
+### Resultados vigentes (actualización 2026-10-29)
 
 - Jest: 5 suites aprobadas y 22 de 22 pruebas aprobadas.
 - Frontend: build de Vite aprobado.
@@ -336,9 +336,13 @@ Confirmar la afirmación académica de 5 suites y 22 pruebas e identificar qué 
 - 22 de 22 pruebas aprobadas.
 - No se encontraron `.skip`, `.only` ni pruebas pendientes.
 - Las pruebas utilizan principalmente mocks y no integran MySQL ni servicios de IA reales.
-- Las pruebas de `moduloController` cubren un controlador que no está conectado a las rutas actuales.
-- Parte de las pruebas de `progresoController` cubre una función de escritura que ya no está expuesta.
-- La evaluación productiva vigente de `ejercicioController` no tiene pruebas dedicadas.
+- `moduloController.test.js` conserva la agrupación funcional de módulos y ejercicios,
+  pero prueba la implementación activa distribuida entre `ejercicioController`,
+  `progresoController` y `docenteController`.
+- El antiguo cálculo global denominado “Chakra” se representa mediante el
+  `avance_promedio` calculado a partir de los porcentajes reales por módulo.
+- `progresoController.test.js` cubre la consulta del avance y la escritura
+  transaccional realizada por `ejercicioController.evaluarEjercicio`.
 
 ### Matriz de las pruebas automatizadas existentes
 
@@ -347,20 +351,23 @@ Confirmar la afirmación académica de 5 suites y 22 pruebas e identificar qué 
 | `api.test.js` | 1 | Integración HTTP parcial con Supertest | Ruta pública `GET /` | Ruta activa; no involucra base de datos ni servicios externos. |
 | `authController.test.js` | 4 | Unitaria con mocks | Validaciones iniciales de `register` | Controlador activo de CU-01; no cubre persistencia, activación, login, recuperación ni correo. |
 | `diagnosticoController.test.js` | 4 | Unitaria con modelos, transacción y Flask simulados | `evaluarDiagnostico` y asignación Genin/Chunin/Jonin | Controlador activo de CU-03; no es integración real con MySQL ni Flask. |
-| `moduloController.test.js` | 6 | Unitaria con mocks | `obtenerEjerciciosModulo` y `actualizarProgreso` | Controlador no conectado a las rutas productivas actuales. |
-| `progresoController.test.js` | 7 | Unitaria con mocks | Cuatro casos de `actualizarProgreso` y tres de `obtenerEstadoModulo` | Solo `obtenerEstadoModulo` continúa expuesto; la escritura se realiza actualmente al evaluar ejercicios. |
+| `moduloController.test.js` | 6 | Unitaria con mocks | Carga y validación de ejercicios, autenticación y cálculo de `avance_promedio` | Agrupa el flujo vigente de módulos distribuido entre controladores activos. |
+| `progresoController.test.js` | 7 | Unitaria con mocks | Tres casos de `obtenerEstadoModulo` y cuatro de actualización al evaluar ejercicios | Cubre lectura y escritura transaccional del progreso productivo. |
 | **Total** | **22** | **5 suites** |  |  |
 
 ### Funciones esenciales sin cobertura automatizada directa
 
 - Login, activación, Google OAuth y recuperación/restablecimiento de contraseña.
 - Rutas, middleware JWT, separación de roles, propiedad de recursos e IDOR.
-- `ejercicioController.evaluarEjercicio`, que contiene la evaluación productiva y actualización del progreso.
 - Foro, comentarios, notificaciones, avatar, biblioteca, ranking y dashboard.
-- Reportes docentes, generación de Excel y reporte individual.
+- Reportes docentes completos, generación de Excel y reporte individual (solo el cálculo de avance promedio tiene cobertura Jest directa).
 - Tutor Gemini, carga y validación binaria de imágenes, MySQL real y Flask real.
 
-Se conservarán intactas las 5 suites y 22 pruebas declaradas en la monografía. No se sustituirán casos porque hacerlo podría cambiar el alcance académico documentado; las brechas se cubrirán mediante la matriz dinámica reproducible de la auditoría y se informarán como limitación de cobertura.
+Se conservan 5 suites y 22 pruebas. La suite de módulos mantiene su nombre como
+agrupación funcional, pero sus mocks apuntan al código productivo vigente. La
+actualización del progreso se valida dentro de la transacción de evaluación y el
+indicador global se comprueba como `avance_promedio`, sin restaurar controladores
+desconectados ni duplicar datos en `diagnostico`.
 
 ## 9. Etapa 4 — Regresión prioritaria HU-01, HU-05 y HU-06
 
@@ -741,10 +748,10 @@ Las correcciones solamente se ejecutarán después de presentar el detalle y obt
 4. [X] Corregir el fallback local del frontend de `3000` a `3001` (commit `7da0145`).
 5. [X] Evaluar y actualizar dependencias vulnerables de manera controlada. **2A/2B/2C:** BE sin high/critical (3 moderate `uuid`); FE 2 low `katex`. Residual documentado; no se usa `npm audit fix --force`.
 6. [X] Corregir los errores de ESLint. **28→0**.
-7. [X] Revisar código muerto y referencias a endpoints inexistentes. Jest productivo **13/13** (tras retirar tests de código muerto + test rate limit). Lint/build FE OK.
+7. [X] Revisar código muerto y referencias a endpoints inexistentes. Jest productivo **22/22** sobre cinco suites vigentes. Lint/build FE OK.
 8. [X] Endurecer validaciones + **rate limit auth (H-001)** verificado en prod (**429**, 2026-10-27).
 9. [X] Preparar `.env.example` (backend, frontend, Flask) y excepciones en `.gitignore`.
-10. [X] Alinear pruebas con rutas productivas: suite Jest depurada (13 casos); brechas históricas documentadas en matrices (sin inventar cobertura ficticia).
+10. [X] Alinear pruebas con rutas productivas: 5 suites / 22 casos; módulos y progreso apuntan a la implementación migrada y verifican `avance_promedio`.
 11. [X] Ignorar artefactos locales de Python en `.gitignore` (commit `46ed6b0`).
 12. [X] Documentar exclusión de la monografía `.docx` del repositorio (sensible) manteniendo hash y trazabilidad en entregables.
 
@@ -840,3 +847,4 @@ Las correcciones solamente se ejecutarán después de presentar el detalle y obt
 | 2026-10-27 | H-002 | Quité `nodemailer` (no se usaba; el correo va por Resend). Audit BE sin high/critical; 3 moderate `uuid`. | Confirmé cero usos en `src/`. |
 | 2026-10-27 | Deploy + smoke | Con los PR ya en prod: fallos de login → 401 y después **429** (Retry-After ≈ 898). Actualicé el concepto a **A** en `docsRevisionRepo`. | Smoke remoto post-deploy. |
 | 2026-10-27 | Docs cierre | Dejé los entregables alineados a A; la monografía la consulté (SHA-256) pero la excluía del repo por datos sensibles; actualicé `.gitignore` y reescribí este registro en primera persona. | Paquete listo para versionar sin el `.docx`. |
+| 2026-10-29 | Alineación de pruebas | Reorganicé la cobertura sin restaurar código muerto: `moduloController.test.js` prueba el flujo migrado y `progresoController.test.js` la actualización transaccional. Sustituí el término técnico obsoleto “Chakra” por `avance_promedio` en la evidencia. | Dos ejecuciones consecutivas: 5 suites / 22 pruebas PASS. Rate limit permanece verificado dinámicamente con 429. |

@@ -665,7 +665,7 @@ Un bloqueo relevante puede impedir emitir A o B si deja sin comprobar una funci�
 - [ ] Todas las pruebas tienen estado explícito.
 - [ ] Los 15 casos están cubiertos o justificados.
 - [ ] HU-01, HU-05 y HU-06 tienen dictamen de regresión.
-- [ ] Se verificaron 5 suites/22 pruebas o se refutó la afirmación.
+- [X] Se verificaron 5 suites/22 pruebas aprobadas (29-10-2026).
 - [ ] Se ejecutó la tabla del clasificador 0–13.
 - [ ] Se revisó el payload de Gemini y la ausencia de PII.
 - [ ] Se completaron matrices de permisos, cobertura y trazabilidad.

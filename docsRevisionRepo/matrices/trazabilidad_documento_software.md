@@ -17,6 +17,6 @@
 | Excel (HU-13) | descargar-excel | Prod xlsx | Sí |
 | Rangos e insignias (HU-14) | finalizacionModulo + perfil | Código + dash | Sí |
 | Comunidad + imagen + notificación (HU-15) | foro + Multer + notificaciones | Etapa 2 | Sí |
-| Suite Jest backend | Jest | 13/13 actuales (histórico 22 documentado) | Sí (cobertura acotada a controladores vivos) |
+| Suite Jest backend | Jest | 5 suites / 22 casos actuales; módulos verifica flujo migrado y avance promedio | Sí (cobertura sobre controladores activos) |
 | Clasificador 0–6 / 7–10 / 11–13 | Flask + fallback Node | Matriz 0–13 | Sí |
 | 21 módulos / 210 ejercicios / 17 tablas | schema + seed | Consultas Etapa 1/7 | Sí |

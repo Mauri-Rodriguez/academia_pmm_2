@@ -32,7 +32,7 @@
 | T-LB | Línea base | PASS |
 | T-REP | Reproducibilidad | PASS |
 | T-SEC | Seguridad | PASS (H-001/H-002 altos cerrados; residual moderate/low) |
-| T-JEST | Jest backend | PASS 13/13 (post-depuración) |
+| T-JEST | Jest backend | PASS 22/22 (5 suites; dos ejecuciones consecutivas el 29-10-2026) |
 | T-HU01…T-HU15 | Historias | PASS / alineado a monografía |
 | T-CLA | Clasificador | PASS dominio 0–13; inválidos → 400 |
 | T-GEM | Gemini | PASS mocks; prod orientativo OK |
@@ -97,7 +97,7 @@ Ejecutado localmente tras F-CLA-400 (opción A). Dominio válido: entero 0–13.
 
 | Prueba | Resultado |
 |---|---|
-| Jest backend | PASS 13/13 |
+| Jest backend | PASS 22/22 |
 | Vite build | PASS |
 | ESLint frontend | PASS 0 errores |
 | npm audit BE | 0 high/critical; 3 moderate (`uuid`) |

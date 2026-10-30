@@ -18,7 +18,7 @@ No se emite **C/D**: no hay incumplimiento esencial ni fallo crítico de reprodu
 ### Incluido
 
 - Línea base del repositorio, reproducibilidad local, seguridad estática/dinámica básica.
-- Pruebas Jest del backend (estado actual: 5 suites / **13** casos tras retirar tests de código muerto e incluir rate limit).
+- Pruebas Jest del backend (estado actual: 5 suites / **22** casos sobre código vigente).
 - Auditoría funcional CU/HU-01 a CU/HU-15 (contraste monografía ↔ código ↔ evidencia dinámica).
 - Clasificador Flask (matriz 0–13 y bordes F-CLA-400) y Gemini (mocks + prueba real limitada en producción).
 - BD/schema, calidad (build, ESLint **0**, audit), accesibilidad corregida en formularios/módulos/AscensoModal, latencias locales.
@@ -64,7 +64,7 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 | Etiqueta correcto/incorrecto (HU-05) | Parcial en pruebas de aceptación originales | Corregido: mensaje textual + `aria-live` | Fue corregido |
 | Referencia explícita al nivel en respuesta Gemini (HU-06) | Parcial CA-06.2 | Prompt incluye nivel; salida del modelo no garantizada | Cumple con limitación de proveedor |
 | Nombre de nivel “BÁSICO” | Aparece en evidencias antiguas | Código usa `Genin (Iniciado)` | Cosmético / nomenclatura ninja |
-| Suite Jest “22 pruebas” | Declaradas históricamente | Tras depuración: **13** casos productivos (se retiraron tests de controladores huérfanos; se añadió rate limit) | Número histórico ≠ cobertura actual; documentado |
+| Suite Jest “22 pruebas” | 5 suites / 22 pruebas | **22** casos aprobados; la suite de módulos cubre el flujo migrado y usa `avance_promedio` en lugar del indicador global “Chakra” | Alineado en cantidad, distribución y funcionalidad vigente |
 
 ## 6. Regresión HU-01, HU-05 y HU-06
 

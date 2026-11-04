@@ -1,19 +1,21 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const sharp = require('sharp');
+const logger = require('../utils/logger');
 
 /**
  * @module subidaMiddleware
- * @description Middleware de Multer para gestionar la subida de archivos de imagen.
- * Limita el tamaño a 5MB y solo permite formatos jpeg, jpg, png y webp.
+ * @description Subida de imágenes con validación de firma, recodificación Sharp
+ * y nombres generados en servidor. Límite 5 MiB y 4096×4096.
  */
 
-// Carpeta de almacenamiento de imágenes
 const uploadDir = process.env.UPLOADS_DIR || path.join(__dirname, '../../public/uploads');
 const extensionesPermitidas = new Set(['.jpeg', '.jpg', '.png', '.webp']);
 const mimePermitidos = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+const MAX_DIMENSION = 4096;
 
-// Asegurar que la carpeta exista
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -22,37 +24,34 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
     },
-
     filename: (req, file, cb) => {
-        cb(
-            null,
-            `ninja_media_${Date.now()}${path.extname(file.originalname).toLowerCase()}`
-        );
+        // Nombre temporal; se reemplaza tras recodificar con Sharp.
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `tmp_${Date.now()}_${crypto.randomBytes(6).toString('hex')}${ext}`);
     }
 });
 
 const upload = multer({
     storage,
-
     limits: {
         fileSize: 5 * 1024 * 1024
     },
-
     fileFilter: (req, file, cb) => {
+        const nombre = String(file.originalname || '');
+        if (nombre.split('.').length > 2) {
+            return cb(new Error('No se permiten nombres con doble extensión'));
+        }
+
         const mimetype = mimePermitidos.has(file.mimetype.toLowerCase());
         const extname = extensionesPermitidas.has(
-            path.extname(file.originalname).toLowerCase()
+            path.extname(nombre).toLowerCase()
         );
 
         if (mimetype && extname) {
             return cb(null, true);
         }
 
-        cb(
-            new Error(
-                'Solo se permiten imágenes (jpeg, jpg, png, webp)'
-            )
-        );
+        cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, webp)'));
     }
 });
 
@@ -86,11 +85,34 @@ const detectarTipoReal = (buffer) => {
     return null;
 };
 
+const extensionPorTipo = {
+    png: '.png',
+    jpeg: '.jpg',
+    webp: '.webp'
+};
+
+const mimePorTipo = {
+    png: 'image/png',
+    jpeg: 'image/jpeg',
+    webp: 'image/webp'
+};
+
+async function eliminarSiExiste(ruta) {
+    if (!ruta) return;
+    await fs.promises.unlink(ruta).catch(() => {});
+}
+
+/**
+ * Valida firma, decodifica con Sharp, limita dimensiones y recodifica.
+ * El nombre y la extensión finales los define el servidor.
+ */
 upload.validarFirmaImagen = async (req, res, next) => {
     if (!req.file) return next();
 
+    const rutaTemporal = req.file.path;
+
     try {
-        const archivo = await fs.promises.open(req.file.path, 'r');
+        const archivo = await fs.promises.open(rutaTemporal, 'r');
         const cabecera = Buffer.alloc(12);
         let bytesRead = 0;
 
@@ -109,19 +131,58 @@ upload.validarFirmaImagen = async (req, res, next) => {
             (tipoReal === 'jpeg' && ['.jpg', '.jpeg'].includes(extension) && ['image/jpeg', 'image/jpg'].includes(mime)) ||
             (tipoReal === 'webp' && extension === '.webp' && mime === 'image/webp');
 
-        if (!coincide) {
-            await fs.promises.unlink(req.file.path).catch(() => {});
+        if (!coincide || !tipoReal) {
+            await eliminarSiExiste(rutaTemporal);
             req.file = undefined;
             return res.status(400).json({
                 error: 'El contenido del archivo no corresponde a una imagen permitida.'
             });
         }
 
+        let pipeline = sharp(rutaTemporal, { failOn: 'error' }).rotate();
+        const metadata = await pipeline.metadata();
+
+        if (
+            !metadata.width ||
+            !metadata.height ||
+            metadata.width > MAX_DIMENSION ||
+            metadata.height > MAX_DIMENSION
+        ) {
+            await eliminarSiExiste(rutaTemporal);
+            req.file = undefined;
+            return res.status(400).json({
+                error: `La imagen supera el máximo de ${MAX_DIMENSION}×${MAX_DIMENSION} píxeles.`
+            });
+        }
+
+        const nombreFinal = `ninja_media_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${extensionPorTipo[tipoReal]}`;
+        const rutaFinal = path.join(uploadDir, nombreFinal);
+
+        pipeline = sharp(rutaTemporal, { failOn: 'error' }).rotate();
+
+        if (tipoReal === 'png') {
+            await pipeline.png({ compressionLevel: 8 }).toFile(rutaFinal);
+        } else if (tipoReal === 'webp') {
+            await pipeline.webp({ quality: 80 }).toFile(rutaFinal);
+        } else {
+            await pipeline.jpeg({ quality: 85, mozjpeg: true }).toFile(rutaFinal);
+        }
+
+        await eliminarSiExiste(rutaTemporal);
+
+        req.file.filename = nombreFinal;
+        req.file.path = rutaFinal;
+        req.file.mimetype = mimePorTipo[tipoReal];
+        req.file.originalname = nombreFinal;
+
         next();
     } catch (error) {
-        await fs.promises.unlink(req.file.path).catch(() => {});
+        await eliminarSiExiste(rutaTemporal);
+        if (req.file?.path && req.file.path !== rutaTemporal) {
+            await eliminarSiExiste(req.file.path);
+        }
         req.file = undefined;
-        console.error('Error validando la firma de imagen:', error);
+        logger.error('upload.validacion_fallo', { detalle: error.message });
         return res.status(400).json({
             error: 'No fue posible validar la imagen enviada.'
         });

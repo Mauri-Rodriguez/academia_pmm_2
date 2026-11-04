@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const docenteController = require('../controllers/docenteController');
 const { verificarToken, verificarRol } = require('../middlewares/authMiddleware');
+const { limitarReportesDocente } = require('../middlewares/rateLimitAuth');
 
 // Ruta GET para obtener el listado y progreso de estudiantes
 // Protegida: Solo los profesores pueden ver esto
@@ -9,9 +10,9 @@ router.get('/resumen-estudiantes', verificarToken, verificarRol(['docente']), do
 
 
 // Ruta GET para descargar el reporte en Excel (Protegida para docentes)
-router.get('/descargar-excel', verificarToken, verificarRol(['docente']), docenteController.descargarReporteExcel);
+router.get('/descargar-excel', verificarToken, verificarRol(['docente']), limitarReportesDocente, docenteController.descargarReporteExcel);
 
 
-router.get('/reporte-individual/:id', verificarToken, verificarRol(['docente']), docenteController.obtenerReporteIndividual);
+router.get('/reporte-individual/:id', verificarToken, verificarRol(['docente']), limitarReportesDocente, docenteController.obtenerReporteIndividual);
 
 module.exports = router;

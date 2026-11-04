@@ -42,4 +42,20 @@ La auditoría **sí tomó como base** la monografía final:
 - Matrices: cobertura, permisos, trazabilidad, inventario
 - Evidencias: índices en `evidencias_revision/` (sin secretos, tokens ni PII)
 
+Las decisiones y riesgos residuales se consolidan en los documentos anteriores,
+sin anexos independientes adicionales:
+
+- JWT en `localStorage`: se mantiene para esta entrega con vigencia de dos horas,
+  payload mínimo, cierre de sesión ante `401`, CSP y headers defensivos. La
+  migración a cookies `HttpOnly`, `Secure` y `SameSite` queda como mejora futura.
+- Dependencias npm: el backend conserva 10 vulnerabilidades moderadas en árboles
+  transitivos de `exceljs`/`archiver` y `sequelize`/`uuid`; el frontend conserva
+  2 bajas asociadas a `react-katex`/`katex`. No existen vulnerabilidades altas o
+  críticas y no se aplica `npm audit fix --force` por riesgo de incompatibilidad.
+
 No incluir contraseñas, tokens ni capturas con datos personales en esta carpeta.
+
+## CI y protección de ramas
+
+El workflow `.github/workflows/test.yml` ejecuta backend, frontend y Python y sube artefactos ligados al commit.
+Para **bloquear integración** hace falta configurar en GitHub: *Settings → Branches → Branch protection → Require status checks to pass* (jobs `backend`, `frontend`, `python-ia`). El YAML solo no activa ese bloqueo.

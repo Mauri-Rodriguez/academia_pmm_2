@@ -4,6 +4,7 @@ const { literal, Op } = require('sequelize');
 const fs = require('fs/promises');
 const path = require('path');
 const db = require('../config/database');
+const logger = require('../utils/logger');
 
 // 2. MODELOS
 const Modulo = require('../models/Modulo');
@@ -32,7 +33,7 @@ const limpiarArchivoSubido = async (file) => {
         path.dirname(rutaArchivo).toLowerCase() !==
         DIRECTORIO_UPLOADS.toLowerCase()
     ) {
-        console.error('Se rechazó la limpieza de una ruta fuera de uploads.');
+        logger.error('error', { detalle: String('Se rechazó la limpieza de una ruta fuera de uploads.') });
         return;
     }
 
@@ -40,7 +41,7 @@ const limpiarArchivoSubido = async (file) => {
         await fs.unlink(rutaArchivo);
     } catch (error) {
         if (error.code !== 'ENOENT') {
-            console.error('No fue posible limpiar el archivo subido:', error);
+            logger.error("No fue posible limpiar el archivo subido:", { detalle: error && error.message ? error.message : String(error) });
         }
     }
 };
@@ -146,10 +147,10 @@ const crearNotificacion = async (id_usuario, mensaje, ruta = null, transaction =
             configuracion
         );
 
-        console.log(`🔔 [NOTIFICACIÓN OK] Usuario ${id_usuario}: "${mensaje}"`);
+        logger.info('notificacion.ok', { id_usuario });
 
     } catch (error) {
-        console.error("❌ [ERROR NOTIFICACIÓN]:", error.message);
+        logger.error('notificacion.error', { id_usuario, detalle: error.message });
 
         // Intento de rescate: Quitamos la transacción en el respaldo por si el objeto viene dañado
         try {
@@ -157,9 +158,9 @@ const crearNotificacion = async (id_usuario, mensaje, ruta = null, transaction =
                 'INSERT INTO notificaciones (id_usuario, mensaje, leida, fecha_creacion) VALUES (?, ?, 0, NOW())',
                 { replacements: [id_usuario, mensaje] }
             );
-            console.log("⚠️ Notificación guardada sin ruta (respaldo ejecutado sin transacción)");
+            logger.warn('notificacion.respaldo', { id_usuario });
         } catch (e2) {
-            console.error("❌ Falla crítica en el sistema de notificaciones:", e2.message);
+            logger.error('notificacion.critico', { id_usuario, detalle: e2.message });
         }
     }
 };
@@ -224,9 +225,9 @@ Estructura de tu respuesta:
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
             const result = await model.generateContent(prompt);
             explicacionIA = result.response.text();
-            console.log(`⚡ [GEMINI API] Tutor consultado en tiempo real para la pregunta ${id_pregunta}.`);
+            logger.info('tutor.gemini_ok', { id_pregunta });
         } catch (err) {
-            console.error("❌ Error en Gemini:", err.message);
+            logger.error('tutor.gemini_error', { detalle: err.message });
             explicacionIA = "El Tutor está meditando en las montañas.";
         }
 
@@ -283,7 +284,7 @@ Estructura de tu respuesta:
 
         return res.status(201).json({ explicacion_ia: explicacionIA });
     } catch (e) {
-        console.error("Error crítico en registrarFallo:", e);
+        logger.error("Error crítico en registrarFallo:", { detalle: e && e.message ? e.message : String(e) });
         res.status(500).json({ error: "Error interno del Dojo" });
     }
 };
@@ -330,7 +331,7 @@ exports.obtenerErroresRecientes = async (req, res) => {
 
         res.json(erroresFormateados);
     } catch (e) {
-        console.error("Error al formatear bitácora:", e);
+        logger.error("Error al formatear bitácora:", { detalle: e && e.message ? e.message : String(e) });
         res.status(500).json({ error: 'Error bitácora' });
     }
 };
@@ -490,7 +491,7 @@ exports.obtenerDashboard = async (req, res) => {
         });
 
     } catch (e) {
-        console.error("Dashboard Error:", e);
+        logger.error("Dashboard Error:", { detalle: e && e.message ? e.message : String(e) });
         res.status(500).json({ mensaje: 'Error motor dashboard' });
     }
 };
@@ -531,7 +532,7 @@ exports.obtenerBiblioteca = async (req, res) => {
 
         res.json(pergaminos);
     } catch (e) {
-        console.error("Error en biblioteca:", e);
+        logger.error("Error en biblioteca:", { detalle: e && e.message ? e.message : String(e) });
         res.status(500).json({ mensaje: 'Error biblioteca' });
     }
 };
@@ -565,7 +566,7 @@ exports.obtenerRanking = async (req, res) => {
         res.json(ranking);
 
     } catch (e) {
-        console.error('Error al obtener ranking:', e);
+        logger.error("Error al obtener ranking:", { detalle: e && e.message ? e.message : String(e) });
         res.status(500).json({
             mensaje: 'Error ranking'
         });
@@ -602,7 +603,7 @@ exports.crearMisionForo = async (req, res) => {
         res.json({ mensaje: "Publicado" });
     } catch (error) {
         await limpiarArchivoSubido(req.file);
-        console.error("Error al crear publicación:", error);
+        logger.error("Error al crear publicación:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({ error: "Falla foro" });
     }
 };
@@ -678,7 +679,7 @@ exports.editarMision = async (req, res) => {
         res.json({ mensaje: "Publicación editada" });
     } catch (error) {
         await limpiarArchivoSubido(req.file);
-        console.error("Error al editar publicación:", error);
+        logger.error("Error al editar publicación:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({ error: "No fue posible editar la publicación" });
     }
 };
@@ -740,14 +741,14 @@ exports.comentarMision = async (req, res) => {
         } catch (notifError) {
             // Si la notificación falla el servidor solo lo anota en consola
             // pero NO le lanza error 500 al usuario. El comentario se publica igual.
-            console.error("⚠️ Error silencioso al enviar notificación:", notifError.message);
+            logger.error("⚠️ Error silencioso al enviar notificación:", { detalle: notifError.message && notifError.message.message ? notifError.message.message : String(notifError.message) });
         }
 
         // ✅ 4. Respuesta exitosa al frontend
         res.json({ mensaje: "Comentado" });
 
     } catch (error) {
-        console.error("❌ Error GRAVE al comentar en el foro:", error);
+        logger.error("❌ Error GRAVE al comentar en el foro:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({ error: "Falla en el servidor al guardar el comentario" });
     }
 };
@@ -910,7 +911,7 @@ exports.obtenerNotificaciones = async (req, res) => {
         );
         res.json(rows);
     } catch (error) {
-        console.error("Error al obtener notificaciones:", error);
+        logger.error("Error al obtener notificaciones:", { detalle: error && error.message ? error.message : String(error) });
         res.json([]); // Si hay error, envía lista vacía para no romper React
     }
 };
@@ -946,7 +947,7 @@ exports.marcarNotificacionLeida = async (req, res) => {
 
         res.json({ mensaje: "OK" });
     } catch (error) {
-        console.error("Error al marcar notificación:", error);
+        logger.error("Error al marcar notificación:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).send("Error update");
     }
 };
@@ -984,7 +985,7 @@ exports.actualizarAvatar = async (req, res) => {
         res.json({ mensaje: "Sello actualizado", url });
     } catch (error) {
         await limpiarArchivoSubido(req.file);
-        console.error("Error al actualizar avatar:", error);
+        logger.error("Error al actualizar avatar:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).send("Error avatar");
     }
 };
@@ -1113,7 +1114,7 @@ Comienza tu respuesta directamente con la orientación o la pista, sin saludos g
 
     } catch (e) {
         const mensajeError = String(e?.message || 'Error desconocido');
-        console.error("❌ Error en el Tutor IA:", mensajeError);
+        logger.error("❌ Error en el Tutor IA:", { detalle: mensajeError && mensajeError.message ? mensajeError.message : String(mensajeError) });
 
         if (mensajeError.includes('429')) {
             return res.status(429).json({

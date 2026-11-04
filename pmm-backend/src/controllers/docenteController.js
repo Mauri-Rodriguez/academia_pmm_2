@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // Archivo: src/controllers/docenteController.js
 // Propósito: Generar reportes y métricas para el Panel del Profesor.
 // ============================================================================
@@ -9,6 +9,7 @@ const ProgresoEstudiante = require('../models/ProgresoEstudiante');
 const ExcelJS = require('exceljs');
 const Modulo = require('../models/Modulo');
 const db = require('../config/database');
+const logger = require('../utils/logger');
 const { QueryTypes } = require('sequelize'); // 
 
 /**
@@ -68,7 +69,7 @@ exports.obtenerResumenEstudiantes = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error al generar el reporte del docente:', error);
+        logger.error("Error al generar el reporte del docente:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({ mensaje: 'Error interno al generar el reporte.' });
     }
 };
@@ -157,7 +158,7 @@ exports.descargarReporteExcel = async (req, res) => {
         res.status(200).end();
 
     } catch (error) {
-        console.error('Error al generar el Excel:', error);
+        logger.error("Error al generar el Excel:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({ mensaje: 'Error interno al generar el archivo Excel.' });
     }
 };
@@ -232,7 +233,7 @@ exports.obtenerReporteIndividual = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error al obtener el reporte individual:', error);
+        logger.error("Error al obtener el reporte individual:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({
             error: 'No fue posible obtener el reporte individual.'
         });

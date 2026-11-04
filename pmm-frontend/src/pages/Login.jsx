@@ -19,17 +19,24 @@ const Login = () => {
     const guardarSesion = (token, usuario, requiereDiagnostico) => {
         localStorage.clear();
 
-        localStorage.setItem('token', token);
-        localStorage.setItem('usuario', JSON.stringify(usuario));
+        // Sesión mínima: sin correo ni datos innecesarios (hallazgo 3.15).
+        const sesion = {
+            id_usuario: usuario?.id_usuario,
+            rol: usuario?.rol,
+            nombre_completo: usuario?.nombre_completo || usuario?.nombre,
+            rango: usuario?.rango
+        };
 
-        if (usuario.rol === 'docente') {
+        localStorage.setItem('token', token);
+        localStorage.setItem('usuario', JSON.stringify(sesion));
+
+        if (sesion.rol === 'docente') {
             navigate('/docente/dashboard');
             return;
         }
 
-        if (usuario && (usuario.nombre || usuario.nombre_completo)) {
-            const nombreCompleto =
-                usuario.nombre || usuario.nombre_completo;
+        if (sesion.nombre_completo) {
+            const nombreCompleto = sesion.nombre_completo;
 
             const primerNombre =
                 nombreCompleto.split(' ')[0];
@@ -41,7 +48,7 @@ const Login = () => {
         } else {
             localStorage.setItem(
                 'user_name',
-                usuario.rol === 'docente'
+                sesion.rol === 'docente'
                     ? 'Docente'
                     : 'Estudiante'
             );

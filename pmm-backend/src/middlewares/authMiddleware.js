@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 // ============================================================================
 // Archivo: src/middlewares/authMiddleware.js
 // Propósito: Verificación de JWT y Roles.
@@ -38,11 +39,8 @@ exports.verificarToken = (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error(
-            '❌ Error de verificación de token:',
-            error.name,
-            error.message
-        );
+        // Sin payload del token: solo tipo de error (no loguear el JWT).
+        logger.warn('auth.token_invalido', { tipo: error.name });
 
         return res.status(401).json({
             error: 'Token inválido',

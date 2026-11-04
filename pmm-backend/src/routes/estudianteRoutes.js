@@ -9,9 +9,11 @@ const {
 const {
   verificarAccesoModulo,
 } = require("../middlewares/accesoModuloMiddleware");
+const {
+  limitarTutorIA,
+  limitarUploads,
+} = require("../middlewares/rateLimitAuth");
 
-//  DEBUG: Verificación de carga
-console.log("--- Rutas Sincronizadas ---");
 // Todas las rutas de este archivo son exclusivas para estudiantes.
 router.use(verificarToken, verificarRol(["estudiante"]));
 const accesoPorEjercicio = verificarAccesoModulo({
@@ -35,12 +37,13 @@ router.put("/notificaciones/:id/leer", estudianteController.marcarNotificacionLe
 router.get("/foro/temas", estudianteController.obtenerTemasForo);
 router.get("/foro/comentarios/:id_post", estudianteController.obtenerComentarios,);
 // La ruta blindada definitiva:
-router.post("/tutor-ia", accesoPorEjercicio, estudianteController.consultarOraculo,);
+router.post("/tutor-ia", limitarTutorIA, accesoPorEjercicio, estudianteController.consultarOraculo,);
 
 router.post("/registrar-fallo", accesoPorEjercicio, estudianteController.registrarFallo,);
 //  GESTIÓN DE AVATAR
 router.post(
   "/perfil/avatar",
+  limitarUploads,
   (req, res, next) => {
     upload.single("avatar")(req, res, function (err) {
       if (err)
@@ -57,6 +60,7 @@ router.post(
 //  GESTIÓN DE FORO
 router.post(
   "/foro/crear",
+  limitarUploads,
   (req, res, next) => {
     upload.single("imagen")(req, res, function (err) {
       if (err)
@@ -75,6 +79,7 @@ router.put("/foro/comentario/:id_comentario", estudianteController.editarComenta
 router.delete("/foro/comentario/:id_comentario", estudianteController.eliminarComentario,);
 router.put(
   "/foro/post/:id_post",
+  limitarUploads,
   (req, res, next) => {
     upload.single("imagen")(req, res, function (err) {
       if (err)

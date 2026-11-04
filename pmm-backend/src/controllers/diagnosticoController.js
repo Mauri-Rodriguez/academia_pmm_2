@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 // ============================================================================
 // Archivo: src/controllers/diagnosticoController.js
 // Propósito: Manejar la lógica de negocio del examen diagnóstico inicial.
@@ -75,7 +76,7 @@ exports.obtenerPreguntas = async (req, res) => {
             data: preguntas
         });
     } catch (error) {
-        console.error('Error al obtener preguntas del diagnóstico:', error);
+        logger.error("Error al obtener preguntas del diagnóstico:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({ mensaje: 'Error interno del servidor al cargar el examen.' });
     }
 };
@@ -255,9 +256,9 @@ exports.evaluarDiagnostico = async (req, res) => {
             nivelAsignado = mapaNiveles[dataIA.nivel_id];
 
         } catch (errorIA) {
-            console.warn(
-                "⚠️ IA Flask no responde. Activando algoritmo de respaldo (Fallback)..."
-            );
+            logger.warn('diagnostico.ia_fallback', {
+                detalle: errorIA.message
+            });
 
             // Los límites deben coincidir con la monografía y con app.py:
             // 0-6 Genin | 7-10 Chunin | 11-13 Jonin
@@ -340,7 +341,7 @@ exports.evaluarDiagnostico = async (req, res) => {
 
     } catch (error) {
         if (t) await t.rollback();
-        console.error('Error al evaluar el diagnóstico:', error);
+        logger.error("Error al evaluar el diagnóstico:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({ mensaje: 'Error interno del servidor al procesar las respuestas.' });
     }
 };

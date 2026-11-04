@@ -1,6 +1,7 @@
-// Gestiona la entrega segura de ejercicios y su evaluación en el servidor.
+﻿// Gestiona la entrega segura de ejercicios y su evaluación en el servidor.
 
 const db = require('../config/database');
+const logger = require('../utils/logger');
 const Ejercicio = require('../models/Ejercicio');
 const ProgresoEstudiante = require('../models/ProgresoEstudiante');
 const HistorialError = require('../models/HistorialError');
@@ -33,7 +34,7 @@ exports.obtenerEjerciciosPorModulo = async (req, res) => {
             data: ejercicios
         });
     } catch (error) {
-        console.error('Error al obtener los ejercicios:', error);
+        logger.error("Error al obtener los ejercicios:", { detalle: error && error.message ? error.message : String(error) });
         return res.status(500).json({
             mensaje: 'Error interno del servidor al consultar la biblioteca.'
         });
@@ -197,7 +198,7 @@ exports.evaluarEjercicio = async (req, res) => {
             await transaction.rollback();
         }
 
-        console.error('Error al evaluar el ejercicio:', error);
+        logger.error("Error al evaluar el ejercicio:", { detalle: error && error.message ? error.message : String(error) });
         return res.status(500).json({
             mensaje: 'Error interno del servidor al procesar la respuesta.'
         });

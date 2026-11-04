@@ -7,6 +7,15 @@ from flask_cors import CORS
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 import os
+import sys
+
+# Windows (cp1252) y CI: salida ASCII-segura para evitar UnicodeEncodeError.
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 app = Flask(__name__)
 CORS(app)
@@ -18,7 +27,7 @@ y_train = np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2])
 modelo_ia = DecisionTreeClassifier()
 modelo_ia.fit(X_train, y_train)
 
-print("✅ Motor de IA Recalibrado y desplegado en Railway.")
+print("[OK] Motor de IA recalibrado (Railway/local).")
 
 
 def _respuesta_entrada_invalida(mensaje):
@@ -94,7 +103,7 @@ def recomendar_ruta():
         prediccion = int(modelo_ia.predict([[puntaje]])[0])
 
         print(
-            f"📊 Puntaje Recibido: {puntaje} | Nivel Asignado: {prediccion}"
+            f"[IA] Puntaje recibido: {puntaje} | Nivel asignado: {prediccion}"
         )
 
         return jsonify({
@@ -104,7 +113,7 @@ def recomendar_ruta():
         }), 200
 
     except Exception as e:
-        print("🚨 Error en IA:", str(e))
+        print("[ERROR] Fallo en clasificador IA:", str(e))
         return jsonify({"error": "Error interno al clasificar el puntaje."}), 500
 
 

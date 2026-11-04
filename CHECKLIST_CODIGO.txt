@@ -1,7 +1,7 @@
 CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
 Proyecto: PMM Interactivo
 Finalidad: qué falta para cumplir completamente con la monografía.
-Última actualización: 27 de octubre de 2026 (cierre auditoría técnica, concepto A).
+Última actualización: 3 de noviembre de 2026 (correcciones fases 1–2 + remediación post-revisión).
 
 Leyenda:
 [X] CUMPLE: se encontró implementado en el repositorio / verificado.
@@ -246,7 +246,7 @@ La monografía final se consultó como base de trazabilidad y NO se versiona en 
     (altos/críticos cerrados: H-001 rate limit, H-002 high deps).
 
 [P] npm audit residual (no alto/crítico).
-    Backend: 3 moderate (uuid transitivo sequelize/exceljs).
+    Backend: 10 moderate (árboles transitivos de exceljs/archiver y sequelize/uuid), justificadas.
     Frontend: 2 low (katex). Documentado; no se usa --force.
 
 

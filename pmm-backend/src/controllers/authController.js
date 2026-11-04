@@ -1,9 +1,11 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Resend } = require('resend');
 const Usuario = require('../models/Usuario');
 const { OAuth2Client } = require('google-auth-library');
 const db = require('../config/database');
+const { validarPassword } = require('../utils/passwordPolicy');
+const { enviarCorreo } = require('../services/correoService');
+const logger = require('../utils/logger');
 
 // ============================================================================
 // CONFIGURACIÓN
@@ -11,14 +13,11 @@ const db = require('../config/database');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const resend = process.env.RESEND_API_KEY
-    ? new Resend(process.env.RESEND_API_KEY)
-    : null;
-
-if (!resend) {
-    console.warn(
-        '⚠️ [CONFIG] RESEND_API_KEY no detectada. Modo simulacro activo.'
-    );
+if (!process.env.RESEND_API_KEY && process.env.NODE_ENV !== 'production') {
+    logger.warn('correo.config', {
+        resultado: 'sin_resend',
+        detalle: 'desarrollo usara buzon local'
+    });
 }
 
 // Versiones actuales de documentos legales
@@ -70,10 +69,10 @@ exports.register = async (req, res) => {
             });
         }
 
-        if (password.length < 6) {
+        const checkPassword = validarPassword(password);
+        if (!checkPassword.ok) {
             return res.status(400).json({
-                mensaje:
-                    'La contraseña debe tener mínimo 6 caracteres.'
+                mensaje: checkPassword.mensaje
             });
         }
 
@@ -163,16 +162,7 @@ exports.register = async (req, res) => {
         const urlConfirmacion =
             `${process.env.FRONTEND_URL}/verificar-correo/${tokenVerificacion}`;
 
-        // Correo
-        if (resend) {
-            try {
-                await resend.emails.send({
-                    from:
-                        'PMM Interactivo <admin@academiapmm.online>',
-                    to: correoNormalizado,
-                    subject:
-                        'Activa tu cuenta en PMM Interactivo',
-                    html: `
+        const htmlActivacion = `
                         <!DOCTYPE html>
                         <html>
                         <head>
@@ -310,20 +300,21 @@ exports.register = async (req, res) => {
 
                         </body>
                         </html>
-                    `
-                });
-            } catch (err) {
-                console.error(
-                    '📧 Fallo envío Resend:',
-                    err.message
-                );
-            }
-        }
+                    `;
 
-        if (process.env.NODE_ENV !== 'production') {
-            console.log(
-                `[DEV LOG] Link de verificación para ${correoNormalizado}: ${urlConfirmacion}`
-            );
+        try {
+            await enviarCorreo({
+                tipo: 'activacion',
+                destinatario: correoNormalizado,
+                asunto: 'Activa tu cuenta en PMM Interactivo',
+                html: htmlActivacion,
+                enlace: urlConfirmacion
+            });
+        } catch (err) {
+            logger.error('auth.registro_correo_fallo', {
+                resultado: 'error',
+                detalle: err.message
+            });
         }
 
         return res.status(201).json({
@@ -333,10 +324,9 @@ exports.register = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(
-            '🚨 Error en registro:',
-            error
-        );
+        logger.error('auth.registro_error', {
+            detalle: error.message
+        });
 
         return res.status(500).json({
             mensaje:
@@ -394,13 +384,9 @@ exports.verificarCorreo = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(
-            '--- FALLO CRÍTICO DE TOKEN ---'
-        );
-
-        console.error(
-            error.message
-        );
+        logger.error('auth.verificacion_token_fallo', {
+            detalle: error.message
+        });
 
         return res.status(401).json({
             mensaje:
@@ -464,9 +450,12 @@ exports.login = async (req, res) => {
         }
 
         if (!usuario.verificado || usuario.estado !== 'Activo') {
-            return res.status(403).json({
-                mensaje:
-                    'Cuenta no activa. Por favor, verifica tu correo.'
+            logger.info('auth.login_rechazado', {
+                motivo: 'cuenta_inactiva_o_no_verificada',
+                id_usuario: usuario.id_usuario
+            });
+            return res.status(401).json({
+                mensaje: 'Credenciales inválidas.'
             });
         }
 
@@ -489,29 +478,6 @@ exports.login = async (req, res) => {
 
         const requiereDiagnostico = !hasDiag;
 
-        console.log(
-            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-        );
-
-        console.log(
-            '🔐 LOGIN NORMAL'
-        );
-
-        console.log(
-            '👤 ID USUARIO:',
-            usuario.id_usuario
-        );
-
-        console.log(
-            '📚 TIENE DIAGNÓSTICO:',
-            !!hasDiag
-        );
-
-        console.log(
-            '🎯 REQUIERE DIAGNÓSTICO:',
-            requiereDiagnostico
-        );
-
         // ========================================================
         // JWT DE PMM
         // ========================================================
@@ -525,9 +491,15 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '8h'
+                expiresIn: '2h'
             }
         );
+
+        logger.info('auth.login_ok', {
+            id_usuario: usuario.id_usuario,
+            rol: usuario.rol,
+            requiereDiagnostico
+        });
 
         return res.status(200).json({
             mensaje:
@@ -542,9 +514,6 @@ exports.login = async (req, res) => {
                 nombre_completo:
                     usuario.nombre_completo,
 
-                correo:
-                    usuario.correo,
-
                 rol:
                     usuario.rol,
 
@@ -555,10 +524,9 @@ exports.login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(
-            'Error en Login:',
-            error
-        );
+        logger.error('auth.login_error', {
+            detalle: error.message
+        });
 
         return res.status(500).json({
             mensaje:
@@ -722,19 +690,9 @@ exports.googleLogin = async (req, res) => {
 
             esNuevo = true;
 
-            console.log(
-                '✅ NUEVO USUARIO GOOGLE CREADO'
-            );
-
-            console.log(
-                '👤 ID:',
-                usuario.id_usuario
-            );
-
-            console.log(
-                '📧 CORREO:',
-                usuario.correo
-            );
+            logger.info('auth.google_usuario_creado', {
+                id_usuario: usuario.id_usuario
+            });
         }
 
         // ========================================================
@@ -772,38 +730,12 @@ exports.googleLogin = async (req, res) => {
         const requiereDiagnostico =
             !hasDiag;
 
-        console.log(
-            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-        );
-
-        console.log(
-            '🔐 GOOGLE LOGIN'
-        );
-
-        console.log(
-            '👤 ID USUARIO:',
-            usuario.id_usuario
-        );
-
-        console.log(
-            '📧 CORREO:',
-            usuario.correo
-        );
-
-        console.log(
-            '🆕 USUARIO NUEVO:',
-            esNuevo
-        );
-
-        console.log(
-            '📚 TIENE DIAGNÓSTICO:',
-            !!hasDiag
-        );
-
-        console.log(
-            '🎯 REQUIERE DIAGNÓSTICO:',
+        logger.info('auth.google_login_ok', {
+            id_usuario: usuario.id_usuario,
+            rol: usuario.rol,
+            esNuevo,
             requiereDiagnostico
-        );
+        });
 
         // ========================================================
         // CREAR JWT DE PMM
@@ -823,7 +755,7 @@ exports.googleLogin = async (req, res) => {
                 process.env.JWT_SECRET,
                 {
                     expiresIn:
-                        '8h'
+                        '2h'
                 }
             );
 
@@ -851,9 +783,6 @@ exports.googleLogin = async (req, res) => {
                 nombre_completo:
                     usuario.nombre_completo,
 
-                correo:
-                    usuario.correo,
-
                 rol:
                     usuario.rol,
 
@@ -865,32 +794,10 @@ exports.googleLogin = async (req, res) => {
 
     } catch (error) {
 
-        console.error(
-            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-        );
-
-        console.error(
-            '❌ ERROR GOOGLE LOGIN'
-        );
-
-        console.error(
-            'TIPO:',
-            error.name
-        );
-
-        console.error(
-            'MENSAJE:',
-            error.message
-        );
-
-        console.error(
-            'STACK:',
-            error.stack
-        );
-
-        console.error(
-            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-        );
+        logger.error('auth.google_login_error', {
+            tipo: error.name,
+            detalle: error.message
+        });
 
         // Solo errores reales de validación
         // del token de Google reciben 401.
@@ -980,27 +887,7 @@ exports.forgotPassword = async (req, res) => {
         const urlRecuperacion =
             `${process.env.FRONTEND_URL}/reset-password/${tokenRecuperacion}`;
 
-        if (
-            process.env.NODE_ENV !==
-            'production'
-        ) {
-            console.log(
-                `[DEV LOG] Token de recuperación para ${correoNormalizado}: ${urlRecuperacion}`
-            );
-        }
-
-        if (resend) {
-            await resend.emails.send({
-                from:
-                    'Seguridad PMM <admin@academiapmm.online>',
-
-                to:
-                    usuario.correo,
-
-                subject:
-                    'Recuperación de acceso a PMM Interactivo',
-
-                html: `
+        const htmlRecuperacion = `
                     <div style="
                         font-family:sans-serif;
                         text-align:center;
@@ -1041,7 +928,20 @@ exports.forgotPassword = async (req, res) => {
                         </p>
 
                     </div>
-                `
+                `;
+
+        try {
+            await enviarCorreo({
+                tipo: 'recuperacion',
+                destinatario: usuario.correo,
+                asunto: 'Recuperación de acceso a PMM Interactivo',
+                html: htmlRecuperacion,
+                enlace: urlRecuperacion
+            });
+        } catch (err) {
+            logger.error('auth.recuperacion_correo_fallo', {
+                resultado: 'error',
+                detalle: err.message
             });
         }
 
@@ -1052,10 +952,9 @@ exports.forgotPassword = async (req, res) => {
 
     } catch (error) {
 
-        console.error(
-            'Error en forgotPassword:',
-            error
-        );
+        logger.error('auth.forgot_password_error', {
+            detalle: error.message
+        });
 
         return res.status(500).json({
             mensaje:
@@ -1073,13 +972,10 @@ exports.resetPassword = async (req, res) => {
         const { token } = req.params;
         const { nuevaPassword } = req.body;
 
-        if (
-            typeof nuevaPassword !== 'string' ||
-            nuevaPassword.length < 6
-        ) {
+        const checkPassword = validarPassword(nuevaPassword);
+        if (!checkPassword.ok) {
             return res.status(400).json({
-                mensaje:
-                    'La nueva contraseña debe tener mínimo 6 caracteres.'
+                mensaje: checkPassword.mensaje
             });
         }
 
@@ -1133,10 +1029,9 @@ exports.resetPassword = async (req, res) => {
 
     } catch (error) {
 
-        console.error(
-            'Error en resetPassword:',
-            error.message
-        );
+        logger.error('auth.reset_password_error', {
+            detalle: error.message
+        });
 
         if (
             error.name === 'JsonWebTokenError' ||

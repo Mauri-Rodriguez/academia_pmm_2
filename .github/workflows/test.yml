@@ -1,23 +1,38 @@
+
 name: CI de PMM Interactivo
 
 on:
   push:
-    branches: [main, master, develop]
-  pull_request:
-    branches: [main, master, develop]
+    branches:
+      - main
+      - master
+      - develop
 
-# Nota: el YAML valida backend/frontend/Python y publica artefactos.
-# El bloqueo real de merge (required checks) se configura en GitHub:
-# Settings → Branches → Branch protection rules → Require status checks.
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
+
+  # ==========================================
+  # BACKEND - Node.js + MySQL + Jest
+  # ==========================================
   backend:
+    name: backend
     runs-on: ubuntu-latest
+
     services:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: "root"
+          MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: pmm_interactivo
         ports:
           - 3306:3306
@@ -25,78 +40,92 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=3
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "20.x"
-          cache: npm
-          cache-dependency-path: pmm-backend/package-lock.json
-      - name: Instalar y probar backend
+          --health-retries=10
+
+    defaults:
+      run:
         working-directory: pmm-backend
-        run: |
-          npm ci
-          npm test -- --runInBand --json --outputFile=jest-results.json
-        env:
-          NODE_ENV: test
-          DB_HOST: 127.0.0.1
-          DB_USER: root
-          DB_PASSWORD: "root"
-          DB_NAME: pmm_interactivo
-          DB_DIALECT: mysql
-          JWT_SECRET: una_cadena_secreta_muy_segura_para_pmm_2026
-      - name: Publicar artefacto backend
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jest-${{ github.sha }}
-          path: pmm-backend/jest-results.json
-          if-no-files-found: ignore
 
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: pmm_interactivo
+      DB_DIALECT: mysql
+      JWT_SECRET: una_cadena_secreta_muy_segura_para_pmm_2026
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias del backend
+        run: npm install
+
+      - name: Ejecutar pruebas del backend
+        run: npm test
+
+
+  # ==========================================
+  # FRONTEND - React + Vite
+  # ==========================================
   frontend:
+    name: frontend
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "20.x"
-          cache: npm
-          cache-dependency-path: pmm-frontend/package-lock.json
-      - name: Lint y build frontend
-        working-directory: pmm-frontend
-        run: |
-          npm ci
-          npm run lint
-          npm run build
-      - name: Publicar artefacto frontend
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build-log-${{ github.sha }}
-          path: |
-            pmm-frontend/dist
-          if-no-files-found: ignore
-          retention-days: 7
 
-  python-ia:
-    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pmm-frontend
+
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
         with:
-          # Alineado con Railway (python@3.13.16).
-          python-version: "3.13"
-      - name: Instalar deps y clasificador
+          node-version: '20'
+
+      - name: Instalar dependencias del frontend
+        run: npm install
+
+      - name: Ejecutar ESLint
+        run: npm run lint
+
+      - name: Construir frontend
+        run: npm run build
+
+
+  # ==========================================
+  # PYTHON-IA - Flask + Scikit-learn
+  # ==========================================
+  python-ia:
+    name: python-ia
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
         working-directory: pmm-ia-service
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          python test_clasificador.py | tee clasificador-resultado.txt
-      - name: Publicar artefacto python
-        if: always()
-        uses: actions/upload-artifact@v4
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+
+      - name: Configurar Python
+        uses: actions/setup-python@v7
         with:
-          name: python-clasificador-${{ github.sha }}
-          path: pmm-ia-service/clasificador-resultado.txt
-          if-no-files-found: ignore
+          python-version: '3.11'
+
+      - name: Actualizar pip
+        run: python -m pip install --upgrade pip
+
+      - name: Instalar dependencias de IA
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar pruebas del clasificador
+        run: python test_clasificador.py

@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const { Op, QueryTypes } = require('sequelize');
 const db = require('../config/database');
 const Modulo = require('../models/Modulo');
@@ -168,10 +169,7 @@ exports.verificarAccesoModulo = ({
             req.idModuloAutorizado = idModulo;
             next();
         } catch (error) {
-            console.error(
-                'Error validando acceso secuencial:',
-                error
-            );
+            logger.error("Error validando acceso secuencial:", { detalle: error && error.message ? error.message : String(error) });
 
             res.status(500).json({
                 mensaje: 'No fue posible validar el acceso al módulo.'

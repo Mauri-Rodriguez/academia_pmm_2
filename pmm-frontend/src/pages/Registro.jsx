@@ -66,6 +66,9 @@ const Registro = () => {
         }
         if (!passwordMatch) return setMensaje({ texto: 'Las contraseñas no coinciden.', tipo: 'error' });
         if (formData.password.length < 6) return setMensaje({ texto: 'La contraseña debe tener mínimo 6 caracteres.', tipo: 'error' });
+        if (new TextEncoder().encode(formData.password).length > 72) {
+            return setMensaje({ texto: 'La contraseña no puede superar 72 bytes en UTF-8.', tipo: 'error' });
+        }
 
         const correoNormalizado =
             formData.correo.trim().toLowerCase();
@@ -146,7 +149,7 @@ const Registro = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="registro-password" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Contraseña</label>
-                            <input id="registro-password" name="password" autoComplete="new-password" required type="password" value={formData.password} onChange={handleChange}
+                            <input id="registro-password" name="password" autoComplete="new-password" required type="password" minLength={6} maxLength={72} value={formData.password} onChange={handleChange}
                                 className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 focus:border-[#0A3D62] focus:bg-white outline-none text-slate-900 transition-all" placeholder="••••••••" />
                             <div className="mt-2 h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
                                 <div className={`h-full transition-all duration-500 rounded-full ${strength.color}`} style={{ width: strength.width }}></div>
@@ -156,7 +159,7 @@ const Registro = () => {
 
                         <div>
                             <label htmlFor="registro-confirmar" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Confirmar</label>
-                            <input id="registro-confirmar" name="confirmarPassword" autoComplete="new-password" required type="password" value={formData.confirmarPassword} onChange={handleChange}
+                            <input id="registro-confirmar" name="confirmarPassword" autoComplete="new-password" required type="password" minLength={6} maxLength={72} value={formData.confirmarPassword} onChange={handleChange}
                                 className={`w-full bg-slate-50 border rounded-xl p-3.5 outline-none transition-all ${passwordMatch ? 'border-slate-300 focus:border-[#0A3D62] focus:bg-white text-slate-900' : 'border-red-500 bg-red-50 text-red-900'
                                     }`} placeholder="••••••••" />
                             {!passwordMatch && <p className="text-[10px] text-red-600 font-bold mt-1 uppercase">No coinciden</p>}

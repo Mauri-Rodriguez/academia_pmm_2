@@ -18,6 +18,9 @@ const ResetPassword = () => {
         if (password.length < 6) {
             return setMensaje({ texto: 'La nueva contraseña debe tener al menos 6 caracteres.', tipo: 'error' });
         }
+        if (new TextEncoder().encode(password).length > 72) {
+            return setMensaje({ texto: 'La contraseña no puede superar 72 bytes en UTF-8.', tipo: 'error' });
+        }
         if (password !== confirmarPassword) {
             return setMensaje({ texto: 'Las contraseñas no coinciden. Por favor, verifícalas.', tipo: 'error' });
         }
@@ -81,12 +84,14 @@ const ResetPassword = () => {
                             id="reset-password"
                             name="password"
                             autoComplete="new-password"
-                            required 
-                            type="password" 
+                            required
+                            type="password"
+                            minLength={6}
+                            maxLength={72}
                             value={password} 
                             onChange={(e) => setPassword(e.target.value)} 
                             className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 focus:border-[#0A3D62] focus:bg-white focus:ring-2 focus:ring-[#0A3D62]/10 outline-none text-slate-900 transition-all placeholder:text-slate-400" 
-                            placeholder="Mínimo 6 caracteres" 
+                            placeholder="Mín. 6 caracteres; máx. 72 bytes UTF-8"
                         />
                     </div>
 
@@ -98,8 +103,10 @@ const ResetPassword = () => {
                             id="reset-confirmar"
                             name="confirmarPassword"
                             autoComplete="new-password"
-                            required 
-                            type="password" 
+                            required
+                            type="password"
+                            minLength={6}
+                            maxLength={72}
                             value={confirmarPassword} 
                             onChange={(e) => setConfirmarPassword(e.target.value)} 
                             className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 focus:border-[#0A3D62] focus:bg-white focus:ring-2 focus:ring-[#0A3D62]/10 outline-none text-slate-900 transition-all placeholder:text-slate-400" 

@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 /**
  * ============================================================================
  * Archivo: src/controllers/progresoController.js
@@ -25,7 +26,7 @@ exports.obtenerEstadoModulo = async (req, res) => {
 
         res.json(registro || { porcentaje_avance: 0 });
     } catch (error) {
-        console.error("❌ Error en obtenerEstadoModulo:", error);
+        logger.error("❌ Error en obtenerEstadoModulo:", { detalle: error && error.message ? error.message : String(error) });
         res.status(500).json({ error: "Error al consultar estado" });
     }
 };

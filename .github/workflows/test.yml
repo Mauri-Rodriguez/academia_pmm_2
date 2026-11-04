@@ -1,56 +1,102 @@
 name: CI de PMM Interactivo
 
-# 1. Define cuándo se ejecuta el workflow
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master, develop]
+
+# Nota: el YAML valida backend/frontend/Python y publica artefactos.
+# El bloqueo real de merge (required checks) se configura en GitHub:
+# Settings → Branches → Branch protection rules → Require status checks.
 
 jobs:
-  build-and-test:
+  backend:
     runs-on: ubuntu-latest
-
-    # 2. Configura los servicios necesarios (Base de datos temporal)
     services:
       mysql:
         image: mysql:8.0
         env:
-          # VUELVE A PONER "root", SI LO DEJAS VACÍO EL CONTENEDOR HACE CRASH
           MYSQL_ROOT_PASSWORD: "root"
           MYSQL_DATABASE: pmm_interactivo
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot" 
-          --health-interval=10s 
-          --health-timeout=5s 
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
           --health-retries=3
-
     steps:
-    # 3. Descarga tu código del repositorio
-    - name: Checkout del código
-      uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20.x"
+          cache: npm
+          cache-dependency-path: pmm-backend/package-lock.json
+      - name: Instalar y probar backend
+        working-directory: pmm-backend
+        run: |
+          npm ci
+          npm test -- --runInBand --json --outputFile=jest-results.json
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASSWORD: "root"
+          DB_NAME: pmm_interactivo
+          DB_DIALECT: mysql
+          JWT_SECRET: una_cadena_secreta_muy_segura_para_pmm_2026
+      - name: Publicar artefacto backend
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jest-${{ github.sha }}
+          path: pmm-backend/jest-results.json
+          if-no-files-found: ignore
 
-    # 4. Instala Node.js
-    - name: Configurar Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.x'
-        package-manager-cache: false
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20.x"
+          cache: npm
+          cache-dependency-path: pmm-frontend/package-lock.json
+      - name: Lint y build frontend
+        working-directory: pmm-frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+      - name: Publicar artefacto frontend
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-log-${{ github.sha }}
+          path: |
+            pmm-frontend/dist
+          if-no-files-found: ignore
+          retention-days: 7
 
-    # 5. Instala las dependencias y ejecuta Jest
-    - name: Instalar dependencias y ejecutar pruebas
-      run: |
-        cd pmm-backend
-        npm install
-        npm test
-      env:
-        # Variables de entorno necesarias para que el backend no falle
-        NODE_ENV: test
-        DB_HOST: 127.0.0.1   # CAMBIADO DE LOCALHOST A LA IP TCP
-        DB_USER: root
-        DB_PASSWORD: "root"  # DEBE COINCIDIR CON MYSQL_ROOT_PASSWORD
-        DB_NAME: pmm_interactivo
-        DB_DIALECT: mysql
-        JWT_SECRET: una_cadena_secreta_muy_segura_para_pmm_2026
+  python-ia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          # Alineado con Railway (python@3.13.16).
+          python-version: "3.13"
+      - name: Instalar deps y clasificador
+        working-directory: pmm-ia-service
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python test_clasificador.py | tee clasificador-resultado.txt
+      - name: Publicar artefacto python
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-clasificador-${{ github.sha }}
+          path: pmm-ia-service/clasificador-resultado.txt
+          if-no-files-found: ignore

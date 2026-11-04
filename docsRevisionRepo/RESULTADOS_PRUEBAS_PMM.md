@@ -18,7 +18,7 @@
 
 | Área | PASS | FAIL | BLOCKED | NOT RUN / parcial |
 |---|---:|---:|---:|---:|
-| Reproducibilidad / Jest | Sí (13 actuales) | 0 | 0 | Histórico “22” documentado |
+| Reproducibilidad / Jest | Sí (22 actuales, 5 suites) | 0 | 0 | Resultado vigente verificado |
 | Seguridad dinámica básica | Sí (incl. rate limit prod) | 0 altos abiertos | — | — |
 | CU/HU 01–15 | 15 esenciales | 0 | 0 | Capturas formales de evidencia visual limitadas |
 | Clasificador 0–13 | Sí | 0 (dominio entero) | — | Bordes → 400 (F-CLA-400) |
@@ -100,7 +100,7 @@ Ejecutado localmente tras F-CLA-400 (opción A). Dominio válido: entero 0–13.
 | Jest backend | PASS 22/22 |
 | Vite build | PASS |
 | ESLint frontend | PASS 0 errores |
-| npm audit BE | 0 high/critical; 3 moderate (`uuid`) |
+| npm audit BE | 0 high/critical; 10 moderate (`exceljs`/`archiver` y `sequelize`/`uuid`), justificadas |
 | npm audit FE | 2 low (`katex`) |
 | CORS oficial | PASS 204 |
 | Rutas sin token | PASS 401 |

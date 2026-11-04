@@ -9,7 +9,7 @@ Se ejecutó una auditoría técnica y funcional alineada con `PLAN_TRABAJO_AUDIT
 Los 15 casos cumplen criterios esenciales en el alcance auditado. No quedan hallazgos **altos ni críticos pendientes**:
 
 - **H-001** cerrado en producción (2026-10-27): tras ~10 fallos de login → HTTP **429** con `Retry-After`.
-- **H-002** sin high/critical en backend tras retirar `nodemailer` (no usado; correo vía Resend). Residual: **3 moderate** (`uuid` transitivo sequelize/exceljs) y **2 low** FE (`katex`), no impeditivos bajo la regla del profesor.
+- **H-002** sin high/critical en backend tras retirar `nodemailer` (no usado; correo vía Resend). Residual vigente: **10 moderate** en árboles transitivos de `exceljs`/`archiver` y `sequelize`/`uuid`, y **2 low** FE (`katex`), documentados y no impeditivos bajo la regla del profesor.
 
 No se emite **C/D**: no hay incumplimiento esencial ni fallo crítico de reproducibilidad del despliegue oficial.
 
@@ -81,7 +81,7 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 - JWT + roles en rutas privadas; IDOR básico de foro/notificaciones verificado.
 - Validaciones endurecidas: auth, recuperación, foro, firmas de imagen, tutor, reporte docente solo sobre estudiantes.
 - **H-001 cerrado en producción:** rate limit en login/Google/registro/forgot/reset; smoke remoto **429**.
-- **H-002 residual no alto:** audit backend **0 high / 0 critical** (3 moderate `uuid`); frontend **2 low** (`katex`).
+- **H-002 residual no alto:** audit backend **0 high / 0 critical** (10 moderate justificadas); frontend **2 low** (`katex`).
 - Token en `localStorage` (riesgo condicionado a XSS; observación habitual SPA).
 - Historial Git aún puede contener objetos de PII retirados del árbol actual.
 
@@ -107,7 +107,7 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 | ID | Severidad al cierre | Título | Estado |
 |---|---|---|---|
 | H-001 | Alta → **cerrado** | Rate limit autenticación | Cerrado en prod (429 verificado) |
-| H-002 | Alta → **cerrado como alto**; residual media/baja | npm audit | Sin high/critical BE; 3 moderate + 2 low FE documentados |
+| H-002 | Alta → **cerrado como alto**; residual media/baja | npm audit | Sin high/critical BE; 10 moderate BE + 2 low FE documentadas y justificadas |
 | H-003 | Media → **cerrado** | Historial de fallos al evaluar | Unificado: `evaluarEjercicio` registra error |
 | H-004 | Baja (abierta) | Front alterno Vercel → Railway muerto | Fuera del despliegue oficial; observación |
 | H-005 | Baja → **cerrado** | Labels / teclado módulos | Corregido en frontend |

@@ -8,13 +8,20 @@ const router = express.Router();
 const diagnosticoController = require('../controllers/diagnosticoController');
 // Importamos nuestros "guardias de seguridad"
 const { verificarToken, verificarRol } = require('../middlewares/authMiddleware'); 
+const { limitarDiagnosticoIA } = require('../middlewares/rateLimitAuth');
 
 // Ruta: GET /api/diagnostico/preguntas
 // Protegida: Solo usuarios con token válido y con rol 'estudiante' pueden pedir el examen
 router.get('/preguntas', verificarToken, verificarRol(['estudiante']), diagnosticoController.obtenerPreguntas);
 
 // Ruta: POST /api/diagnostico/evaluar
-router.post('/evaluar', verificarToken, verificarRol(['estudiante']), diagnosticoController.evaluarDiagnostico);
+router.post(
+    '/evaluar',
+    verificarToken,
+    verificarRol(['estudiante']),
+    limitarDiagnosticoIA,
+    diagnosticoController.evaluarDiagnostico
+);
 
 // Ruta secreta Mauri (Solo para desarrollo) DEBE ELIMINARSE CON EL LANZAMIENTO OFICIAL // ELIMINADA - MAURY
 

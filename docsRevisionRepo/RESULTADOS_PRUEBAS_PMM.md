@@ -4,7 +4,7 @@
 
 | Ítem | Valor |
 |---|---|
-| Fecha consolidación | 2026-10-27 (actualizado post-deploy H-001/H-002) |
+| Fecha consolidación | 2026-11-15 (ampliación de seguridad autorizada por concepto docente) |
 | Frontend oficial | `https://academia-pmm-2.vercel.app` |
 | Backend oficial | `https://academiapmm2-production.up.railway.app` |
 | Local backend | `http://127.0.0.1:3001` |
@@ -18,7 +18,7 @@
 
 | Área | PASS | FAIL | BLOCKED | NOT RUN / parcial |
 |---|---:|---:|---:|---:|
-| Reproducibilidad / Jest | Sí (22 actuales, 5 suites) | 0 | 0 | Resultado vigente verificado |
+| Reproducibilidad / Jest | Sí (44 actuales, 10 suites) | 0 | 0 | 22 originales + 22 de seguridad |
 | Seguridad dinámica básica | Sí (incl. rate limit prod) | 0 altos abiertos | — | — |
 | CU/HU 01–15 | 15 esenciales | 0 | 0 | Capturas formales de evidencia visual limitadas |
 | Clasificador 0–13 | Sí | 0 (dominio entero) | — | Bordes → 400 (F-CLA-400) |
@@ -32,7 +32,9 @@
 | T-LB | Línea base | PASS |
 | T-REP | Reproducibilidad | PASS |
 | T-SEC | Seguridad | PASS (H-001/H-002 altos cerrados; residual moderate/low) |
-| T-JEST | Jest backend | PASS 22/22 (5 suites; dos ejecuciones consecutivas el 29-10-2026) |
+| T-JEST-ORIGINAL | Jest backend original | PASS 22/22 (5 suites; línea base académica) |
+| T-JEST-SEG | Regresión de seguridad posterior | PASS 22/22 (5 suites nuevas; 15-11-2026) |
+| T-JEST-TOTAL | Jest backend total | PASS 44/44 (10 suites; 15-11-2026) |
 | T-HU01…T-HU15 | Historias | PASS / alineado a monografía |
 | T-CLA | Clasificador | PASS dominio 0–13; inválidos → 400 |
 | T-GEM | Gemini | PASS mocks; prod orientativo OK |
@@ -63,7 +65,7 @@
 
 ## 5. Clasificador — tabla 0–13 y bordes
 
-Ejecutado localmente tras F-CLA-400 (opción A). Dominio válido: entero 0–13. Script `test_clasificador.py` alineado (36/36).
+Ejecutado localmente tras F-CLA-400 (opción A). Dominio válido: entero 0–13. El script conserva 36 casos funcionales y añade 5 controles de seguridad del servicio interno: **41/41**.
 
 | Puntaje | HTTP | nivel_id | Esperado | Estado |
 |---:|---:|---:|---|---|
@@ -97,11 +99,14 @@ Ejecutado localmente tras F-CLA-400 (opción A). Dominio válido: entero 0–13.
 
 | Prueba | Resultado |
 |---|---|
-| Jest backend | PASS 22/22 |
+| Jest backend original | PASS 22/22 (5 suites) |
+| Jest seguridad posterior | PASS 22/22 (5 suites) |
+| Jest total vigente | PASS 44/44 (10 suites) |
+| Python clasificador + seguridad interna | PASS 41/41 |
 | Vite build | PASS |
 | ESLint frontend | PASS 0 errores |
-| npm audit BE | 0 high/critical; 10 moderate (`exceljs`/`archiver` y `sequelize`/`uuid`), justificadas |
-| npm audit FE | 2 low (`katex`) |
+| npm audit BE (`--omit=dev`, 15-11-2026) | 0 vulnerabilidades |
+| npm audit FE (`--omit=dev`, 15-11-2026) | 0 vulnerabilidades |
 | CORS oficial | PASS 204 |
 | Rutas sin token | PASS 401 |
 | Rate limit login prod | PASS 429 |
@@ -112,6 +117,8 @@ Las evidencias operativas (comandos, matrices HTTP, dictámenes) están en:
 
 - `PLAN_EJECUCION_AUDITORIA_PMM.md` (registro de actualizaciones y etapas)
 - `docsRevisionRepo/matrices/*`
+- `docsRevisionRepo/matrices/matriz_regresion_seguridad_post_auditoria.md`
+- `docsRevisionRepo/REGISTRO_RIESGOS_RESIDUALES_2026-11-15.md`
 - `docs/pruebas/pruebas_aceptacion.md` (aceptación académica previa del equipo)
 
 No se adjuntan tokens, contraseñas ni capturas con datos personales.

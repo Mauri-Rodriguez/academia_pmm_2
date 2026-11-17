@@ -9,6 +9,7 @@ const LOGIN_MAX = Number(process.env.AUTH_RATE_LOGIN_MAX) || 10;
 const REGISTER_MAX = Number(process.env.AUTH_RATE_REGISTER_MAX) || 5;
 const RECOVERY_MAX = Number(process.env.AUTH_RATE_RECOVERY_MAX) || 5;
 const TUTOR_MAX = Number(process.env.RATE_TUTOR_MAX) || 20;
+const DIAGNOSTICO_MAX = Number(process.env.RATE_DIAGNOSTICO_MAX) || 5;
 const UPLOAD_MAX = Number(process.env.RATE_UPLOAD_MAX) || 10;
 const REPORTE_WINDOW_MS =
     Number(process.env.RATE_REPORTE_WINDOW_MS) || 10 * 60 * 1000;
@@ -94,6 +95,13 @@ const limitarTutorIA = crearLimitador({
     keyGenerator: claveIpUsuario
 });
 
+/** Evaluación diagnóstica / clasificador Flask: 5 / 15 min por usuario e IP. */
+const limitarDiagnosticoIA = crearLimitador({
+    windowMs: WINDOW_MS,
+    max: DIAGNOSTICO_MAX,
+    keyGenerator: claveIpUsuario
+});
+
 /** Uploads: 10 / 15 min por usuario e IP. */
 const limitarUploads = crearLimitador({
     windowMs: WINDOW_MS,
@@ -113,6 +121,7 @@ module.exports = {
     limitarRegistro,
     limitarRecuperacion,
     limitarTutorIA,
+    limitarDiagnosticoIA,
     limitarUploads,
     limitarReportesDocente,
     WINDOW_MS,
@@ -120,6 +129,7 @@ module.exports = {
     REGISTER_MAX,
     RECOVERY_MAX,
     TUTOR_MAX,
+    DIAGNOSTICO_MAX,
     UPLOAD_MAX,
     REPORTE_MAX
 };

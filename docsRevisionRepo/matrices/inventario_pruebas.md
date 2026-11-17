@@ -11,7 +11,14 @@ Identificadores alineados a la bitácora operativa (`PLAN_EJECUCION_AUDITORIA_PM
 | T-SEC-02 | Matriz permisos/IDOR | PASS |
 | T-SEC-03 | Validaciones auth/foro/archivos | PASS |
 | T-SEC-04 | Rate limit auth | PASS local + PASS prod 2026-10-27 (10×401 luego 429 + Retry-After) |
-| T-JEST-01 | 5 suites / 22 casos sobre implementación vigente | PASS (dos ejecuciones consecutivas, 29-10-2026) |
+| T-JEST-01 | Batería original: 5 suites / 22 casos | PASS; línea base académica preservada |
+| T-JEST-02 | Ampliación posterior: 5 suites / 22 casos de seguridad | PASS 22/22 el 15-11-2026 |
+| T-JEST-03 | Total posterior a auditoría: 10 suites / 44 casos | PASS 44/44 el 15-11-2026 |
+| T-SEC-05 | Recuperación/reset/JWT | PASS; `seguridadAuth.test.js` |
+| T-SEC-06 | Entorno y logs | PASS; `seguridadConfiguracionLogger.test.js` |
+| T-SEC-07 | CORS y rate limit | PASS; suites de seguridad HTTP |
+| T-SEC-08 | Firma y recodificación de uploads | PASS; `seguridadUploads.test.js` |
+| T-SEC-09 | Credencial interna y rate limit Flask | PASS; 5 casos nuevos, Python 41/41 |
 | T-HU01…15 | Casos de uso | Ver matriz_cobertura.md |
 | T-CLA-01 | Enteros 0–13 | PASS |
 | T-CLA-02 | Bordes/inválidos → 400 | PASS (post F-CLA-400) |

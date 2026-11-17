@@ -3,11 +3,13 @@
 # ============================================================================
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+import hmac
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 import os
 import sys
+import time
+from collections import defaultdict
 
 # Windows (cp1252) y CI: salida ASCII-segura para evitar UnicodeEncodeError.
 if hasattr(sys.stdout, "reconfigure"):
@@ -18,7 +20,6 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 app = Flask(__name__)
-CORS(app)
 
 # 1. ENTRENAMIENTO (0-6 Genin | 7-10 Chunin | 11-13 Jonin)
 X_train = np.array([[i] for i in range(14)])
@@ -29,9 +30,78 @@ modelo_ia.fit(X_train, y_train)
 
 print("[OK] Motor de IA recalibrado (Railway/local).")
 
+# Rate limit en memoria (una réplica Railway). Defensa ante abuso directo al servicio.
+RATE_IA_WINDOW_MS = int(os.environ.get("RATE_IA_WINDOW_MS", str(15 * 60 * 1000)))
+RATE_IA_MAX = int(os.environ.get("RATE_IA_MAX", "60"))
+_rate_hits = defaultdict(list)
+
 
 def _respuesta_entrada_invalida(mensaje):
     return jsonify({"mensaje": mensaje}), 400
+
+
+def _clave_cliente():
+    # remote_addr: no se usa X-Forwarded-For (el cliente podría falsificarlo).
+    return request.remote_addr or "unknown"
+
+
+def _credencial_interna_valida():
+    secreto_esperado = os.environ.get("IA_SERVICE_SECRET", "")
+    secreto_recibido = request.headers.get("X-IA-Service-Secret", "")
+    if not secreto_esperado or not secreto_recibido:
+        return False
+
+    try:
+        secreto_esperado_bytes = secreto_esperado.encode("utf-8")
+        secreto_recibido_bytes = secreto_recibido.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+
+    return hmac.compare_digest(
+        secreto_recibido_bytes,
+        secreto_esperado_bytes
+    )
+
+
+def _aplicar_rate_limit():
+    """Solo llamadas sin credencial interna válida (abuso directo al servicio)."""
+    ahora = time.time()
+    ventana_s = max(RATE_IA_WINDOW_MS, 1) / 1000.0
+    inicio = ahora - ventana_s
+    clave = _clave_cliente()
+    vigentes = [t for t in _rate_hits[clave] if t > inicio]
+    if len(vigentes) >= RATE_IA_MAX:
+        _rate_hits[clave] = vigentes
+        resp = jsonify({
+            "mensaje": (
+                "Demasiadas solicitudes al clasificador. "
+                "Espera unos minutos e inténtalo de nuevo."
+            )
+        })
+        resp.status_code = 429
+        resp.headers["Retry-After"] = str(int(ventana_s))
+        return resp
+
+    vigentes.append(ahora)
+    _rate_hits[clave] = vigentes
+    return None
+
+
+def _validar_credencial_interna():
+    """Restringe el clasificador a llamadas autenticadas desde el backend."""
+    secreto_esperado = os.environ.get("IA_SERVICE_SECRET", "")
+
+    if not secreto_esperado:
+        return jsonify({
+            "mensaje": "El servicio de IA no tiene configurada la credencial interna."
+        }), 503
+
+    if not _credencial_interna_valida():
+        return jsonify({
+            "mensaje": "Credencial interna inválida o ausente."
+        }), 401
+
+    return None
 
 
 def _parsear_puntaje_entero(datos):
@@ -94,6 +164,17 @@ def _parsear_puntaje_entero(datos):
 
 @app.route('/api/ia/recomendar-ruta', methods=['POST'])
 def recomendar_ruta():
+    # Con credencial válida el cupo lo controla el backend (por usuario).
+    # Aquí solo se frena el abuso directo, sin secreto.
+    if not _credencial_interna_valida():
+        error_limite = _aplicar_rate_limit()
+        if error_limite is not None:
+            return error_limite
+
+    error_autorizacion = _validar_credencial_interna()
+    if error_autorizacion is not None:
+        return error_autorizacion
+
     try:
         datos = request.get_json(silent=True)
         puntaje, error = _parsear_puntaje_entero(datos)

@@ -17,6 +17,7 @@ pmm-backend/public/uploads/
 # Reportes generados (evidencia vía CI artifacts, no versionar)
 **/jest-report.json
 **/jest-results.json
+**/clasificador-resultado.txt
 **/coverage/
 
 # Buzón local de desarrollo (enlaces de correo; nunca enrutable ni versionado)

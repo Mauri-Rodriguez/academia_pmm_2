@@ -4,7 +4,17 @@
 # enteros 0–13 → 200; inválidos / fuera de rango → 400.
 # ============================================================================
 
-from app import app
+import os
+
+SECRETO_PRUEBAS = "credencial-interna-pruebas-clasificador"
+os.environ["IA_SERVICE_SECRET"] = SECRETO_PRUEBAS
+# Evitar 429 durante la batería de 36 casos (límite productivo por defecto: 60/15min).
+os.environ["RATE_IA_MAX"] = "1000"
+os.environ["RATE_IA_WINDOW_MS"] = "900000"
+
+import app as app_module
+
+app = app_module.app
 
 
 # ============================================================================
@@ -30,6 +40,7 @@ print("=" * 75)
 def probar_valido(puntaje, esperado_nivel, esperado_nombre, descripcion):
     response = client.post(
         "/api/ia/recomendar-ruta",
+        headers={"X-IA-Service-Secret": SECRETO_PRUEBAS},
         json={"puntaje": puntaje}
     )
 
@@ -68,7 +79,11 @@ def probar_valido(puntaje, esperado_nivel, esperado_nombre, descripcion):
 
 def probar_rechazo(descripcion, **kwargs):
     """Espera HTTP 400 con campo mensaje (F-CLA-400)."""
-    response = client.post("/api/ia/recomendar-ruta", **kwargs)
+    response = client.post(
+        "/api/ia/recomendar-ruta",
+        headers={"X-IA-Service-Secret": SECRETO_PRUEBAS},
+        **kwargs
+    )
     datos = response.get_json()
 
     correcto = (
@@ -220,7 +235,72 @@ totales += 1
 
 
 # ============================================================================
-# 12. RESUMEN
+# 12. REGRESIÓN DE SEGURIDAD DEL SERVICIO INTERNO
+# ============================================================================
+
+print("\n--- SEGURIDAD DEL SERVICIO INTERNO ---")
+
+
+def registrar_seguridad(descripcion, correcto, response):
+    print(
+        f"{descripcion:<35} | "
+        f"HTTP: {response.status_code:<3} | "
+        f"{'APROBADO' if correcto else 'FALLIDO'}"
+    )
+    if not correcto:
+        print(f"   Respuesta: {response.get_json()}")
+    return correcto
+
+
+secreto_original = os.environ.pop("IA_SERVICE_SECRET")
+response = client.post(
+    "/api/ia/recomendar-ruta",
+    headers={"X-IA-Service-Secret": SECRETO_PRUEBAS},
+    json={"puntaje": 7}
+)
+if registrar_seguridad("Servicio sin secreto configurado", response.status_code == 503, response):
+    aprobadas += 1
+totales += 1
+os.environ["IA_SERVICE_SECRET"] = secreto_original
+
+response = client.post("/api/ia/recomendar-ruta", json={"puntaje": 7})
+if registrar_seguridad("Cabecera interna ausente", response.status_code == 401, response):
+    aprobadas += 1
+totales += 1
+
+response = client.post(
+    "/api/ia/recomendar-ruta",
+    headers={"X-IA-Service-Secret": "credencial-incorrecta"},
+    json={"puntaje": 7}
+)
+if registrar_seguridad("Credencial interna incorrecta", response.status_code == 401, response):
+    aprobadas += 1
+totales += 1
+
+response = client.post(
+    "/api/ia/recomendar-ruta",
+    headers={"X-IA-Service-Secret": "ñ" * len(SECRETO_PRUEBAS)},
+    json={"puntaje": 7}
+)
+if registrar_seguridad("Credencial Unicode inválida", response.status_code == 401, response):
+    aprobadas += 1
+totales += 1
+
+max_original = app_module.RATE_IA_MAX
+app_module.RATE_IA_MAX = 2
+app_module._rate_hits.clear()
+client.post("/api/ia/recomendar-ruta", json={"puntaje": 7})
+client.post("/api/ia/recomendar-ruta", json={"puntaje": 7})
+response = client.post("/api/ia/recomendar-ruta", json={"puntaje": 7})
+if registrar_seguridad("Límite ante abuso directo", response.status_code == 429, response):
+    aprobadas += 1
+totales += 1
+app_module.RATE_IA_MAX = max_original
+app_module._rate_hits.clear()
+
+
+# ============================================================================
+# 13. RESUMEN
 # ============================================================================
 
 print("\n" + "=" * 75)

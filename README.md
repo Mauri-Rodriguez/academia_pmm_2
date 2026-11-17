@@ -16,7 +16,7 @@ Versión desplegada: https://academia-pmm-2.vercel.app/
 
 ## Instalación local
 
-Requisitos: Node.js 20, **Python 3.13.x** (alineado con Railway `3.13.16`) y MySQL 8.
+Requisitos: Node.js 22, **Python 3.13.x** (alineado con Railway `3.13.16`) y MySQL 8.
 
 **1. Base de datos**
 
@@ -39,6 +39,7 @@ cd pmm-ia-service
 py -3.13 -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
+$env:IA_SERVICE_SECRET="<secreto-interno-compartido>"
 python test_clasificador.py
 python app.py
 ```
@@ -49,7 +50,7 @@ python app.py
 
 ```bash
 cd pmm-backend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -68,6 +69,7 @@ cp pmm-ia-service/.env.example pmm-ia-service/.env
 | `JWT_SECRET` | Firma de los tokens de sesión |
 | `GEMINI_API_KEY` | API de Gemini (modelo 2.5 Flash-Lite) para el tutor |
 | `IA_SERVICE_URL` | URL base del microservicio, por ejemplo `http://127.0.0.1:5000` (sin `/api/ia/recomendar-ruta`, porque el backend agrega esa ruta) |
+| `IA_SERVICE_SECRET` | Credencial interna compartida por backend y Flask; debe tener el mismo valor en ambos servicios y no exponerse al frontend |
 | `FRONTEND_URL` | Dominio del frontend (CORS y enlaces de correo). Producción: `https://academia-pmm-2.vercel.app` |
 | `CORS_ORIGINS` | Orígenes exactos permitidos (coma-separados). En prod no incluir localhost |
 | `DOMINIOS_DOCENTES` | Dominios de correo que reciben el rol docente |
@@ -75,19 +77,23 @@ cp pmm-ia-service/.env.example pmm-ia-service/.env
 | `GOOGLE_CLIENT_ID` | Inicio de sesión con Google |
 | `PORT`, `UPLOADS_DIR` | Puerto y carpeta de imágenes del foro |
 | `LOG_LEVEL` | `error` \| `warn` \| `info` \| `debug` (default `info`) |
-| `RATE_TUTOR_MAX`, `RATE_UPLOAD_MAX`, `RATE_REPORTE_MAX`, `RATE_REPORTE_WINDOW_MS` | Límites de rutas costosas (ver `.env.example`) |
+| `RATE_TUTOR_MAX`, `RATE_DIAGNOSTICO_MAX`, `RATE_UPLOAD_MAX`, `RATE_REPORTE_MAX`, `RATE_REPORTE_WINDOW_MS` | Límites de rutas costosas (ver `.env.example`) |
 
 Contraseñas: mínimo 6 caracteres y máximo **72 bytes UTF-8** (límite de bcrypt). JWT de sesión: **2 horas**. En desarrollo sin Resend, los enlaces van a `.local/dev-mailbox/` (no enrutable).
 
-CI: `.github/workflows/test.yml` (backend, frontend, Python) publica artefactos por commit. El **bloqueo de merge** requiere Branch protection en GitHub (required status checks).
+`IA_SERVICE_SECRET` debe ser un valor aleatorio y robusto, configurado en el entorno del backend y del microservicio Flask. No debe usar prefijo `VITE_`, registrarse en Git ni enviarse al navegador.
+
+CI: `.github/workflows/test.yml` ejecuta backend, frontend y Python (`npm ci`, Node 22, Python 3.13) y publica artefactos por commit (Jest, `dist`, clasificador). El **bloqueo de merge** requiere Branch protection en GitHub (required status checks).
 
 **4. Frontend**
 
 ```bash
 cd pmm-frontend
-npm install
+npm ci
 npm run dev
 ```
+
+Usar `npm install` únicamente cuando se agreguen o actualicen dependencias de forma intencional y se vayan a versionar los cambios correspondientes en `package.json` y `package-lock.json`.
 
 Variable en `pmm-frontend/.env` (ver `.env.example`): `VITE_API_URL=http://localhost:3001` (sin `/api`).
 
@@ -98,8 +104,10 @@ cd pmm-backend
 npm test
 ```
 
-Resultado esperado: 5 suites y 22 pruebas aprobadas. La evidencia de las pruebas de aceptación está en `docs/pruebas/pruebas_aceptacion.md`.
+Resultado esperado posterior a la auditoría: 10 suites y 44 pruebas aprobadas. Se conservan como línea base las 5 suites y 22 pruebas originales; la ampliación añade 5 suites y 22 casos de regresión de seguridad. El clasificador Python ejecuta 41 casos. La matriz está en `docsRevisionRepo/matrices/matriz_regresion_seguridad_post_auditoria.md` y la evidencia de aceptación en `docs/pruebas/pruebas_aceptacion.md`.
 
 ## Despliegue
 
 Frontend en Vercel (raíz `pmm-frontend`, preset Vite, `npm ci`, `npm run build`, salida `dist`, Node 22) con `VITE_API_URL` apuntando al backend. Backend, base de datos y microservicio de IA en Railway. Las rutas de React Router están cubiertas por `pmm-frontend/vercel.json`.
+
+La política CSP no permite scripts inline. `style-src 'unsafe-inline'` se conserva porque React y Framer Motion generan estilos dinámicos para animaciones, indicadores de progreso y otros elementos visuales; retirarlo requiere una refactorización y regresión visual específicas.

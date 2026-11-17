@@ -1,4 +1,3 @@
-
 name: CI de PMM Interactivo
 
 on:
@@ -18,6 +17,10 @@ on:
 
 permissions:
   contents: read
+
+# Nota: este YAML valida y publica artefactos.
+# El bloqueo de merge (required checks) se configura en GitHub:
+# Settings → Branches → Branch protection → Require status checks.
 
 jobs:
 
@@ -62,13 +65,24 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: pmm-backend/package-lock.json
 
       - name: Instalar dependencias del backend
-        run: npm install
+        run: npm ci
 
       - name: Ejecutar pruebas del backend
-        run: npm test
+        run: npm test -- --runInBand --json --outputFile=jest-results.json
+
+      - name: Publicar artefacto Jest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jest-${{ github.sha }}
+          path: pmm-backend/jest-results.json
+          if-no-files-found: ignore
+          retention-days: 14
 
 
   # ==========================================
@@ -89,16 +103,27 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: pmm-frontend/package-lock.json
 
       - name: Instalar dependencias del frontend
-        run: npm install
+        run: npm ci
 
       - name: Ejecutar ESLint
         run: npm run lint
 
       - name: Construir frontend
         run: npm run build
+
+      - name: Publicar artefacto build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-${{ github.sha }}
+          path: pmm-frontend/dist
+          if-no-files-found: ignore
+          retention-days: 7
 
 
   # ==========================================
@@ -128,4 +153,13 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Ejecutar pruebas del clasificador
-        run: python test_clasificador.py
+        run: python test_clasificador.py | tee clasificador-resultado.txt
+
+      - name: Publicar artefacto clasificador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-clasificador-${{ github.sha }}
+          path: pmm-ia-service/clasificador-resultado.txt
+          if-no-files-found: ignore
+          retention-days: 14

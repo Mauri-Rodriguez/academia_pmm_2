@@ -1,7 +1,7 @@
 CHECKLIST DEL ESTADO ACTUAL DEL CÓDIGO
 Proyecto: PMM Interactivo
 Finalidad: qué falta para cumplir completamente con la monografía.
-Última actualización: 3 de noviembre de 2026 (correcciones fases 1–2 + remediación post-revisión).
+Última actualización: 15 de noviembre de 2026 (concepto docente + regresión de seguridad posterior).
 
 Leyenda:
 [X] CUMPLE: se encontró implementado en el repositorio / verificado.
@@ -232,8 +232,11 @@ La monografía final se consultó como base de trazabilidad y NO se versiona en 
 
 [X] Existen pruebas Jest para la API, autenticación, diagnóstico,
     módulos/ejercicios y progreso.
-[X] Ejecución actual de Jest: 5 suites / 22 pruebas aprobadas
-    Evidencia: pmm-backend/test/.
+[X] Batería original Jest: 5 suites / 22 pruebas aprobadas.
+[X] Regresión de seguridad posterior: 5 suites / 22 pruebas aprobadas.
+[X] Ejecución actual de Jest: 10 suites / 44 pruebas aprobadas el 15-11-2026.
+    Evidencia: pmm-backend/test/ y
+    docsRevisionRepo/matrices/matriz_regresion_seguridad_post_auditoria.md.
 
 [X] Compilación actual del frontend (Vite build OK; ESLint 0 errores).
 
@@ -245,21 +248,26 @@ La monografía final se consultó como base de trazabilidad y NO se versiona en 
     Evidencia: docsRevisionRepo/REVISION_TECNICA_PMM.md
     (altos/críticos cerrados: H-001 rate limit, H-002 high deps).
 
-[P] npm audit residual (no alto/crítico).
-    Backend: 10 moderate (árboles transitivos de exceljs/archiver y sequelize/uuid), justificadas.
-    Frontend: 2 low (katex). Documentado; no se usa --force.
+[X] npm audit de producción verificado el 15-11-2026.
+    Backend: 0 vulnerabilidades con --omit=dev.
+    Frontend: 0 vulnerabilidades con --omit=dev.
+    El riesgo histórico moderado/bajo fue aceptado por concepto docente;
+    se conserva vigilancia y no se usa --force.
 
 
 ============================================================
-12. RESUMEN DE CIERRE (OCTUBRE 2026)
+12. RESUMEN DE CIERRE (ACTUALIZADO NOVIEMBRE 2026)
 ============================================================
 
 [X] Código muerto / endpoints huérfanos retirados (VisualizadorModulo, foroController,
     moduloController, reset de diagnóstico, etc.).
 [X] Rate limit auth en producción (429 verificado).
-[X] Clasificador: bordes inválidos → 400; test_clasificador.py alineado.
+[X] Clasificador: bordes inválidos → 400; 36 casos funcionales +
+    5 casos de seguridad interna, total 41/41.
 [X] Accesibilidad básica: labels htmlFor, módulos tecléables, foco en AscensoModal.
 [X] Concepto técnico de auditoría: A — Conforme (docsRevisionRepo/).
 
-Pendientes no bloqueantes (observaciones):
-- Residual moderate/low de npm audit y peso del bundle JS.
+Pendientes / riesgos aceptados:
+- JWT en localStorage aceptado para la entrega; migración HttpOnly + CSRF futura.
+- Saneamiento coordinado del historial Git autorizado, aún no ejecutado.
+- Peso del bundle JS como observación no bloqueante.

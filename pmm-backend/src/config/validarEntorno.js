@@ -13,6 +13,7 @@ function validarEntorno() {
         const obligatorias = [
             'FRONTEND_URL',
             'IA_SERVICE_URL',
+            'IA_SERVICE_SECRET',
             'GEMINI_API_KEY',
             'RESEND_API_KEY',
             'GOOGLE_CLIENT_ID',

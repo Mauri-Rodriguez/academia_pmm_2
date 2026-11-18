@@ -1,5 +1,19 @@
 # Revisión técnica — PMM Interactivo
 
+## Seguimiento posterior al concepto docente — 15 de noviembre de 2026
+
+El dictamen original se conserva como evidencia histórica. Después del concepto docente del 14 de noviembre se incorporó una batería versionada de regresión de seguridad:
+
+- batería Jest original: 5 suites / 22 pruebas;
+- ampliación de seguridad: 5 suites / 22 pruebas;
+- total vigente: 10 suites / 44 pruebas aprobadas;
+- Python: 36 casos funcionales + 5 de seguridad = 41/41;
+- `npm audit --omit=dev`: cero vulnerabilidades reportadas en backend y frontend el 15-11-2026, sin modificar lockfiles.
+
+La ampliación cubre recuperación y reset, payload/expiración JWT, variables productivas, sanitización de logs, CORS, rate limit, firma/recodificación de uploads y credencial interna Flask. La matriz detallada está en `matrices/matriz_regresion_seguridad_post_auditoria.md`.
+
+El JWT en `localStorage` permanece como riesgo aceptado para el cierre académico y el saneamiento del historial Git continúa pendiente de la ventana coordinada y del respaldo exigidos por el concepto docente.
+
 ## 1. Resumen ejecutivo
 
 Se ejecutó una auditoría técnica y funcional alineada con `PLAN_TRABAJO_AUDITORIA_TECNICA_PMM.md` y la monografía final (entrega 13–14 octubre 2026). El producto reproduce la arquitectura declarada (Vercel + Railway + MySQL + Flask + Gemini), cumple los criterios esenciales de los 15 casos de uso en el alcance verificado, y las regresiones prioritarias HU-01 / HU-05 / HU-06 quedaron cerradas o alineadas con limitaciones documentadas.
@@ -9,7 +23,7 @@ Se ejecutó una auditoría técnica y funcional alineada con `PLAN_TRABAJO_AUDIT
 Los 15 casos cumplen criterios esenciales en el alcance auditado. No quedan hallazgos **altos ni críticos pendientes**:
 
 - **H-001** cerrado en producción (2026-10-27): tras ~10 fallos de login → HTTP **429** con `Retry-After`.
-- **H-002** sin high/critical en backend tras retirar `nodemailer` (no usado; correo vía Resend). Residual vigente: **10 moderate** en árboles transitivos de `exceljs`/`archiver` y `sequelize`/`uuid`, y **2 low** FE (`katex`), documentados y no impeditivos bajo la regla del profesor.
+- **H-002** sin high/critical en el cierre original tras retirar `nodemailer` (no usado; correo vía Resend). En esa revisión quedaron **10 moderate** en backend y **2 low** en frontend. La revisión posterior del 15-11-2026 reportó cero advisories de producción.
 
 No se emite **C/D**: no hay incumplimiento esencial ni fallo crítico de reproducibilidad del despliegue oficial.
 
@@ -18,7 +32,7 @@ No se emite **C/D**: no hay incumplimiento esencial ni fallo crítico de reprodu
 ### Incluido
 
 - Línea base del repositorio, reproducibilidad local, seguridad estática/dinámica básica.
-- Pruebas Jest del backend (estado actual: 5 suites / **22** casos sobre código vigente).
+- Pruebas Jest del backend al cierre original: 5 suites / **22** casos. Seguimiento posterior: 10 suites / 44 casos.
 - Auditoría funcional CU/HU-01 a CU/HU-15 (contraste monografía ↔ código ↔ evidencia dinámica).
 - Clasificador Flask (matriz 0–13 y bordes F-CLA-400) y Gemini (mocks + prueba real limitada en producción).
 - BD/schema, calidad (build, ESLint **0**, audit), accesibilidad corregida en formularios/módulos/AscensoModal, latencias locales.
@@ -64,7 +78,7 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 | Etiqueta correcto/incorrecto (HU-05) | Parcial en pruebas de aceptación originales | Corregido: mensaje textual + `aria-live` | Fue corregido |
 | Referencia explícita al nivel en respuesta Gemini (HU-06) | Parcial CA-06.2 | Prompt incluye nivel; salida del modelo no garantizada | Cumple con limitación de proveedor |
 | Nombre de nivel “BÁSICO” | Aparece en evidencias antiguas | Código usa `Genin (Iniciado)` | Cosmético / nomenclatura ninja |
-| Suite Jest “22 pruebas” | 5 suites / 22 pruebas | **22** casos aprobados; la suite de módulos cubre el flujo migrado y usa `avance_promedio` en lugar del indicador global “Chakra” | Alineado en cantidad, distribución y funcionalidad vigente |
+| Suite Jest original “22 pruebas” | 5 suites / 22 pruebas | **22** casos originales aprobados; después se añadieron 5 suites/22 casos de seguridad, total 10/44 | Alineado tras actualización documental posterior |
 
 ## 6. Regresión HU-01, HU-05 y HU-06
 
@@ -81,7 +95,7 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 - JWT + roles en rutas privadas; IDOR básico de foro/notificaciones verificado.
 - Validaciones endurecidas: auth, recuperación, foro, firmas de imagen, tutor, reporte docente solo sobre estudiantes.
 - **H-001 cerrado en producción:** rate limit en login/Google/registro/forgot/reset; smoke remoto **429**.
-- **H-002 residual no alto:** audit backend **0 high / 0 critical** (10 moderate justificadas); frontend **2 low** (`katex`).
+- **H-002:** en el cierre original se documentaron 10 moderate backend y 2 low frontend. `npm audit --omit=dev` reportó cero vulnerabilidades en ambos proyectos el 15-11-2026.
 - Token en `localStorage` (riesgo condicionado a XSS; observación habitual SPA).
 - Historial Git aún puede contener objetos de PII retirados del árbol actual.
 
@@ -107,7 +121,7 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 | ID | Severidad al cierre | Título | Estado |
 |---|---|---|---|
 | H-001 | Alta → **cerrado** | Rate limit autenticación | Cerrado en prod (429 verificado) |
-| H-002 | Alta → **cerrado como alto**; residual media/baja | npm audit | Sin high/critical BE; 10 moderate BE + 2 low FE documentadas y justificadas |
+| H-002 | Alta → **cerrado como alto**; residual histórico aceptado | npm audit | Revisión original: 10 moderate BE + 2 low FE; revisión 15-11-2026: cero vulnerabilidades de producción |
 | H-003 | Media → **cerrado** | Historial de fallos al evaluar | Unificado: `evaluarEjercicio` registra error |
 | H-004 | Baja (abierta) | Front alterno Vercel → Railway muerto | Fuera del despliegue oficial; observación |
 | H-005 | Baja → **cerrado** | Labels / teclado módulos | Corregido en frontend |

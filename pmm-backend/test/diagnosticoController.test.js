@@ -1,6 +1,8 @@
 const PreguntaDiagnostico = require('../src/models/PreguntaDiagnostico');
 const Diagnostico = require('../src/models/Diagnostico');
 
+process.env.IA_SERVICE_SECRET = 'credencial-interna-pruebas-clasificador';
+
 jest.mock('../src/models/PreguntaDiagnostico', () => ({
   findAll: jest.fn(),
 }));

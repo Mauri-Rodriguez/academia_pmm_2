@@ -18,6 +18,6 @@ Leyenda: `OK` = comportamiento esperado verificado; `—` = no aplicable.
 
 Notas:
 
-- Rol se asigna en servidor (ignora `rol` enviado en registro).
+- El servidor asigna el rol según el dominio del correo. Una solicitud explícita de rol docente con dominio sin autorización se rechaza con `403` antes de consultar o crear la cuenta. El registro normal con correo personal sigue asignando el rol estudiante.
 - Propiedad de foro/comentarios/notificaciones verificada dinámicamente en local (Etapa 2).
 - Alcance de objeto en reporte docente corregido y verificado en local y prod.

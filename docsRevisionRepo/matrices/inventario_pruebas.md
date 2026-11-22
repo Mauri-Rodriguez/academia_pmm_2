@@ -14,6 +14,7 @@ Identificadores alineados a la bitácora operativa (`PLAN_EJECUCION_AUDITORIA_PM
 | T-JEST-01 | Batería original: 5 suites / 22 casos | PASS; línea base académica preservada |
 | T-JEST-02 | Ampliación posterior: 5 suites / 22 casos de seguridad | PASS 22/22 el 15-11-2026 |
 | T-JEST-03 | Total posterior a auditoría: 10 suites / 44 casos | PASS 44/44 el 15-11-2026 |
+| T-JEST-04 | Revisión de registro: dominios institucionales y personal, rol docente rechazado en registro manual y Google y consulta de dominio inválido | 6 casos añadidos a `authController.test.js`. PASS 50/50 en 10 suites el 21-11-2026 |
 | T-SEC-05 | Recuperación/reset/JWT | PASS; `seguridadAuth.test.js` |
 | T-SEC-06 | Entorno y logs | PASS; `seguridadConfiguracionLogger.test.js` |
 | T-SEC-07 | CORS y rate limit | PASS; suites de seguridad HTTP |

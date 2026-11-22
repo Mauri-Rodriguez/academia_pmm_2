@@ -6,13 +6,14 @@ El dictamen original se conserva como evidencia histórica. Después del concept
 
 - batería Jest original: 5 suites / 22 pruebas;
 - ampliación de seguridad: 5 suites / 22 pruebas;
-- total vigente: 10 suites / 44 pruebas aprobadas;
+- total de la primera ampliación: 10 suites / 44 pruebas aprobadas;
+- revisión de dominios del 21-11-2026: 6 casos adicionales, total local de 10 suites / 50 pruebas aprobadas;
 - Python: 36 casos funcionales + 5 de seguridad = 41/41;
-- `npm audit --omit=dev`: cero vulnerabilidades reportadas en backend y frontend el 15-11-2026, sin modificar lockfiles.
+- Auditoría de producción repetida el 21-11-2026: 3 moderadas en backend, 2 bajas en frontend, 0 altas y 0 críticas. Los lockfiles conservaron sus hashes.
 
-La ampliación cubre recuperación y reset, payload/expiración JWT, variables productivas, sanitización de logs, CORS, rate limit, firma/recodificación de uploads y credencial interna Flask. La matriz detallada está en `matrices/matriz_regresion_seguridad_post_auditoria.md`.
+La ampliación cubre recuperación y reset, payload/expiración JWT, variables productivas, sanitización de logs, CORS, rate limit, firma/recodificación de uploads y credencial interna Flask. Los resultados por categoría y sus suites se registran en el [inventario de pruebas](matrices/inventario_pruebas.md).
 
-El JWT en `localStorage` permanece como riesgo aceptado para el cierre académico y el saneamiento del historial Git continúa pendiente de la ventana coordinada y del respaldo exigidos por el concepto docente.
+El JWT en `localStorage` permanece como riesgo aceptado para el cierre académico. Las cinco ramas públicas de Git se reescribieron el 21-11-2026 a partir del espejo verificado. Queda gestionar la limpieza de las referencias internas de GitHub y completar el reclonado del equipo. [Acta de saneamiento](evidencias_revision/08_cierre/README.md#saneamiento-de-historial-git-rc-01)
 
 ## 1. Resumen ejecutivo
 
@@ -20,10 +21,10 @@ Se ejecutó una auditoría técnica y funcional alineada con `PLAN_TRABAJO_AUDIT
 
 **Concepto técnico final: A — Conforme.**
 
-Los 15 casos cumplen criterios esenciales en el alcance auditado. No quedan hallazgos **altos ni críticos pendientes**:
+Los 15 casos cumplen criterios esenciales en el alcance auditado originalmente. Los hallazgos altos H-001 y H-002 quedaron tratados en ese cierre. El seguimiento del 14 de noviembre mantiene abierto RC-01, sobre datos personales en el historial Git.
 
 - **H-001** cerrado en producción (2026-10-27): tras ~10 fallos de login → HTTP **429** con `Retry-After`.
-- **H-002** sin high/critical en el cierre original tras retirar `nodemailer` (no usado; correo vía Resend). En esa revisión quedaron **10 moderate** en backend y **2 low** en frontend. La revisión posterior del 15-11-2026 reportó cero advisories de producción.
+- **H-002** sin high/critical en el cierre original tras retirar `nodemailer` (no usado; correo vía Resend). En esa revisión quedaron **10 moderate** en backend y **2 low** en frontend. La repetición del 21-11-2026 confirmó cero avisos altos o críticos en producción y registró los avisos residuales.
 
 No se emite **C/D**: no hay incumplimiento esencial ni fallo crítico de reproducibilidad del despliegue oficial.
 
@@ -40,7 +41,7 @@ No se emite **C/D**: no hay incumplimiento esencial ni fallo crítico de reprodu
 
 ### Limitaciones
 
-- No se reescribió el historial Git (objetos de PII antiguos pueden existir en commits previos).
+- GitHub conservaba 57 referencias internas de pull requests al historial original tras la reescritura de las ramas públicas. La limpieza de esas referencias y vistas en caché requiere seguimiento con GitHub.
 - Prueba semántica agresiva de prompt injection contra Gemini real: omitida / parcial.
 - Matriz completa de teclado en navegador real: inspección de código + correcciones; sin capturas formales de todos los viewports en vivo.
 - Front alterno `academia-pmm.vercel.app` sigue apuntando a un Railway inexistente (fuera del despliegue oficial).
@@ -95,14 +96,14 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 - JWT + roles en rutas privadas; IDOR básico de foro/notificaciones verificado.
 - Validaciones endurecidas: auth, recuperación, foro, firmas de imagen, tutor, reporte docente solo sobre estudiantes.
 - **H-001 cerrado en producción:** rate limit en login/Google/registro/forgot/reset; smoke remoto **429**.
-- **H-002:** en el cierre original se documentaron 10 moderate backend y 2 low frontend. `npm audit --omit=dev` reportó cero vulnerabilidades en ambos proyectos el 15-11-2026.
+- **H-002:** en el cierre original se documentaron 10 moderate backend y 2 low frontend. `npm audit --omit=dev` confirmó el 21-11-2026 tres moderadas en backend y dos bajas en frontend, con cero altas o críticas.
 - Token en `localStorage` (riesgo condicionado a XSS; observación habitual SPA).
-- Historial Git aún puede contener objetos de PII retirados del árbol actual.
+- Los dos objetos con datos personales quedaron fuera de las ramas públicas reescritas. Las referencias internas de pull requests siguen en seguimiento.
 
 ### Base de datos
 
 - 17 tablas, 21 módulos, 210 ejercicios, 13 preguntas, 24 insignias, 16 recursos confirmados.
-- Modelo Sequelize sin campo `rango` (columna sí existe en schema; actualizaciones vía SQL) — observación de alineación, no defecto funcional.
+- El modelo Sequelize de `Usuario` declara `rango` con el tipo, la nulabilidad y el valor por defecto del esquema existente.
 - Foro/biblioteca/notificaciones sin modelo ORM (SQL parametrizado).
 
 ### IA
@@ -114,21 +115,21 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 
 - Build producción OK; bundle JS grande (~4,7–4,8 MB) — observación de peso, no bloquea CU.
 - ESLint frontend: **0** errores (tras limpieza y config anti-falso-positivo JSX/`motion`).
-- Accesibilidad: `htmlFor`/`id` en login/registro/recuperación; módulos con teclado; AscensoModal enfoca al abrir.
+- Accesibilidad: `htmlFor`/`id` en login, registro y recuperación. Los módulos admiten teclado. El modal de ascenso enfoca su botón al abrir, mantiene el foco con `Tab` y `Mayús+Tab` y devuelve el foco al cerrar cuando el control anterior sigue disponible.
 
 ## 8. Hallazgos — estado al cierre
 
 | ID | Severidad al cierre | Título | Estado |
 |---|---|---|---|
 | H-001 | Alta → **cerrado** | Rate limit autenticación | Cerrado en prod (429 verificado) |
-| H-002 | Alta → **cerrado como alto**; residual histórico aceptado | npm audit | Revisión original: 10 moderate BE + 2 low FE; revisión 15-11-2026: cero vulnerabilidades de producción |
+| H-002 | Alta → **cerrado como alto**; residual histórico aceptado | npm audit | Revisión original: 10 moderate BE + 2 low FE; revisión 21-11-2026: 3 moderadas BE, 2 bajas FE, 0 altas o críticas |
 | H-003 | Media → **cerrado** | Historial de fallos al evaluar | Unificado: `evaluarEjercicio` registra error |
 | H-004 | Baja (abierta) | Front alterno Vercel → Railway muerto | Fuera del despliegue oficial; observación |
 | H-005 | Baja → **cerrado** | Labels / teclado módulos | Corregido en frontend |
 | H-006 | Baja → **cerrado** (ESLint); obs. bundle | ESLint / peso JS | ESLint 0; bundle sigue pesado (obs.) |
 | H-007 | Observación | IDs hardcodeados en herencia diagnóstico | Deuda menor; no alta |
 
-**Hallazgos altos/críticos pendientes: ninguno.**
+**Seguimiento abierto: RC-01, datos personales en el historial Git.** El concepto A de la sección siguiente corresponde al cierre original de la bitácora.
 
 ## 9. Concepto técnico final
 
@@ -139,4 +140,4 @@ Coincide con lo declarado en la monografía. El fallback del clasificador en Nod
 1. Los 15 casos de uso cumplen criterios esenciales en el alcance verificado (local y/o producción oficial).
 2. HU-01/05/06 tienen dictamen de regresión explícito.
 3. Reproducibilidad y despliegue oficial operativos; H-001 con **429** en Railway; H-002 sin high/critical.
-4. Residuales (uuid moderate, katex low, Vercel legacy, columna `rango` SQL-only, bundle grande) **no** son altos/críticos.
+4. Los avisos residuales de uuid y KaTeX, el Vercel alterno y el peso del bundle quedaron como observaciones del cierre original.

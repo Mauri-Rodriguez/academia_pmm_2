@@ -34,7 +34,8 @@
 | T-SEC | Seguridad | PASS (H-001/H-002 altos cerrados; residual moderate/low) |
 | T-JEST-ORIGINAL | Jest backend original | PASS 22/22 (5 suites; línea base académica) |
 | T-JEST-SEG | Regresión de seguridad posterior | PASS 22/22 (5 suites nuevas; 15-11-2026) |
-| T-JEST-TOTAL | Jest backend total | PASS 44/44 (10 suites; 15-11-2026) |
+| T-JEST-TOTAL | Jest al cierre de la primera ampliación | PASS 44/44 (10 suites; 15-11-2026) |
+| T-JEST-04 | Regresión de dominios de registro | PASS 6/6 adicionales y 50/50 totales (10 suites; 21-11-2026) |
 | T-HU01…T-HU15 | Historias | PASS / alineado a monografía |
 | T-CLA | Clasificador | PASS dominio 0–13; inválidos → 400 |
 | T-GEM | Gemini | PASS mocks; prod orientativo OK |
@@ -101,15 +102,19 @@ Ejecutado localmente tras F-CLA-400 (opción A). Dominio válido: entero 0–13.
 |---|---|
 | Jest backend original | PASS 22/22 (5 suites) |
 | Jest seguridad posterior | PASS 22/22 (5 suites) |
-| Jest total vigente | PASS 44/44 (10 suites) |
+| Jest al cierre de la primera ampliación | PASS 44/44 (10 suites) |
+| Jest tras verificar dominios de registro | PASS 50/50 (10 suites, 21-11-2026) |
+| Formulario compilado en Edge/Playwright | PASS 4/4 el 21-11-2026. Dos dominios docentes, correo personal y cambio de autorización entre consulta y envío con `403` sin crear cuenta. Persistencia y correo simulados. |
 | Python clasificador + seguridad interna | PASS 41/41 |
 | Vite build | PASS |
 | ESLint frontend | PASS 0 errores |
-| npm audit BE (`--omit=dev`, 15-11-2026) | 0 vulnerabilidades |
-| npm audit FE (`--omit=dev`, 15-11-2026) | 0 vulnerabilidades |
+| npm audit BE (`--omit=dev`, 21-11-2026) | 3 moderadas, 0 altas y 0 críticas |
+| npm audit FE (`--omit=dev`, 21-11-2026) | 2 bajas, 0 altas y 0 críticas |
 | CORS oficial | PASS 204 |
 | Rutas sin token | PASS 401 |
 | Rate limit login prod | PASS 429 |
+
+El conteo anterior de cero avisos totales no se reprodujo en la consulta al registro público del 21-11-2026. Backend: [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq) en `uuid`, con `exceljs` y `sequelize` marcados por arrastre. Frontend: [GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7) en el `katex` de `react-katex`.
 
 ## 8. Evidencias
 
@@ -117,8 +122,8 @@ Las evidencias operativas (comandos, matrices HTTP, dictámenes) están en:
 
 - `PLAN_EJECUCION_AUDITORIA_PMM.md` (registro de actualizaciones y etapas)
 - `docsRevisionRepo/matrices/*`
-- `docsRevisionRepo/matrices/matriz_regresion_seguridad_post_auditoria.md`
-- `docsRevisionRepo/REGISTRO_RIESGOS_RESIDUALES_2026-11-15.md`
+- [Inventario de pruebas y suites de regresión](matrices/inventario_pruebas.md)
+- Resultados y avisos residuales de dependencias en la sección 7 de este informe.
 - `docs/pruebas/pruebas_aceptacion.md` (aceptación académica previa del equipo)
 
 No se adjuntan tokens, contraseñas ni capturas con datos personales.

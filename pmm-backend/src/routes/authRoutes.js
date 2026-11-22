@@ -9,6 +9,7 @@ const {
 } = require('../middlewares/rateLimitAuth');
 
 // Definición de las rutas REST (rate limit H-001 en autenticación/recuperación)
+router.get('/rol-registro', authController.consultarRolRegistro);
 router.post('/register', limitarRegistro, authController.register);
 router.post('/login', limitarLogin, authController.login);
 router.post('/google-login', limitarLogin, authController.googleLogin);

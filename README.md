@@ -72,7 +72,7 @@ cp pmm-ia-service/.env.example pmm-ia-service/.env
 | `IA_SERVICE_SECRET` | Credencial interna compartida por backend y Flask; debe tener el mismo valor en ambos servicios y no exponerse al frontend |
 | `FRONTEND_URL` | Dominio del frontend (CORS y enlaces de correo). Producción: `https://academia-pmm-2.vercel.app` |
 | `CORS_ORIGINS` | Orígenes exactos permitidos (coma-separados). En prod no incluir localhost |
-| `DOMINIOS_DOCENTES` | Dominios de correo que reciben el rol docente |
+| `DOMINIOS_DOCENTES` | Lista separada por comas. Para PMM Interactivo, `profesores.uniajc.edu.co,admon.uniajc.edu.co` |
 | `RESEND_API_KEY` | Envío de correos de verificación y recuperación |
 | `GOOGLE_CLIENT_ID` | Inicio de sesión con Google |
 | `PORT`, `UPLOADS_DIR` | Puerto y carpeta de imágenes del foro |
@@ -104,10 +104,12 @@ cd pmm-backend
 npm test
 ```
 
-Resultado esperado posterior a la auditoría: 10 suites y 44 pruebas aprobadas. Se conservan como línea base las 5 suites y 22 pruebas originales; la ampliación añade 5 suites y 22 casos de regresión de seguridad. El clasificador Python ejecuta 41 casos. La matriz está en `docsRevisionRepo/matrices/matriz_regresion_seguridad_post_auditoria.md` y la evidencia de aceptación en `docs/pruebas/pruebas_aceptacion.md`.
+Resultado esperado actual: 10 suites y 50 pruebas. La evaluación académica original tuvo 5 suites y 22 pruebas. La primera ampliación añadió 22 casos de seguridad y la revisión de registro añadió 6 casos. El clasificador Python ejecuta 41 casos. Consulta el [inventario de pruebas](docsRevisionRepo/matrices/inventario_pruebas.md) y la [evidencia de aceptación](docs/pruebas/pruebas_aceptacion.md).
 
 ## Despliegue
 
 Frontend en Vercel (raíz `pmm-frontend`, preset Vite, `npm ci`, `npm run build`, salida `dist`, Node 22) con `VITE_API_URL` apuntando al backend. Backend, base de datos y microservicio de IA en Railway. Las rutas de React Router están cubiertas por `pmm-frontend/vercel.json`.
+
+Para publicar cambios en el registro, comprobar `DOMINIOS_DOCENTES` en el servicio backend de Railway. Con el backend candidato, `GET /api/auth/rol-registro?dominio=profesores.uniajc.edu.co` y la misma consulta para `admon.uniajc.edu.co` deben devolver `{"rol":"docente"}`. La consulta para `example.org` debe devolver `{"rol":"estudiante"}`. Verificar las tres respuestas antes de publicar el frontend que consume esta ruta.
 
 La política CSP no permite scripts inline. `style-src 'unsafe-inline'` se conserva porque React y Framer Motion generan estilos dinámicos para animaciones, indicadores de progreso y otros elementos visuales; retirarlo requiere una refactorización y regresión visual específicas.

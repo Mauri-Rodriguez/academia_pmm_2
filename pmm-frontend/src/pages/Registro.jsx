@@ -1,11 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/api';
 
-const DOMINIOS_DOCENTES = [
-    'profesores.uniajc.edu.co',
-    'admon.uniajc.edu.co'
-];
 const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Registro = () => {
@@ -21,29 +17,38 @@ const Registro = () => {
 
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [loading, setLoading] = useState(false);
-    const [passwordMatch, setPasswordMatch] = useState(true);
-    const [detectedRole, setDetectedRole] = useState('');
+    const [rolConsultado, setRolConsultado] = useState(null);
+    const passwordMatch = !formData.confirmarPassword || formData.password === formData.confirmarPassword;
+    const correoNormalizado = formData.correo.trim().toLowerCase();
+    const correoValido = correoNormalizado.length <= 255 && FORMATO_CORREO.test(correoNormalizado);
+    const dominio = correoValido ? correoNormalizado.split('@')[1] : '';
+    const rol = rolConsultado?.dominio === dominio ? rolConsultado.rol : '';
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (formData.confirmarPassword !== '') {
-            setPasswordMatch(formData.password === formData.confirmarPassword);
-        } else {
-            setPasswordMatch(true);
-        }
+        if (!dominio) return;
 
-        const correoNormalizado =
-            formData.correo.trim().toLowerCase();
-        const dominio = correoNormalizado.split('@')[1];
+        const controller = new AbortController();
+        const timer = setTimeout(async () => {
+            try {
+                const { data } = await api.get('/api/auth/rol-registro', {
+                    params: { dominio },
+                    signal: controller.signal
+                });
+                if (!controller.signal.aborted) {
+                    const rolValido = data?.rol === 'docente' || data?.rol === 'estudiante';
+                    setRolConsultado(rolValido ? { dominio, rol: data.rol } : null);
+                }
+            } catch {
+                if (!controller.signal.aborted) setRolConsultado(null);
+            }
+        }, 300);
 
-        if (DOMINIOS_DOCENTES.includes(dominio)) {
-            setDetectedRole('Docente/Administrativo');
-        } else if (FORMATO_CORREO.test(correoNormalizado)) {
-            setDetectedRole('Estudiante');
-        } else {
-            setDetectedRole('');
-        }
-    }, [formData]);
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [dominio]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -70,10 +75,7 @@ const Registro = () => {
             return setMensaje({ texto: 'La contraseña no puede superar 72 bytes en UTF-8.', tipo: 'error' });
         }
 
-        const correoNormalizado =
-            formData.correo.trim().toLowerCase();
-
-        if (!FORMATO_CORREO.test(correoNormalizado)) {
+        if (!correoValido) {
             return setMensaje({ texto: 'El formato del correo es inválido.', tipo: 'error' });
         }
 
@@ -83,6 +85,7 @@ const Registro = () => {
                 nombre_completo: formData.nombre_completo.trim(),
                 correo: correoNormalizado,
                 password: formData.password,
+                ...(rol === 'docente' && { rol }),
 
                 acepta_politica_privacidad: aceptaTerminos,
                 acepta_terminos: aceptaTerminos,
@@ -140,7 +143,9 @@ const Registro = () => {
                     <div>
                         <div className="flex justify-between items-center mb-2">
                             <label htmlFor="registro-correo" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Correo</label>
-                            {detectedRole && <span className="text-[10px] bg-[#0A3D62] text-white px-2 py-0.5 rounded-full font-bold uppercase">Rol: {detectedRole}</span>}
+                            <span aria-live="polite" className={rol ? 'text-[10px] bg-[#0A3D62] text-white px-2 py-0.5 rounded-full font-bold uppercase' : ''}>
+                                {rol && `Rol: ${rol === 'docente' ? 'Docente/Administrativo' : 'Estudiante'}`}
+                            </span>
                         </div>
                         <input id="registro-correo" name="correo" autoComplete="email" required type="email" value={formData.correo} onChange={handleChange}
                             className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 focus:border-[#0A3D62] focus:bg-white outline-none text-slate-900 transition-all" placeholder="usuario@uniajc.edu.co" />

@@ -24,6 +24,30 @@ if (!process.env.RESEND_API_KEY && process.env.NODE_ENV !== 'production') {
 const VERSION_POLITICA = '1.0';
 const VERSION_TERMINOS = '1.0';
 const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MENSAJE_DOMINIO_DOCENTE = 'El dominio del correo no está autorizado para el registro docente.';
+
+const obtenerRolPorDominio = (dominio) => {
+    const dominiosDocentes = (process.env.DOMINIOS_DOCENTES || '')
+        .split(',')
+        .map(d => d.trim().toLowerCase());
+
+    return dominio && dominiosDocentes.includes(dominio.toLowerCase())
+        ? 'docente'
+        : 'estudiante';
+};
+
+const solicitaRolDocenteNoAutorizado = (rolSolicitado, rolAsignado) =>
+    rolAsignado !== 'docente' && typeof rolSolicitado === 'string' &&
+    rolSolicitado.trim().toLowerCase() === 'docente';
+
+exports.consultarRolRegistro = (req, res) => {
+    const dominio = req.query.dominio;
+    if (typeof dominio !== 'string' || dominio.length > 253 || !/^[^\s@]+\.[^\s@]+$/.test(dominio)) {
+        return res.status(400).json({ mensaje: 'Dominio de correo inválido.' });
+    }
+
+    return res.set('Cache-Control', 'no-store').json({ rol: obtenerRolPorDominio(dominio) });
+};
 
 // ============================================================================
 // 1. REGISTRO MANUAL
@@ -35,6 +59,7 @@ exports.register = async (req, res) => {
             nombre_completo,
             correo,
             password,
+            rol: rolSolicitado,
             acepta_politica_privacidad,
             acepta_terminos,
             version_politica_privacidad,
@@ -87,6 +112,11 @@ exports.register = async (req, res) => {
             });
         }
 
+        const rolAsignado = obtenerRolPorDominio(correoNormalizado.split('@')[1]);
+        if (solicitaRolDocenteNoAutorizado(rolSolicitado, rolAsignado)) {
+            return res.status(403).json({ mensaje: MENSAJE_DOMINIO_DOCENTE });
+        }
+
         const usuarioExistente = await Usuario.findOne({
             where: { correo: correoNormalizado }
         });
@@ -97,21 +127,6 @@ exports.register = async (req, res) => {
                     'El correo ya está registrado en la aldea.'
             });
         }
-
-        // Asignación de rol por dominio
-        const dominioUsuario = correoNormalizado
-            .split('@')[1]
-            .toLowerCase();
-
-        const dominiosDocente = process.env.DOMINIOS_DOCENTES
-            ? process.env.DOMINIOS_DOCENTES
-                .split(',')
-                .map(d => d.trim().toLowerCase())
-            : [];
-
-        const rolAsignado = dominiosDocente.includes(dominioUsuario)
-            ? 'docente'
-            : 'estudiante';
 
         // Hash de contraseña
         const salt = await bcrypt.genSalt(10);
@@ -543,6 +558,7 @@ exports.googleLogin = async (req, res) => {
     try {
         const {
             token,
+            rol: rolSolicitado,
             acepta_politica_privacidad,
             acepta_terminos,
             version_politica_privacidad,
@@ -579,26 +595,10 @@ exports.googleLogin = async (req, res) => {
             });
         }
 
-        const dominioUsuario =
-            email
-                .split('@')[1]
-                ?.toLowerCase();
-
-        const dominiosDocente =
-            process.env.DOMINIOS_DOCENTES
-                ? process.env.DOMINIOS_DOCENTES
-                    .split(',')
-                    .map(d =>
-                        d.trim().toLowerCase()
-                    )
-                : [];
-
-        const rolAsignado =
-            dominiosDocente.includes(
-                dominioUsuario
-            )
-                ? 'docente'
-                : 'estudiante';
+        const rolAsignado = obtenerRolPorDominio(email.split('@')[1]);
+        if (solicitaRolDocenteNoAutorizado(rolSolicitado, rolAsignado)) {
+            return res.status(403).json({ mensaje: MENSAJE_DOMINIO_DOCENTE });
+        }
 
         // ========================================================
         // BUSCAR USUARIO

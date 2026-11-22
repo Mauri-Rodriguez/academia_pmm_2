@@ -35,6 +35,12 @@ const Usuario = sequelize.define('Usuario', {
     },
 
     // --- MÉTRICAS DE GAMIFICACIÓN ---
+    rango: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        defaultValue: 'Recluta'
+    },
+
     rango_actual: {
         type: DataTypes.STRING,
         defaultValue: 'Recluta'

@@ -10,13 +10,24 @@ jest.mock('../src/config/database', () => ({
   },
 }));
 
+jest.mock('../src/services/correoService', () => ({
+  enviarCorreo: jest.fn().mockResolvedValue({ ok: true }),
+}));
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
+const { parse } = require('dotenv');
+const { OAuth2Client } = require('google-auth-library');
+const Usuario = require('../src/models/Usuario');
 
 jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 
 const {
+  consultarRolRegistro,
+  googleLogin,
   register,
 } = require('../src/controllers/authController');
 
@@ -96,5 +107,82 @@ describe('authController - register', () => {
       mensaje:
         'Debes aceptar los Términos y la Política de Privacidad para registrarte.',
     });
+  });
+});
+
+describe('authController - dominios del registro', () => {
+  const datosRegistro = {
+    nombre_completo: 'Cuenta ficticia',
+    password: 'Prueba2026',
+    acepta_politica_privacidad: true,
+    acepta_terminos: true,
+  };
+  const entornoEjemplo = parse(readFileSync(join(__dirname, '../.env.example')));
+  let res;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.replaceProperty(process, 'env', {
+      ...process.env,
+      DOMINIOS_DOCENTES: entornoEjemplo.DOMINIOS_DOCENTES,
+    });
+    Usuario.findOne.mockResolvedValue(null);
+    Usuario.create.mockResolvedValue({ id_usuario: 1, save: jest.fn() });
+    jwt.sign.mockReturnValue('token-ficticio');
+    res = {
+      status: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  test.each([
+    ['Profesores.UNIAJC.edu.co', 'docente'],
+    ['admon.uniajc.edu.co', 'docente'],
+    ['personal.example.org', 'estudiante'],
+  ])('consulta y registro asignan el mismo rol a %s', async (dominio, rol) => {
+    consultarRolRegistro({ query: { dominio } }, res);
+    expect(res.json).toHaveBeenCalledWith({ rol });
+
+    await register({ body: { ...datosRegistro, correo: `cuenta@${dominio}` } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(Usuario.create).toHaveBeenCalledWith(expect.objectContaining({ rol }));
+  });
+
+  test('rechaza una solicitud manual de rol docente con dominio no autorizado', async () => {
+    await register({ body: {
+      ...datosRegistro,
+      correo: 'cuenta@personal.example.org',
+      rol: ' Docente ',
+    } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(Usuario.findOne).not.toHaveBeenCalled();
+    expect(Usuario.create).not.toHaveBeenCalled();
+  });
+
+  test('Google usa el correo de la credencial para rechazar el rol docente no autorizado', async () => {
+    jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockResolvedValue({
+      getPayload: () => ({ email: 'cuenta@personal.example.org' }),
+    });
+
+    await googleLogin({ body: {
+      token: 'credencial-ficticia',
+      correo: 'cuenta@profesores.uniajc.edu.co',
+      rol: 'docente',
+    } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(Usuario.findOne).not.toHaveBeenCalled();
+    expect(Usuario.create).not.toHaveBeenCalled();
+  });
+
+  test('la consulta acepta únicamente el dominio, sin la dirección de correo', () => {
+    consultarRolRegistro({ query: { dominio: 'cuenta@profesores.uniajc.edu.co' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 });

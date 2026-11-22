@@ -248,9 +248,9 @@ La monografía final se consultó como base de trazabilidad y NO se versiona en 
     Evidencia: docsRevisionRepo/REVISION_TECNICA_PMM.md
     (altos/críticos cerrados: H-001 rate limit, H-002 high deps).
 
-[X] npm audit de producción verificado el 15-11-2026.
-    Backend: 0 vulnerabilidades con --omit=dev.
-    Frontend: 0 vulnerabilidades con --omit=dev.
+[X] npm audit de producción repetido el 21-11-2026 con --omit=dev.
+    Backend: 3 moderadas, 0 altas y 0 críticas.
+    Frontend: 2 bajas, 0 altas y 0 críticas.
     El riesgo histórico moderado/bajo fue aceptado por concepto docente;
     se conserva vigilancia y no se usa --force.
 
@@ -269,5 +269,6 @@ La monografía final se consultó como base de trazabilidad y NO se versiona en 
 
 Pendientes / riesgos aceptados:
 - JWT en localStorage aceptado para la entrega; migración HttpOnly + CSRF futura.
-- Saneamiento coordinado del historial Git autorizado, aún no ejecutado.
+- Cinco ramas públicas reescritas y verificadas el 21-11-2026.
+  Pendientes: referencias internas de GitHub y reclonado de los integrantes.
 - Peso del bundle JS como observación no bloqueante.

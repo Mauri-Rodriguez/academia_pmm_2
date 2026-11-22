@@ -3,13 +3,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
 const AscensoModal = ({ datos, onClose }) => {
-    const modalRef = useRef(null);
     const botonCerrarRef = useRef(null);
+    const abierto = Boolean(datos);
+
+    useEffect(() => {
+        if (!abierto) return;
+
+        const focoAnterior = document.activeElement;
+        botonCerrarRef.current?.focus();
+
+        return () => {
+            if (focoAnterior instanceof HTMLElement && focoAnterior.isConnected) {
+                focoAnterior.focus({ preventScroll: true });
+            }
+        };
+    }, [abierto]);
 
     // 🚩 1. EFECTO DE CONFETI AL ABRIR (Gamificación)
     useEffect(() => {
         if (datos) {
-            botonCerrarRef.current?.focus();
             const duration = 3 * 1000;
             const animationEnd = Date.now() + duration;
             const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
@@ -25,17 +37,31 @@ const AscensoModal = ({ datos, onClose }) => {
                 confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#FBE000', '#0A3D62', '#FFFFFF'] });
                 confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#FBE000', '#2E5AAC', '#FFFFFF'] });
             }, 250);
+
+            return () => clearInterval(interval);
         }
     }, [datos]);
 
     // 🚩 2. CERRAR CON LA TECLA "ESCAPE" (Heurística #3)
     useEffect(() => {
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') onClose();
+        if (!abierto) return;
+
+        const manejarTeclado = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onClose();
+            }
+
+            if (e.key === 'Tab') {
+                // El botón de continuar es el único control del diálogo.
+                e.preventDefault();
+                botonCerrarRef.current?.focus();
+            }
         };
-        window.addEventListener('keydown', handleEscape);
-        return () => window.removeEventListener('keydown', handleEscape);
-    }, [onClose]);
+
+        window.addEventListener('keydown', manejarTeclado);
+        return () => window.removeEventListener('keydown', manejarTeclado);
+    }, [abierto, onClose]);
 
     if (!datos) return null;
 
@@ -53,7 +79,6 @@ const AscensoModal = ({ datos, onClose }) => {
                 aria-labelledby="modal-ascenso-titulo"
             >
                 <motion.div 
-                    ref={modalRef}
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}

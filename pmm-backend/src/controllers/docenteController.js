@@ -10,7 +10,76 @@ const ExcelJS = require('exceljs');
 const Modulo = require('../models/Modulo');
 const db = require('../config/database');
 const logger = require('../utils/logger');
-const { QueryTypes } = require('sequelize'); // 
+const { QueryTypes, Op, fn, col } = require('sequelize');
+
+/**
+ * Obtiene diagnóstico y progreso agregado para un conjunto de estudiantes.
+ * Mantiene constante el número de consultas, independientemente de la cantidad
+ * de estudiantes, y evita el patrón N+1 del resumen y la exportación.
+ *
+ * @param {number[]} idsEstudiantes Identificadores de estudiantes.
+ * @returns {Promise<{diagnosticosPorUsuario: Map, progresosPorUsuario: Map}>}
+ */
+const obtenerMetricasPorEstudiante = async (idsEstudiantes) => {
+    if (idsEstudiantes.length === 0) {
+        return {
+            diagnosticosPorUsuario: new Map(),
+            progresosPorUsuario: new Map()
+        };
+    }
+
+    const filtroUsuarios = {
+        id_usuario: { [Op.in]: idsEstudiantes }
+    };
+
+    const [diagnosticos, progresos] = await Promise.all([
+        Diagnostico.findAll({
+            where: filtroUsuarios,
+            attributes: [
+                'id_diagnostico',
+                'id_usuario',
+                'nivel_asignado',
+                'puntaje_obtenido',
+                'fecha_realizacion'
+            ],
+            order: [
+                ['fecha_realizacion', 'DESC'],
+                ['id_diagnostico', 'DESC']
+            ],
+            raw: true
+        }),
+        ProgresoEstudiante.findAll({
+            where: filtroUsuarios,
+            attributes: [
+                'id_usuario',
+                [fn('COUNT', col('id_progreso')), 'modulos_en_curso'],
+                [fn('AVG', col('porcentaje_avance')), 'avance_promedio']
+            ],
+            group: ['id_usuario'],
+            raw: true
+        })
+    ]);
+
+    const diagnosticosPorUsuario = new Map();
+    diagnosticos.forEach((diagnostico) => {
+        const idUsuario = Number(diagnostico.id_usuario);
+        if (!diagnosticosPorUsuario.has(idUsuario)) {
+            diagnosticosPorUsuario.set(idUsuario, diagnostico);
+        }
+    });
+
+    const progresosPorUsuario = new Map(
+        progresos.map((progreso) => [
+            Number(progreso.id_usuario),
+            {
+                modulos_en_curso: Number(progreso.modulos_en_curso) || 0,
+                avance_promedio: Number(progreso.avance_promedio) || 0
+            }
+        ])
+    );
+
+    return { diagnosticosPorUsuario, progresosPorUsuario };
+};
 
 /**
  * Obtiene un resumen del rendimiento de todos los estudiantes para el dashboard del docente.
@@ -33,21 +102,17 @@ exports.obtenerResumenEstudiantes = async (req, res) => {
             });
         }
 
-        const reporteCompleto = await Promise.all(estudiantes.map(async (estudiante) => {
-            const diagnostico = await Diagnostico.findOne({
-                where: { id_usuario: estudiante.id_usuario },
-                order: [['fecha_realizacion', 'DESC']]
-            });
+        const idsEstudiantes = estudiantes.map((estudiante) => estudiante.id_usuario);
+        const { diagnosticosPorUsuario, progresosPorUsuario } =
+            await obtenerMetricasPorEstudiante(idsEstudiantes);
 
-            const progresos = await ProgresoEstudiante.findAll({
-                where: { id_usuario: estudiante.id_usuario }
-            });
-
-            let promedioAvance = 0;
-            if (progresos.length > 0) {
-                const sumaAvance = progresos.reduce((sum, p) => sum + p.porcentaje_avance, 0);
-                promedioAvance = sumaAvance / progresos.length;
-            }
+        const reporteCompleto = estudiantes.map((estudiante) => {
+            const idEstudiante = Number(estudiante.id_usuario);
+            const diagnostico = diagnosticosPorUsuario.get(idEstudiante);
+            const progreso = progresosPorUsuario.get(idEstudiante) || {
+                modulos_en_curso: 0,
+                avance_promedio: 0
+            };
 
             return {
                 id_estudiante: estudiante.id_usuario,
@@ -57,10 +122,10 @@ exports.obtenerResumenEstudiantes = async (req, res) => {
                 ultima_conexion: estudiante.ultima_conexion, 
                 rango_ia_asignado: diagnostico ? diagnostico.nivel_asignado : 'Genin (Iniciado)',
                 puntaje_diagnostico: diagnostico ? diagnostico.puntaje_obtenido : 0,
-                modulos_en_curso: progresos.length,
-                avance_promedio: Math.round(promedioAvance) + '%'
+                modulos_en_curso: progreso.modulos_en_curso,
+                avance_promedio: Math.round(progreso.avance_promedio) + '%'
             };
-        }));
+        });
 
         res.status(200).json({
             mensaje: 'Reporte generado con éxito',
@@ -87,20 +152,16 @@ exports.descargarReporteExcel = async (req, res) => {
             attributes: ['id_usuario', 'nombre_completo', 'correo']
         });
 
-        const reporteCompleto = await Promise.all(estudiantes.map(async (estudiante) => {
-            const diagnostico = await Diagnostico.findOne({
-                where: { id_usuario: estudiante.id_usuario },
-                order: [['fecha_realizacion', 'DESC']]
-            });
-            const progresos = await ProgresoEstudiante.findAll({
-                where: { id_usuario: estudiante.id_usuario }
-            });
+        const idsEstudiantes = estudiantes.map((estudiante) => estudiante.id_usuario);
+        const { diagnosticosPorUsuario, progresosPorUsuario } =
+            await obtenerMetricasPorEstudiante(idsEstudiantes);
 
-            let promedioAvance = 0;
-            if (progresos.length > 0) {
-                const sumaAvance = progresos.reduce((sum, p) => sum + p.porcentaje_avance, 0);
-                promedioAvance = sumaAvance / progresos.length;
-            }
+        const reporteCompleto = estudiantes.map((estudiante) => {
+            const idEstudiante = Number(estudiante.id_usuario);
+            const diagnostico = diagnosticosPorUsuario.get(idEstudiante);
+            const progreso = progresosPorUsuario.get(idEstudiante) || {
+                avance_promedio: 0
+            };
 
             return {
                 id: estudiante.id_usuario,
@@ -108,9 +169,9 @@ exports.descargarReporteExcel = async (req, res) => {
                 correo: estudiante.correo,
                 rango: diagnostico ? diagnostico.nivel_asignado : 'Sin evaluar',
                 puntaje: diagnostico ? diagnostico.puntaje_obtenido : 0,
-                avance: Math.round(promedioAvance) + '%'
+                avance: Math.round(progreso.avance_promedio) + '%'
             };
-        }));
+        });
 
         // 2. CREACIÓN DEL ARCHIVO EXCEL
         const workbook = new ExcelJS.Workbook();

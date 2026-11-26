@@ -4,6 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Activity, ChevronRight, Loader2, FileDown, RefreshCw, LogOut, LayoutDashboard } from 'lucide-react';
 import api from '../api/api';
 
+const normalizarTextoBusqueda = (valor) => String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
 const DashboardDocente = () => {
     const navigate = useNavigate();
     const [estudiantes, setEstudiantes] = useState([]);
@@ -101,10 +107,11 @@ const DashboardDocente = () => {
     };
 
     const estudiantesFiltrados = estudiantes.filter(est => {
-        const termino = busqueda.trim().toLowerCase();
-        const nombre = est.nombre?.toLowerCase() || '';
-        const correo = est.correo?.toLowerCase() || '';
-        const rango = est.rango_ia_asignado?.toLowerCase() || '';
+        const termino = normalizarTextoBusqueda(busqueda);
+        const nombre = normalizarTextoBusqueda(est.nombre);
+        const correo = normalizarTextoBusqueda(est.correo);
+        const rango = normalizarTextoBusqueda(est.rango_ia_asignado);
+        const nivelSeleccionado = normalizarTextoBusqueda(filtroNivel);
 
         const coincideBusqueda =
             nombre.includes(termino) ||
@@ -112,7 +119,7 @@ const DashboardDocente = () => {
 
         const coincideNivel =
             filtroNivel === '' ||
-            rango.includes(filtroNivel.toLowerCase());
+            rango.includes(nivelSeleccionado);
 
         return coincideBusqueda && coincideNivel;
     });
@@ -333,26 +340,36 @@ const DashboardDocente = () => {
                 {/* 🚩 FILTROS DE PRECISIÓN */}
                 <div className="flex flex-col md:flex-row gap-4 mb-6 md:mb-8">
                     <div className="relative flex-1 group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0A3D62] transition-colors" size={18} />
+                        <Search aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0A3D62] transition-colors" size={18} />
+                        <label htmlFor="buscar-estudiante" className="sr-only">
+                            Buscar estudiante por nombre o correo
+                        </label>
                         <input 
-                            type="text" 
+                            id="buscar-estudiante"
+                            type="search"
                             placeholder="Buscar estudiante por nombre o correo..."
                             className="w-full bg-white border border-slate-200 rounded-xl py-3.5 pl-12 pr-6 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#0A3D62] focus:ring-2 focus:ring-[#0A3D62]/10 transition-all shadow-sm"
                             value={busqueda}
                             onChange={(e) => setBusqueda(e.target.value)}
                         />
                     </div>
-                    <select 
-                        className="bg-white border border-slate-200 rounded-xl px-6 py-3.5 text-sm font-bold text-slate-700 outline-none focus:border-[#0A3D62] focus:ring-2 focus:ring-[#0A3D62]/10 cursor-pointer shadow-sm"
-                        value={filtroNivel}
-                        onChange={(e) => setFiltroNivel(e.target.value)}
-                    >
-                        <option value="">Filtrar por Rango</option>
-                        <option value="Genin">Genin (Iniciado)</option>
-                        <option value="Chunin">Chunin (Guerrero)</option>
-                        <option value="Jonin">Jonin (Maestro)</option>
-                        <option value="Kage">Kage (Leyenda)</option>
-                    </select>
+                    <div>
+                        <label htmlFor="filtro-rango" className="sr-only">
+                            Filtrar estudiantes por rango
+                        </label>
+                        <select
+                            id="filtro-rango"
+                            className="w-full bg-white border border-slate-200 rounded-xl px-6 py-3.5 text-sm font-bold text-slate-700 outline-none focus:border-[#0A3D62] focus:ring-2 focus:ring-[#0A3D62]/10 cursor-pointer shadow-sm"
+                            value={filtroNivel}
+                            onChange={(e) => setFiltroNivel(e.target.value)}
+                        >
+                            <option value="">Filtrar por Rango</option>
+                            <option value="Genin">Genin (Iniciado)</option>
+                            <option value="Chunin">Chunin (Guerrero)</option>
+                            <option value="Jonin">Jonin (Maestro)</option>
+                            <option value="Kage">Kage (Leyenda)</option>
+                        </select>
+                    </div>
                 </div>
 
                 {/* 🚩 TABLA DE ALTO IMPACTO (Responsive) */}

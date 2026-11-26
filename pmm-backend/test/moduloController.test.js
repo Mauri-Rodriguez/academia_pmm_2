@@ -36,7 +36,7 @@ jest.mock('../src/models/Usuario', () => ({
 }));
 
 jest.mock('../src/models/Diagnostico', () => ({
-    findOne: jest.fn(),
+    findAll: jest.fn(),
 }));
 
 jest.mock('../src/models/Modulo', () => ({}));
@@ -157,14 +157,18 @@ describe('Módulos y ejercicios', () => {
             correo: 'estudiante@example.com',
             ultima_conexion: null,
         }]);
-        Diagnostico.findOne.mockResolvedValue({
+        Diagnostico.findAll.mockResolvedValue([{
+            id_diagnostico: 1,
+            id_usuario: 1,
             nivel_asignado: 'Genin (Iniciado)',
             puntaje_obtenido: 4,
-        });
-        ProgresoEstudiante.findAll.mockResolvedValue([
-            { porcentaje_avance: 50 },
-            { porcentaje_avance: 100 },
-        ]);
+            fecha_realizacion: '2026-11-25',
+        }]);
+        ProgresoEstudiante.findAll.mockResolvedValue([{
+            id_usuario: 1,
+            modulos_en_curso: 2,
+            avance_promedio: 75,
+        }]);
 
         await obtenerResumenEstudiantes(req, res);
 
@@ -178,5 +182,7 @@ describe('Módulos y ejercicios', () => {
                 ],
             })
         );
+        expect(Diagnostico.findAll).toHaveBeenCalledTimes(1);
+        expect(ProgresoEstudiante.findAll).toHaveBeenCalledTimes(1);
     });
 });
